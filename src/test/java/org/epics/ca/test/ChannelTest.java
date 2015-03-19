@@ -3,7 +3,7 @@ package org.epics.ca.test;
 import java.util.concurrent.Future;
 
 import org.epics.ca.Channel;
-import org.epics.ca.Channel.TimeStamp;
+import org.epics.ca.Channel.TimeStamped;
 
 
 public class ChannelTest {
@@ -17,7 +17,7 @@ public class ChannelTest {
 		double value = adc.get();
 		
 		// sync get w/ timestamp 
-		TimeStamp<Double> ts = adc.get(TimeStamp.class);
+		TimeStamped<Double> ts = adc.get(TimeStamped.class);
 		value = ts.getValue();
 		long millis = ts.getTimeStamp();
 		
