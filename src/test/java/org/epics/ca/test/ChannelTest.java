@@ -1,9 +1,9 @@
-package org.epics.test;
+package org.epics.ca.test;
 
 import java.util.concurrent.Future;
 
-import org.epics.Channel;
-import org.epics.Channel.TimeStamp;
+import org.epics.ca.Channel;
+import org.epics.ca.Channel.TimeStamp;
 
 
 public class ChannelTest {

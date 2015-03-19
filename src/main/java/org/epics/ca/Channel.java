@@ -1,4 +1,4 @@
-package org.epics;
+package org.epics.ca;
 
 import java.util.concurrent.Future;
 
