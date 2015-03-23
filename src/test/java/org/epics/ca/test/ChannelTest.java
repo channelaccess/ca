@@ -1,34 +1,43 @@
 package org.epics.ca.test;
 
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import org.epics.ca.Channel;
-import org.epics.ca.Channel.TimeStamped;
+import org.epics.ca.Monitor;
+import org.epics.ca.data.TimeStamped;
 
 
 public class ChannelTest {
-	
-	
+
+	@SuppressWarnings({ "unused", "null" })
 	public static void main(String[] args) throws Throwable {
 		
 		Channel<Double> adc = null; // = new Channel<Double>("adc01");
 		
 		// sync get
-		double value = adc.get();
+		double dv = adc.get();
 		
 		// sync get w/ timestamp 
 		TimeStamped<Double> ts = adc.get(TimeStamped.class);
-		value = ts.getValue();
+		dv = ts.getValue();
 		long millis = ts.getTimeStamp();
 		
 		// best-effort put
 		adc.put(12.3);
 		
 		// async get
-		Future<Double> fd = adc.getAsync();
+		CompletableFuture<Double> fd = adc.getAsync();
+		// ... in some other thread
+		dv = fd.get();
 		
-		// in some other thread
-		value = fd.get();
+		// create monitor
+		Monitor<Double> monitor = adc.createMonitor(value -> System.out.println(value));
+
+		Monitor<TimeStamped<Double>> monitor2 =
+				(Monitor<TimeStamped<Double>>) adc.createMonitor(
+								TimeStamped.class, 
+								value -> System.out.println(value)
+								);
 		
 	}
 }
