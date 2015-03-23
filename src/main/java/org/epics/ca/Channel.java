@@ -8,7 +8,9 @@ import org.epics.ca.data.Metadata;
 
 public interface Channel<T> extends AutoCloseable {
 	
-	public CompletableFuture<Void> connect();
+	public String getName();
+	
+	public CompletableFuture<Channel<T>> connect();
 	
 	// TODO connection listener, ACL listener
 	

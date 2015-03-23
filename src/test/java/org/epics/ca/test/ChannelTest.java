@@ -14,6 +14,20 @@ public class ChannelTest {
 		
 		Channel<Double> adc = null; // = new Channel<Double>("adc01");
 		
+		// wait until connected
+		adc.connect().get();
+		
+		// async wait
+		// NOTE: thenAccept vs thenAcceptAsync
+		adc.connect().thenAccept((channel) -> System.out.println(channel.getName() + " connected"));
+		
+		Channel<Double> adc2 = null; // = new Channel<Double>("adc02");
+		Channel<Double> adc3 = null; // = new Channel<Double>("adc03");
+		
+		// wait for all channels to connect
+		CompletableFuture.allOf(adc.connect(), adc2.connect(), adc3.connect()).
+			thenAccept((v) -> System.out.println("all connected"));
+		
 		// sync get
 		double dv = adc.get();
 		
@@ -32,7 +46,9 @@ public class ChannelTest {
 		
 		// create monitor
 		Monitor<Double> monitor = adc.createMonitor(value -> System.out.println(value));
-
+		monitor.close();	// try-catch-resoirce can be used
+		
+		// TODO that cast is really annoying here
 		Monitor<TimeStamped<Double>> monitor2 =
 				(Monitor<TimeStamped<Double>>) adc.createMonitor(
 								TimeStamped.class, 
