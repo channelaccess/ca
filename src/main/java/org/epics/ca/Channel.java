@@ -2,6 +2,7 @@ package org.epics.ca;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.epics.ca.data.Metadata;
@@ -12,7 +13,13 @@ public interface Channel<T> extends AutoCloseable {
 	
 	public CompletableFuture<Channel<T>> connect();
 	
-	// TODO connection listener, ACL listener
+	//
+	// listeners
+	//
+	
+	public Listener addConnectionListener(BiConsumer<Channel<T>, Boolean> handler);
+	public Listener addAccessRightListener(BiConsumer<Channel<T>, AccessRights> handler);
+	
 	
 	//
 	// sync methods, exception is thrown on failure
@@ -35,10 +42,10 @@ public interface Channel<T> extends AutoCloseable {
 	//
 
 	// value only, queueSize = 2, called from its own thread
-	public Monitor<T> createMonitor(final Consumer<? extends T> handler); 
+	public Monitor<T> addMonitor(Consumer<? extends T> handler); 
 
 	// queueSize = 2, called from its own thread
-	public <MT extends Metadata<T>> Monitor<MT> createMonitor(Class<MT> clazz, final Consumer<? extends MT> handler); 
+	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<MT> clazz, final Consumer<? extends MT> handler); 
 	
 	//
 	// misc

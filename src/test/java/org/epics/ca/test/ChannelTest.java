@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.epics.ca.Channel;
 import org.epics.ca.Monitor;
+import org.epics.ca.Status;
 import org.epics.ca.data.TimeStamped;
 
 
@@ -44,13 +45,16 @@ public class ChannelTest {
 		// ... in some other thread
 		dv = fd.get();
 		
+		CompletableFuture<Status> sf = adc.putAsync(12.8);
+		boolean putOK = sf.get().isSuccessful();
+		
 		// create monitor
-		Monitor<Double> monitor = adc.createMonitor(value -> System.out.println(value));
+		Monitor<Double> monitor = adc.addMonitor(value -> System.out.println(value));
 		monitor.close();	// try-catch-resoirce can be used
 		
 		// TODO that cast is really annoying here
 		Monitor<TimeStamped<Double>> monitor2 =
-				(Monitor<TimeStamped<Double>>) adc.createMonitor(
+				(Monitor<TimeStamped<Double>>) adc.addMonitor(
 								TimeStamped.class, 
 								value -> System.out.println(value)
 								);
