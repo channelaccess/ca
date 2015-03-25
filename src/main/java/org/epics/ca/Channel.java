@@ -34,8 +34,16 @@ public interface Channel<T> extends AutoCloseable {
 	public CompletableFuture<T> getAsync();
 	public CompletableFuture<Status> putAsync(T value);
 	
-	public <MT extends Metadata<T>> MT get(Class<MT> clazz);
-	public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(Class<MT> clazz);
+	// NOTE: "public <MT extends Metadata<T>> MT get(Class<MT> clazz)" would
+	// be a better definition, however it raises unchecked warnings in the code
+	// and requires explicit casts for monitor APIs
+	// the drawback of the signature below is that type of "?" can be different than "MT"
+	// (it will raise ClassCastException if not properly used)
+	
+	@SuppressWarnings("rawtypes")
+	public <MT extends Metadata<T>> MT get(Class<? extends Metadata> clazz);
+	@SuppressWarnings("rawtypes")
+	public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(Class<? extends Metadata> clazz);
 	
 	//
 	// monitors
@@ -45,7 +53,8 @@ public interface Channel<T> extends AutoCloseable {
 	public Monitor<T> addMonitor(Consumer<? extends T> handler); 
 
 	// queueSize = 2, called from its own thread
-	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<MT> clazz, final Consumer<? extends MT> handler); 
+	@SuppressWarnings("rawtypes")
+	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, final Consumer<? extends MT> handler); 
 	
 	//
 	// misc

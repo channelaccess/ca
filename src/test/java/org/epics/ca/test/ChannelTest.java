@@ -10,7 +10,7 @@ import org.epics.ca.data.TimeStamped;
 
 public class ChannelTest {
 
-	@SuppressWarnings({ "unused", "null" })
+	@SuppressWarnings({ "unused", "null"/*, "unchecked"*/ })
 	public static void main(String[] args) throws Throwable {
 		
 		Channel<Double> adc = null; // = new Channel<Double>("adc01");
@@ -45,16 +45,20 @@ public class ChannelTest {
 		// ... in some other thread
 		dv = fd.get();
 		
+		CompletableFuture<TimeStamped<Double>> ftd = adc.getAsync(TimeStamped.class);
+		// ... in some other thread
+		TimeStamped<Double> td = ftd.get();
+
+		
 		CompletableFuture<Status> sf = adc.putAsync(12.8);
 		boolean putOK = sf.get().isSuccessful();
 		
 		// create monitor
 		Monitor<Double> monitor = adc.addMonitor(value -> System.out.println(value));
-		monitor.close();	// try-catch-resoirce can be used
+		monitor.close();	// try-catch-resource can be used
 		
-		// TODO that cast is really annoying here
 		Monitor<TimeStamped<Double>> monitor2 =
-				(Monitor<TimeStamped<Double>>) adc.addMonitor(
+				adc.addMonitor(
 								TimeStamped.class, 
 								value -> System.out.println(value)
 								);
