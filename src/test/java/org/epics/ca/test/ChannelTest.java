@@ -54,7 +54,7 @@ public class ChannelTest {
 		boolean putOK = sf.get().isSuccessful();
 		
 		// create monitor
-		Monitor<Double> monitor = adc.addMonitor(value -> System.out.println(value));
+		Monitor<Double> monitor = adc.addValueMonitor(value -> System.out.println(value));
 		monitor.close();	// try-catch-resource can be used
 		
 		Monitor<TimeStamped<Double>> monitor2 =

@@ -1,19 +1,32 @@
 package org.epics.ca;
 
-public class Context implements AutoCloseable {
+import java.util.Properties;
+
+public class Context implements AutoCloseable, Constants {
 	
 	// use Java logging API
 	
 	public Context()
 	{
-		loadConfig();
+		this(System.getProperties());
 	}
 	
-	protected void loadConfig()
+	public Context(Properties properties)
 	{
-		// TODO sys env. w/ explicit override
+		loadConfig(properties);
+	}
+
+	protected void loadConfig(Properties properties)
+	{
+		// TODO properties override system env. variables
+		// e.g. String addressList = properties.getProperty(ADDR_LIST_KEY, System.getenv(ADDR_LIST_KEY));
 	}
 	
+	<T> Channel<T> createChannel(String channelName)
+	{
+		return createChannel(channelName, CHANNEL_PRIORITY_DEFAULT);
+	}
+
 	<T> Channel<T> createChannel(String channelName, short priority)
 	{
 		//return new ChannelImpl<T>(channelName, priority);

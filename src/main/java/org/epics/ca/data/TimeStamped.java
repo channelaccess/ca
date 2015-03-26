@@ -1,6 +1,6 @@
 package org.epics.ca.data;
 
 // TODO
-public interface TimeStamped<T> extends Metadata<T> {
-	public long getTimeStamp();
+public class TimeStamped<T> extends Statused<T> {
+	public long getTimeStamp() { return 0; }
 }

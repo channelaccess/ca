@@ -7,6 +7,8 @@ import java.util.function.Consumer;
 
 import org.epics.ca.data.Metadata;
 
+import com.lmax.disruptor.dsl.Disruptor;
+
 public interface Channel<T> extends AutoCloseable {
 	
 	public String getName();
@@ -50,12 +52,16 @@ public interface Channel<T> extends AutoCloseable {
 	//
 
 	// value only, queueSize = 2, called from its own thread
-	public Monitor<T> addMonitor(Consumer<? extends T> handler); 
+	public Monitor<T> addValueMonitor(Consumer<? extends T> handler); 
 
 	// queueSize = 2, called from its own thread
 	@SuppressWarnings("rawtypes")
 	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, final Consumer<? extends MT> handler); 
-	
+
+	// advanced monitor, user provides its own Disruptor
+	public Monitor<T> addValueMonitor(Disruptor<T> disruptor); 
+	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Disruptor<MT> disruptor);
+
 	//
 	// misc
 	//
