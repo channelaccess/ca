@@ -1,6 +1,6 @@
 package org.epics.ca.data;
 
 // TODO
-public class TimeStamped<T> extends Statused<T> {
+public class Timestamped<T> extends Alarm<T> {
 	public long getTimeStamp() { return 0; }
 }

@@ -7,7 +7,7 @@ import org.epics.ca.Context;
 import org.epics.ca.Listener;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
-import org.epics.ca.data.TimeStamped;
+import org.epics.ca.data.Timestamped;
 
 
 public class ChannelTest {
@@ -45,7 +45,7 @@ public class ChannelTest {
 			double dv = adc.get();
 			
 			// sync get w/ timestamp 
-			TimeStamped<Double> ts = adc.get(TimeStamped.class);
+			Timestamped<Double> ts = adc.get(Timestamped.class);
 			dv = ts.getValue();
 			long millis = ts.getTimeStamp();
 			
@@ -57,9 +57,9 @@ public class ChannelTest {
 			// ... in some other thread
 			dv = fd.get();
 			
-			CompletableFuture<TimeStamped<Double>> ftd = adc.getAsync(TimeStamped.class);
+			CompletableFuture<Timestamped<Double>> ftd = adc.getAsync(Timestamped.class);
 			// ... in some other thread
-			TimeStamped<Double> td = ftd.get();
+			Timestamped<Double> td = ftd.get();
 	
 			
 			CompletableFuture<Status> sf = adc.putAsync(12.8);
@@ -69,9 +69,9 @@ public class ChannelTest {
 			Monitor<Double> monitor = adc.addValueMonitor(value -> System.out.println(value));
 			monitor.close();	// try-catch-resource can be used
 			
-			Monitor<TimeStamped<Double>> monitor2 =
+			Monitor<Timestamped<Double>> monitor2 =
 					adc.addMonitor(
-									TimeStamped.class, 
+									Timestamped.class, 
 									value -> System.out.println(value)
 									);
 			

@@ -11,6 +11,8 @@ import com.lmax.disruptor.dsl.Disruptor;
 
 public interface Channel<T> extends AutoCloseable {
 	
+	public static final int MONITOR_QUEUE_SIZE_DEFAULT = 2;
+
 	public String getName();
 	
 	public CompletableFuture<Channel<T>> connect();
@@ -26,6 +28,12 @@ public interface Channel<T> extends AutoCloseable {
 	//
 	// sync methods, exception is thrown on failure
 	// 
+	
+	// TODO reusable get methods
+	//	public T get(T reuse);
+	// public CompletableFuture<T> getAsync(T reuse);
+	// public <MT extends Metadata<T>> MT get(Class<? extends Metadata> clazz, T reuse);
+	// public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(Class<? extends MT> clazz, T reuse);
 	
 	public T get();
 	public void put(T value); // best-effort put
@@ -50,11 +58,23 @@ public interface Channel<T> extends AutoCloseable {
 	// monitors
 	//
 
-	// value only, queueSize = 2, called from its own thread
-	public Monitor<T> addValueMonitor(Consumer<? extends T> handler); 
+	// value only, queueSize = DEFAULT_MONITOR_QUEUE_SIZE, called from its own thread
+	default Monitor<T> addValueMonitor(Consumer<? extends T> handler)
+	{
+		return addValueMonitor(handler, MONITOR_QUEUE_SIZE_DEFAULT);
+	}
+	
+	// value only, called from its own thread
+	public Monitor<T> addValueMonitor(Consumer<? extends T> handler, int queueSize); 
 
-	// queueSize = 2, called from its own thread
-	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends MT> clazz, Consumer<? extends MT> handler); 
+	// queueSize = DEFAULT_MONITOR_QUEUE_SIZE, called from its own thread
+	default <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends MT> clazz, Consumer<? extends MT> handler)
+	{
+		return addMonitor(clazz, handler, MONITOR_QUEUE_SIZE_DEFAULT);
+	}
+	
+	// called from its own thread
+	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends MT> clazz, Consumer<? extends MT> handler, int queueSize); 
 
 	// advanced monitor, user provides its own Disruptor
 	public Monitor<T> addValueMonitor(Disruptor<T> disruptor); 

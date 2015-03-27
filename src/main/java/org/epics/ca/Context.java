@@ -2,6 +2,8 @@ package org.epics.ca;
 
 import java.util.Properties;
 
+import org.epics.ca.impl.ChannelImpl;
+
 public class Context implements AutoCloseable, Constants {
 	
 	// use Java logging API
@@ -27,10 +29,10 @@ public class Context implements AutoCloseable, Constants {
 		return createChannel(channelName, channelType, CHANNEL_PRIORITY_DEFAULT);
 	}
 
-	public <T> Channel<T> createChannel(String channelName, Class<T> channelType, short priority)
+	public <T> Channel<T> createChannel(String channelName, Class<T> channelType, int priority)
 	{
-		//return new ChannelImpl(channelName, channelType, priority);
-		return null;
+		// TODO priority
+		return new ChannelImpl<T>(channelName, channelType);
 	}
 
 	@Override
