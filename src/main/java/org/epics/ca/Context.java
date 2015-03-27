@@ -36,7 +36,7 @@ public class Context implements AutoCloseable, Constants {
 	}
 
 	@Override
-	public void close() throws Exception {
+	public void close() {
 		// TODO Auto-generated method stub
 		
 	}
