@@ -95,9 +95,10 @@ public class ChannelImpl<T> implements Channel<T>
 		return null;
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(
-			Class<? extends MT> clazz) {
+			Class<? extends Metadata> clazz) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -108,9 +109,10 @@ public class ChannelImpl<T> implements Channel<T>
 		return null;
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public <MT extends Metadata<T>> Monitor<MT> addMonitor(
-			Class<? extends MT> clazz, Consumer<? extends MT> handler, int queueSize) {
+			Class<? extends Metadata> clazz, Consumer<? extends Metadata> handler, int queueSize) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -121,9 +123,10 @@ public class ChannelImpl<T> implements Channel<T>
 		return null;
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public <MT extends Metadata<T>> Monitor<MT> addMonitor(
-			Class<? extends MT> clazz, Disruptor<? extends MT> disruptor) {
+			Class<? extends Metadata> clazz, Disruptor<? extends Metadata> disruptor) {
 		// TODO Auto-generated method stub
 		return null;
 	}

@@ -52,7 +52,8 @@ public interface Channel<T> extends AutoCloseable {
 	
 	@SuppressWarnings("rawtypes")
 	public <MT extends Metadata<T>> MT get(Class<? extends Metadata> clazz);
-	public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(Class<? extends MT> clazz);
+	@SuppressWarnings("rawtypes")
+	public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(Class<? extends Metadata> clazz);
 	
 	//
 	// monitors
@@ -68,17 +69,20 @@ public interface Channel<T> extends AutoCloseable {
 	public Monitor<T> addValueMonitor(Consumer<? extends T> handler, int queueSize); 
 
 	// queueSize = DEFAULT_MONITOR_QUEUE_SIZE, called from its own thread
-	default <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends MT> clazz, Consumer<? extends MT> handler)
+	@SuppressWarnings("rawtypes")
+	default <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Consumer<? extends Metadata> handler)
 	{
 		return addMonitor(clazz, handler, MONITOR_QUEUE_SIZE_DEFAULT);
 	}
 	
 	// called from its own thread
-	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends MT> clazz, Consumer<? extends MT> handler, int queueSize); 
+	@SuppressWarnings("rawtypes")
+	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Consumer<? extends Metadata> handler, int queueSize); 
 
 	// advanced monitor, user provides its own Disruptor
 	public Monitor<T> addValueMonitor(Disruptor<T> disruptor); 
-	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends MT> clazz, Disruptor<? extends MT> disruptor);
+	@SuppressWarnings("rawtypes")
+	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Disruptor<? extends Metadata> disruptor);
 
 	//
 	// misc
