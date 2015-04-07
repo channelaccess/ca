@@ -1,5 +1,9 @@
 package org.epics.ca.impl;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.SelectionKey;
 import java.util.Properties;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -8,7 +12,14 @@ import java.util.logging.Logger;
 import org.epics.ca.Channel;
 import org.epics.ca.Constants;
 import org.epics.ca.Version;
+import org.epics.ca.impl.reactor.Reactor;
+import org.epics.ca.impl.reactor.ReactorHandler;
+import org.epics.ca.impl.reactor.lf.LeaderFollowersHandler;
+import org.epics.ca.impl.reactor.lf.LeaderFollowersThreadPool;
+import org.epics.ca.impl.search.ChannelSearchManager;
 import org.epics.ca.util.logging.ConsoleLogHandler;
+import org.epics.ca.util.net.InetAddressUtil;
+import org.epics.ca.util.sync.NamedLockPattern;
 
 public class ContextImpl implements AutoCloseable, Constants {
 
@@ -22,7 +33,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 	/**
 	 * Context logger.
 	 */
-	protected Logger logger;
+	protected final Logger logger = Logger.getLogger(getClass().getPackage().getName());
 	
 	/**
 	 * Debug level, turns on low-level debugging.
@@ -54,6 +65,11 @@ public class ContextImpl implements AutoCloseable, Constants {
 	protected float beaconPeriod = 15.0f;
 	
 	/**
+	 * Port number for the repeater to listen to.
+	 */
+	protected int repeaterPort = CA_REPEATER_PORT;
+	
+	/**
 	 * Port number for the server to listen to.
 	 */
 	protected int serverPort = CA_SERVER_PORT;
@@ -63,6 +79,52 @@ public class ContextImpl implements AutoCloseable, Constants {
 	 */
 	protected int maxArrayBytes = 16384;
 
+	
+	
+	
+	
+	
+	
+	/**
+	 * Timer.
+	 */
+	//protected final Timer timer;
+
+	/**
+	 * Reactor.
+	 */
+	protected final Reactor reactor;
+
+	/**
+	 * Leader/followers thread pool.
+	 */
+	protected final LeaderFollowersThreadPool leaderFollowersThreadPool;
+
+	/**
+	 * Context instance.
+	 */
+	@SuppressWarnings("unused")
+	private static final int LOCK_TIMEOUT = 20 * 1000;	// 20s
+
+	/**
+	 * Context instance.
+	 */
+	@SuppressWarnings("unused")
+	private final NamedLockPattern namedLocker;
+
+	/**
+	 * Channel search manager.
+	 * Manages UDP search requests.
+	 */
+	private final ChannelSearchManager channelSearchManager;
+	
+	/**
+	 * Broadcast (search) transport.
+	 */
+	private final BroadcastTransport broadcastTransport;
+	
+	
+	
 	public ContextImpl()
 	{
 		this(System.getProperties());
@@ -72,6 +134,33 @@ public class ContextImpl implements AutoCloseable, Constants {
 	{
 		initializeLogger(properties);
 		loadConfig(properties);
+
+		// async IO reactor
+		try {
+			reactor = new Reactor();
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to initialize reactor.", e);
+		}
+		
+	    // leader/followers processing
+	    leaderFollowersThreadPool = new LeaderFollowersThreadPool();
+	    
+		// spawn initial leader
+		leaderFollowersThreadPool.promoteLeader(
+		        new Runnable() {
+		            /**
+		        	 * @see java.lang.Runnable#run()
+		        	 */
+		        	public void run() {
+		        		reactor.process();
+		        	}
+				}
+		);
+
+		namedLocker = new NamedLockPattern();
+
+		broadcastTransport = initializeUDPTransport();
+		channelSearchManager = new ChannelSearchManager(broadcastTransport);
 	}
 	
 	protected String readStringProperty(Properties properties, String key, String defaultValue)
@@ -141,6 +230,9 @@ public class ContextImpl implements AutoCloseable, Constants {
 		beaconPeriod = readFloatProperty(properties, BEACON_PERIOD_KEY, beaconPeriod);
 		logger.config(() -> BEACON_PERIOD_KEY + ": " + beaconPeriod);
 
+		repeaterPort = readIntegerProperty(properties, REPEATER_PORT_KEY, repeaterPort);
+		logger.config(() -> REPEATER_PORT_KEY + ": " + repeaterPort);
+
 		serverPort = readIntegerProperty(properties, SERVER_PORT_KEY, serverPort);
 		logger.config(() -> SERVER_PORT_KEY + ": " + serverPort);
 
@@ -154,8 +246,6 @@ public class ContextImpl implements AutoCloseable, Constants {
 	protected void initializeLogger(Properties properties)
 	{
 		debugLevel = readIntegerProperty(properties, CA_DEBUG, debugLevel);
-		
-		logger = Logger.getLogger(this.getClass().getName());
 		
 		if (debugLevel > 0)
 		{
@@ -180,6 +270,78 @@ public class ContextImpl implements AutoCloseable, Constants {
 		}
 	}
 
+	protected BroadcastTransport initializeUDPTransport()
+	{
+		// where to bind (listen) address
+		InetSocketAddress connectAddress = new InetSocketAddress(repeaterPort);
+
+		
+		// set broadcast address list
+		InetSocketAddress[] broadcastAddressList = null;
+		if (addressList != null && addressList.length() > 0)
+		{
+			// if auto is true, add it to specified list
+			InetSocketAddress[] appendList = null;
+			if (autoAddressList == true)
+				appendList = InetAddressUtil.getBroadcastAddresses(serverPort);
+			
+			InetSocketAddress[] list = InetAddressUtil.getSocketAddressList(addressList, serverPort, appendList);
+			if (list != null && list.length > 0)
+				broadcastAddressList = list;
+		}
+		else if (autoAddressList == false)
+			logger.log(Level.WARNING, "Empty broadcast search address list, all connects will fail.");
+		else
+			broadcastAddressList = InetAddressUtil.getBroadcastAddresses(serverPort);
+
+		if (logger.isLoggable(Level.CONFIG) && broadcastAddressList != null)
+			for (int i = 0; i < broadcastAddressList.length; i++)
+        		logger.config("Broadcast address #" + i + ": " + broadcastAddressList[i] + '.');
+
+		logger.finer(() -> "Creating datagram socket to: " + connectAddress);
+		
+		DatagramChannel channel = null;
+		try
+		{        
+			channel = DatagramChannel.open();
+
+			// use non-blocking channel (no need for soTimeout)			
+			channel.configureBlocking(false);
+		
+			// set SO_BROADCAST
+			channel.socket().setBroadcast(true);
+			
+			// explicitly bind first
+			channel.socket().setReuseAddress(true);
+			channel.socket().bind(connectAddress /*new InetSocketAddress(0)*/);
+
+			// create transport
+			// TODO !!!
+			ResponseHandler responseHandler = null;
+			BroadcastTransport transport = new BroadcastTransport(this, responseHandler, channel,
+					connectAddress, broadcastAddressList);
+	
+			// and register to the selector
+			ReactorHandler handler = new LeaderFollowersHandler(reactor, transport, leaderFollowersThreadPool);
+			reactor.register(channel, SelectionKey.OP_READ, handler);
+			
+			return transport;
+		}
+		catch (Throwable th)
+		{
+			// close socket, if open
+			try
+			{
+				if (channel != null)
+					channel.close();
+			}
+			catch (Throwable t) { /* noop */ }
+
+			throw new RuntimeException("Failed to connect to '" + connectAddress + "'.", th);
+		}
+		
+	}
+	
 	public <T> Channel<T> createChannel(String channelName, Class<T> channelType)
 	{
 		return createChannel(channelName, channelType, CHANNEL_PRIORITY_DEFAULT);
@@ -193,8 +355,20 @@ public class ContextImpl implements AutoCloseable, Constants {
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
+		channelSearchManager.cancel();
+		broadcastTransport.close();
 		
+		// this will also close all CA transports
+		//destroyAllChannels();
+		
+		reactor.shutdown();
+	    leaderFollowersThreadPool.shutdown();
 	}
+
+	public Reactor getReactor() {
+		return reactor;
+	}
+	
+	
 	
 }

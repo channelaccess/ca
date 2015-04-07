@@ -1,7 +1,9 @@
 package org.epics.ca.impl;
 
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -158,5 +160,36 @@ public class ChannelImpl<T> implements Channel<T>
 	}
 
 	*/
+	
+	protected final AtomicReference<Object> timerIdRef = new AtomicReference<Object>();
+	
+	public void setTimerId(Object timerId)
+	{
+		timerIdRef.set(timerId);
+	}
+	
+	public Object getTimerId()
+	{
+		return timerIdRef.get();
+	}
+	
+	/**
+	 * Send search message.
+	 * @return success status.  
+	 */
+	public synchronized boolean generateSearchRequestMessage(Transport transport, ByteBuffer buffer)
+	{
+		// TODO!!!
+		/*
+		ByteBuffer result = SearchRequest.generateSearchRequestMessage(transport, buffer, name, channelID);
+		if (result == null)
+			return false;
+		
+		if (searchTries < Integer.MAX_VALUE)
+			searchTries++;
+		*/
+		return true;
+	}
+	
 	
 }

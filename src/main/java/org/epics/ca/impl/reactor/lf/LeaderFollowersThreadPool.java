@@ -74,7 +74,7 @@ public class LeaderFollowersThreadPool {
             executor.execute(task);
         } catch (Throwable th) { 
         	/* noop */
-        	logger.log(Level.SEVERE, "Unexpected exception cautch in one of the LF thread-pool thread.", th);
+        	logger.log(Level.SEVERE, "Unexpected exception caught in one of the LF thread-pool thread.", th);
         }
     }
     
