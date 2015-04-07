@@ -1,10 +1,13 @@
 package org.epics.ca.data;
 
-// TODO
-public class Alarm<T> implements Metadata<T> {
-
-	public T getValue() { return null; }
+public class Alarm<T> extends Metadata<T> {
 	
-	public int getStatus() { return 0; }
-	public int getSeverity() { return 0; }
+	protected AlarmStatus alarmStatus = AlarmStatus.UDF_ALARM;
+	protected AlarmSeverity alarmSeverity = AlarmSeverity.INVALID_ALARM;
+	
+	public AlarmStatus getAlarmStatus() { return alarmStatus; }
+	public void setAlarmStatus(AlarmStatus alarmStatus) { this.alarmStatus = alarmStatus; }
+
+	public AlarmSeverity getAlarmSeverity() { return alarmSeverity; }
+	public void setAlarmSeverity(AlarmSeverity alarmSeverity) { this.alarmSeverity = alarmSeverity; }
 }

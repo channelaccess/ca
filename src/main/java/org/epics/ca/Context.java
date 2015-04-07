@@ -2,11 +2,11 @@ package org.epics.ca;
 
 import java.util.Properties;
 
-import org.epics.ca.impl.ChannelImpl;
+import org.epics.ca.impl.ContextImpl;
 
-public class Context implements AutoCloseable, Constants {
+public class Context implements AutoCloseable {
 	
-	// use Java logging API
+	private final ContextImpl delegate;
 	
 	public Context()
 	{
@@ -15,30 +15,22 @@ public class Context implements AutoCloseable, Constants {
 	
 	public Context(Properties properties)
 	{
-		loadConfig(properties);
+		delegate = new ContextImpl(properties);
 	}
 
-	protected void loadConfig(Properties properties)
-	{
-		// TODO properties override system env. variables
-		// e.g. String addressList = properties.getProperty(ADDR_LIST_KEY, System.getenv(ADDR_LIST_KEY));
-	}
-	
 	public <T> Channel<T> createChannel(String channelName, Class<T> channelType)
 	{
-		return createChannel(channelName, channelType, CHANNEL_PRIORITY_DEFAULT);
+		return delegate.createChannel(channelName, channelType, Constants.CHANNEL_PRIORITY_DEFAULT);
 	}
 
 	public <T> Channel<T> createChannel(String channelName, Class<T> channelType, int priority)
 	{
-		// TODO priority
-		return new ChannelImpl<T>(channelName, channelType);
+		return delegate.createChannel(channelName, channelType, priority);
 	}
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
-		
+		delegate.close();
 	}
 	
 }
