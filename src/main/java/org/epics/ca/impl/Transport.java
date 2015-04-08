@@ -1,6 +1,7 @@
 package org.epics.ca.impl;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
 /**
  * Interface defining transport (connection).
@@ -24,5 +25,9 @@ public interface Transport {
 	 * @return protocol minor revision.
 	 */
 	public short getMinorRevision();
+	
+	public ByteBuffer acquireSendBuffer(int requiredSize);
+	public void releaseSendBuffer(boolean ignore, boolean flush);
+	public void flush();
 
 }

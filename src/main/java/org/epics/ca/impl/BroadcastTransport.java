@@ -16,7 +16,6 @@ import org.epics.ca.impl.reactor.ReactorHandler;
  * It receives datagrams from <code>BroadcastConnector</code> registered
  * repeater and sends broadcasts datagrams to given addresses.  
  */
-// TODO buffer out of memory bug (on massive connect)?! 
 public class BroadcastTransport implements ReactorHandler, Transport {
 
 	// Get Logger
@@ -40,7 +39,7 @@ public class BroadcastTransport implements ReactorHandler, Transport {
 	/**
 	 * Connect address.
 	 */
-	private InetSocketAddress connectAddress;
+	private final InetSocketAddress connectAddress;
 
 	/**
 	 * Broadcast addresses.
@@ -53,14 +52,14 @@ public class BroadcastTransport implements ReactorHandler, Transport {
 	private final ByteBuffer receiveBuffer;
 
 	/**
-	 * Receive buffer.
-	 */
-	private final ByteBuffer[] receiveBufferArray;
-
-	/**
 	 * Response handler.
 	 */
 	protected final ResponseHandler responseHandler;
+	
+	/**
+	 * CA header structure.
+	 */
+	private final Header header = new Header();
 
 	/**
 	 * @param context
@@ -77,7 +76,6 @@ public class BroadcastTransport implements ReactorHandler, Transport {
 
 		// allocate receive buffer
 		receiveBuffer = ByteBuffer.allocate(Constants.MAX_UDP_RECV);
-		receiveBufferArray = new ByteBuffer[] { receiveBuffer };
 	}
 
 	/**
@@ -134,8 +132,26 @@ public class BroadcastTransport implements ReactorHandler, Transport {
 
 				// handle response				
 				while (receiveBuffer.limit() - receiveBuffer.position() >= Constants.CA_MESSAGE_HEADER_SIZE)
-					responseHandler.handleResponse(fromAddress, this, receiveBufferArray);
- 
+				{
+					header.read(receiveBuffer);
+					
+					int pos = receiveBuffer.position();
+					int endOfMessage = pos + header.payloadSize;
+					if (endOfMessage > receiveBuffer.limit())
+					{
+						// we need whole payload, ignore rest of the packet
+						logger.warning("Malformed UDP packet/CA message - the packet does not contain complete payload.");
+						break;
+					}
+
+					try {
+						responseHandler.handleResponse(fromAddress, this, header, receiveBuffer);
+					} catch (Throwable th) {
+						logger.log(Level.WARNING, "Unexpected exception caught while processing CA message over UDP from " + fromAddress, th);
+					} finally {
+						receiveBuffer.position(endOfMessage);
+					}
+				}
 			}
 			
 		} catch (IOException ioex) {
@@ -200,6 +216,21 @@ public class BroadcastTransport implements ReactorHandler, Transport {
 	@Override
 	public short getMinorRevision() {
 		return Constants.CA_MINOR_PROTOCOL_REVISION;
+	}
+
+	@Override
+	public ByteBuffer acquireSendBuffer(int requiredSize) {
+		throw new UnsupportedOperationException("not implemented");
+	}
+
+	@Override
+	public void releaseSendBuffer(boolean ignore, boolean flush) {
+		// noop
+	}
+
+	@Override
+	public void flush() {
+		// noop
 	}
    
 }
