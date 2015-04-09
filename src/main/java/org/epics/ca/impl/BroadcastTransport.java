@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.epics.ca.Constants;
+import org.epics.ca.impl.ResponseHandlers.ResponseHandler;
 import org.epics.ca.impl.reactor.ReactorHandler;
 
 /**

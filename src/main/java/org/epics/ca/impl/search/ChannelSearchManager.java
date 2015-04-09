@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.epics.ca.Constants;
 import org.epics.ca.impl.BroadcastTransport;
 import org.epics.ca.impl.ChannelImpl;
+import org.epics.ca.impl.Messages;
 
 /**
  * CA channel search manager.
@@ -173,7 +174,6 @@ public class ChannelSearchManager {
 	/**
 	 * Search (datagram) sequence number.
 	 */
-	@SuppressWarnings("unused")
 	private volatile int sequenceNumber = 0;
 
 	/**
@@ -207,8 +207,7 @@ public class ChannelSearchManager {
 		
 		// put version message
 		sequenceNumber++;
-// TODO!!!		VersionRequest.generateVersionRequestMessage(broadcastTransport, sendBuffer, (short)0, sequenceNumber, true);
-		
+		Messages.generateVersionRequestMessage(broadcastTransport, sendBuffer, (short)0, sequenceNumber, true);
 	}
 
 	/**

@@ -46,6 +46,12 @@ public class ChannelImpl<T> implements Channel<T>
 		TypeSupport ts = Util.getTypeSupport(channelType);
 		System.out.println(ts.getClass().getName() + " code " + ts.getCode());
 		*/
+		
+		// register before issuing search request
+		context.registerChannel(this);
+
+		// this has to be submitted immediately
+		initiateSearch();
 	}
 	
 	@Override
@@ -56,6 +62,10 @@ public class ChannelImpl<T> implements Channel<T>
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	public int getCID() {
+		return cid;
 	}
 
 	@Override
@@ -184,22 +194,26 @@ public class ChannelImpl<T> implements Channel<T>
 		return timerIdRef.get();
 	}
 	
+	// TODO
+	boolean allowCreation = false;
+	
+	/**
+	 * Initiate search (connect) procedure.
+	 */
+	public synchronized void initiateSearch()
+	{
+		// TODO synced?!!
+		allowCreation = true;
+		context.getChannelSearchManager().registerChannel(this);
+	}
+
 	/**
 	 * Send search message.
 	 * @return success status.  
 	 */
-	public synchronized boolean generateSearchRequestMessage(Transport transport, ByteBuffer buffer)
+	public boolean generateSearchRequestMessage(Transport transport, ByteBuffer buffer)
 	{
-		// TODO!!!
-		/*
-		ByteBuffer result = SearchRequest.generateSearchRequestMessage(transport, buffer, name, channelID);
-		if (result == null)
-			return false;
-		
-		if (searchTries < Integer.MAX_VALUE)
-			searchTries++;
-		*/
-		return true;
+		return Messages.generateSearchRequestMessage(transport, buffer, name, cid);
 	}
 	
 	

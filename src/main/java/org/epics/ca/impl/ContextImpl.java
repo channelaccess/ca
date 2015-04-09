@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 import org.epics.ca.Channel;
 import org.epics.ca.Constants;
 import org.epics.ca.Version;
+import org.epics.ca.impl.ResponseHandlers.ResponseHandler;
 import org.epics.ca.impl.reactor.Reactor;
 import org.epics.ca.impl.reactor.ReactorHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersHandler;
@@ -318,7 +319,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 
 			// create transport
 			// TODO !!!
-			ResponseHandler responseHandler = null;
+			ResponseHandler responseHandler = ResponseHandlers::handleResponse;
 			BroadcastTransport transport = new BroadcastTransport(this, responseHandler, channel,
 					connectAddress, broadcastAddressList);
 	
@@ -397,5 +398,73 @@ public class ContextImpl implements AutoCloseable, Constants {
 		}
 	}
 	
+	/**
+	 * Register channel.
+	 * @param channel
+	 */
+	void registerChannel(ChannelImpl<?> channel)
+	{
+		synchronized (channelsByCID)
+		{
+			channelsByCID.put(channel.getCID(), channel);
+		}
+	}
+
+	/**
+	 * Unregister channel.
+	 * @param channel
+	 */
+	void unregisterChannel(ChannelImpl<?> channel)
+	{
+		synchronized (channelsByCID)
+		{
+			channelsByCID.remove(channel.getCID());
+		}
+	}
+	
+	/**
+	 * Searches for a channel with given channel ID.
+	 * @param channelID CID.
+	 * @return channel with given CID, <code>null</code> if non-existent.
+	 */
+	public ChannelImpl<?> getChannel(int channelID)
+	{
+		synchronized (channelsByCID)
+		{
+			return channelsByCID.get(channelID);
+		}
+	}
+
+	public ChannelSearchManager getChannelSearchManager() {
+		return channelSearchManager;
+	}
+
+	public BroadcastTransport getBroadcastTransport() {
+		return broadcastTransport;
+	}
+
+	public int getServerPort() {
+		return serverPort;
+	}
+	
+	/**
+	 * Search response from server (channel found).
+	 * @param cid	client channel ID.
+	 * @param sid	server channel ID.
+	 * @param type	channel native type code.
+	 * @param count	channel element count.
+	 * @param minorRevision	server minor CA revision.
+	 * @param serverAddress	server address.
+	 */
+	public void searchResponse(int cid, int sid, short type, int count,
+							   short minorRevision, InetSocketAddress serverAddress)
+	{
+		ChannelImpl<?> channel = getChannel(cid);
+		if (channel == null)
+			return;
+
+		// TODO
+		logger.fine(() -> "Search response for channel " + channel.getName() + " received.");
+	}
 	
 }
