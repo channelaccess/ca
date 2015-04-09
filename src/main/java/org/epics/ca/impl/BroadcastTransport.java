@@ -147,7 +147,7 @@ public class BroadcastTransport implements ReactorHandler, Transport {
 					try {
 						responseHandler.handleResponse(fromAddress, this, header, receiveBuffer);
 					} catch (Throwable th) {
-						logger.log(Level.WARNING, "Unexpected exception caught while processing CA message over UDP from " + fromAddress, th);
+						logger.log(Level.WARNING, th, () -> "Unexpected exception caught while processing CA message over UDP from " + fromAddress);
 					} finally {
 						receiveBuffer.position(endOfMessage);
 					}

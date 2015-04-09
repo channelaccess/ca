@@ -18,16 +18,27 @@ import com.lmax.disruptor.dsl.Disruptor;
 
 public class ChannelImpl<T> implements Channel<T>
 {
+	protected final ContextImpl context;
 	protected final String name;
 	protected final Class<T> channelType;
+	protected final int priority;
 	
+	protected final int cid;
+	
+	protected final int INVALID_SID = 0xFFFFFFFF;
+	protected int sid = INVALID_SID;
+
 	protected T value;
 	
-	public ChannelImpl(String name, Class<T> channelType)
+	public ChannelImpl(ContextImpl context, String name, Class<T> channelType, int priority)
 	{
+		this.context = context;
 		this.name = name;
 		this.channelType = channelType;
+		this.priority = priority;
 		
+		this.cid = context.generateCID();
+
 		/*
 		// TODO
 		// map channelType to base DBR type

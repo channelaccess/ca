@@ -17,6 +17,7 @@ import org.epics.ca.impl.reactor.ReactorHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersThreadPool;
 import org.epics.ca.impl.search.ChannelSearchManager;
+import org.epics.ca.util.IntHashMap;
 import org.epics.ca.util.logging.ConsoleLogHandler;
 import org.epics.ca.util.net.InetAddressUtil;
 import org.epics.ca.util.sync.NamedLockPattern;
@@ -26,7 +27,6 @@ public class ContextImpl implements AutoCloseable, Constants {
 	static
 	{
 		// force only IPv4 sockets, since EPICS does not work with IPv6 sockets
-		// see http://java.sun.com/j2se/1.5.0/docs/guide/net/properties.html
 		System.setProperty("java.net.preferIPv4Stack", "true");
 	}
 	
@@ -123,6 +123,16 @@ public class ContextImpl implements AutoCloseable, Constants {
 	 */
 	private final BroadcastTransport broadcastTransport;
 	
+	/**
+	 * Last CID cache. 
+	 */
+	private int lastCID = 0;
+
+	/**
+	 * Map of channels (keys are CIDs).
+	 */
+	// TODO consider using IntHashMap
+	protected IntHashMap<ChannelImpl<?>> channelsByCID = new IntHashMap<ChannelImpl<?>>();
 	
 	
 	public ContextImpl()
@@ -146,16 +156,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 	    leaderFollowersThreadPool = new LeaderFollowersThreadPool();
 	    
 		// spawn initial leader
-		leaderFollowersThreadPool.promoteLeader(
-		        new Runnable() {
-		            /**
-		        	 * @see java.lang.Runnable#run()
-		        	 */
-		        	public void run() {
-		        		reactor.process();
-		        	}
-				}
-		);
+		leaderFollowersThreadPool.promoteLeader(() -> reactor.process());
 
 		namedLocker = new NamedLockPattern();
 
@@ -179,7 +180,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 				return false;
 			else
 			{
-				logger.config("Failed to parse boolean value for property " + key + ": \"" + sValue + "\", \"YES\" or \"NO\" expected.");
+				logger.config(() -> "Failed to parse boolean value for property " + key + ": \"" + sValue + "\", \"YES\" or \"NO\" expected.");
 				return defaultValue;
 			}
 		}
@@ -194,7 +195,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 			try {
 				return Float.parseFloat(sValue);
 			} catch (Throwable th) {
-				logger.config("Failed to parse float value for property " + key + ": \"" + sValue + "\".");
+				logger.config(() -> "Failed to parse float value for property " + key + ": \"" + sValue + "\".");
 			}
 		}
 		return defaultValue;
@@ -207,7 +208,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 			try {
 				return Integer.parseInt(sValue);
 			} catch (Throwable th) {
-				logger.config("Failed to parse integer value for property " + key + ": \"" + sValue + "\".");
+				logger.config(() -> "Failed to parse integer value for property " + key + ": \"" + sValue + "\".");
 			}
 		}
 		return defaultValue;
@@ -290,7 +291,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 				broadcastAddressList = list;
 		}
 		else if (autoAddressList == false)
-			logger.log(Level.WARNING, "Empty broadcast search address list, all connects will fail.");
+			logger.warning("Empty broadcast search address list, all connects will fail.");
 		else
 			broadcastAddressList = InetAddressUtil.getBroadcastAddresses(serverPort);
 
@@ -349,8 +350,18 @@ public class ContextImpl implements AutoCloseable, Constants {
 
 	public <T> Channel<T> createChannel(String channelName, Class<T> channelType, int priority)
 	{
-		// TODO priority
-		return new ChannelImpl<T>(channelName, channelType);
+		if (channelName == null || channelName.length() == 0)
+			throw new IllegalArgumentException("null or empty channel name");
+		else if (channelName.length() > Math.min(MAX_UDP_SEND - CA_MESSAGE_HEADER_SIZE, UNREASONABLE_CHANNEL_NAME_LENGTH))
+			throw new IllegalArgumentException("name too long");
+		
+		if (!Util.isNativeType(channelType))
+			throw new IllegalArgumentException("Invalid channel native type");
+		
+		if (priority < CHANNEL_PRIORITY_MIN || priority > CHANNEL_PRIORITY_MAX)
+			throw new IllegalArgumentException("priority out of bounds");
+		
+		return new ChannelImpl<T>(this, channelName, channelType, priority);
 	}
 
 	@Override
@@ -369,6 +380,22 @@ public class ContextImpl implements AutoCloseable, Constants {
 		return reactor;
 	}
 	
+
+	/**
+	 * Generate Client channel ID (CID).
+	 * @return Client channel ID (CID). 
+	 */
+	int generateCID()
+	{
+		synchronized (channelsByCID)
+		{
+			// search first free (theoretically possible loop of death)
+			while (channelsByCID.containsKey(++lastCID));
+			// reserve CID
+			channelsByCID.put(lastCID, null);
+			return lastCID;
+		}
+	}
 	
 	
 }

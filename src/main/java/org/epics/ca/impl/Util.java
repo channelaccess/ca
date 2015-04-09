@@ -3,7 +3,9 @@ package org.epics.ca.impl;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.lmax.disruptor.EventFactory;
 
@@ -45,10 +47,34 @@ public class Util {
 		public Object deserialize(ByteBuffer buffer, Object object) { return object; }
 	}
 
+	static final Set<Class<?>> nativeTypeSet;
 	static final Map<Class<?>, TypeSupport> typeSupportMap;
 
 	static
 	{
+		Set<Class<?>> set = new HashSet<Class<?>>();
+		set.add(String.class);
+		set.add(Integer.class);
+		set.add(Short.class);
+		set.add(Float.class);
+		set.add(Enum.class);
+		set.add(Byte.class);
+		set.add(Long.class);
+		set.add(Double.class);
+		
+		set.add(String[].class);
+		set.add(int[].class);
+		set.add(short[].class);
+		set.add(float[].class);
+		set.add(Enum[].class);
+		set.add(byte[].class);
+		set.add(long[].class);
+		set.add(double[].class);
+
+		nativeTypeSet = Collections.unmodifiableSet(set);
+
+		
+		
 		Map<Class<?>, TypeSupport> map = new HashMap<Class<?>, Util.TypeSupport>();
 		map.put(Double.class, DoubleTypeSupport.INSTANCE);
 		map.put(Integer.class, IntegerTypeSupport.INSTANCE);
@@ -62,6 +88,11 @@ public class Util {
 		return typeSupportMap.get(clazz);
 	}
 	
+	static final boolean isNativeType(Class<?> clazz)
+	{
+		return nativeTypeSet.contains(clazz);
+	}
+
 	// TODO move to TypeSupport
 	static final <T> EventFactory<T> getEventFactory(Class<T> clazz)
 	{
