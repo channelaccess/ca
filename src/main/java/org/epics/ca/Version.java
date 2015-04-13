@@ -1,38 +1,26 @@
 package org.epics.ca;
 
 /**
- * pvAccessJava module version (to be keept in sync with pom.xml).
+ * pvAccessJava module version, retrieves version from MANIFEST.
  */
 public final class Version {
 
-    /**
-     * Major version.
-     */
-    public static final int VERSION_MAJOR = 0;
-    
-    /**
-     * Minor version.
-     */
-    public static final int VERSION_MINOR = 1;
+	public static String getVersionString() {
+		String version = null;
 
-    /**
-     * Maintenance version.
-     */
-    public static final int VERSION_MAINTENANCE = 0;
+		Package aPackage = Version.class.getPackage();
+		if (aPackage != null) {
+			version = aPackage.getImplementationVersion();
+			if (version == null) {
+				version = aPackage.getSpecificationVersion();
+			}
+		}
 
-    /**
-     * Snapshot flag.
-     */
-    public static final boolean VERSION_SNAPSHOT = true;
-    
-    
-    public static String getVersionString() {
-    	StringBuffer sb = new StringBuffer(32);
-    	sb.append(VERSION_MAJOR).append('.').append(VERSION_MINOR).
-    		append('.').append(VERSION_MAINTENANCE);
-		if (VERSION_SNAPSHOT)
-        	sb.append("-SNAPSHOT");
-		return sb.toString();
-    }
+		// we could not compute the version so use a blank
+		if (version == null)
+			version = "<unknown>";
+
+		return version;
+	}
 
 }

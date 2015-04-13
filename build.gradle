@@ -1,0 +1,20 @@
+apply plugin: 'java'
+group = 'org.epics'
+archivesBaseName = 'ca'
+sourceCompatibility = 1.8
+version = '0.1-SNAPSHOT'
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'Java EPICS CA',
+                   'Implementation-Version': version
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'com.lmax:disruptor:3.3.2'
+    testCompile 'junit:junit:3.8.1'
+}
