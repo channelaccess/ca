@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.Properties;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -12,7 +13,6 @@ import java.util.logging.Logger;
 import org.epics.ca.Channel;
 import org.epics.ca.Constants;
 import org.epics.ca.Version;
-import org.epics.ca.impl.ResponseHandlers.ResponseHandler;
 import org.epics.ca.impl.reactor.Reactor;
 import org.epics.ca.impl.reactor.ReactorHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersHandler;
@@ -104,14 +104,12 @@ public class ContextImpl implements AutoCloseable, Constants {
 	/**
 	 * Context instance.
 	 */
-	@SuppressWarnings("unused")
 	private static final int LOCK_TIMEOUT = 20 * 1000;	// 20s
 
 	/**
 	 * Context instance.
 	 */
-	@SuppressWarnings("unused")
-	private final NamedLockPattern namedLocker;
+	private final NamedLockPattern namedLocker = new NamedLockPattern();
 	
 	/**
 	 * TCP transport registry.
@@ -140,7 +138,6 @@ public class ContextImpl implements AutoCloseable, Constants {
 	// TODO consider using IntHashMap
 	protected IntHashMap<ChannelImpl<?>> channelsByCID = new IntHashMap<ChannelImpl<?>>();
 	
-	
 	public ContextImpl()
 	{
 		this(System.getProperties());
@@ -163,8 +160,6 @@ public class ContextImpl implements AutoCloseable, Constants {
 	    
 		// spawn initial leader
 		leaderFollowersThreadPool.promoteLeader(() -> reactor.process());
-
-		namedLocker = new NamedLockPattern();
 
 		broadcastTransport = initializeUDPTransport();
 		channelSearchManager = new ChannelSearchManager(broadcastTransport);
@@ -323,9 +318,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 			channel.socket().bind(connectAddress /*new InetSocketAddress(0)*/);
 
 			// create transport
-			// TODO !!!
-			ResponseHandler responseHandler = ResponseHandlers::handleResponse;
-			BroadcastTransport transport = new BroadcastTransport(this, responseHandler, channel,
+			BroadcastTransport transport = new BroadcastTransport(this, ResponseHandlers::handleResponse, channel,
 					connectAddress, broadcastAddressList);
 	
 			// and register to the selector
@@ -464,6 +457,10 @@ public class ContextImpl implements AutoCloseable, Constants {
 		return transportRegistry;
 	}
 
+	public LeaderFollowersThreadPool getLeaderFollowersThreadPool() {
+		return leaderFollowersThreadPool;
+	}
+
 	/**
 	 * Search response from server (channel found).
 	 * @param cid	client channel ID.
@@ -480,8 +477,158 @@ public class ContextImpl implements AutoCloseable, Constants {
 		if (channel == null)
 			return;
 
-		// TODO
-		logger.fine(() -> "Search response for channel " + channel.getName() + " received.");
+		logger.finer(() -> "Search response for channel " + channel.getName() + " received.");
+
+		// check for multiple responses
+		synchronized (channel)
+		{
+			TCPTransport transport = channel.getTransport();
+			if (transport != null)
+			{
+				// multiple defined PV or reconnect request (same server address)
+				if (!transport.getRemoteAddress().equals(serverAddress))
+				{
+					logger.info(() -> "More than one PVs with name '" + channel.getName() +
+								 "' detected, additional response from: " + serverAddress);
+					return;
+				}
+			}
+			
+			// do not search anymore (also unregisters)
+			channelSearchManager.searchResponse(channel);
+			
+			transport = getTransport(channel, serverAddress, minorRevision, channel.getPriority());
+			if (transport == null)
+			{
+				channel.createChannelFailed();
+				return;
+			}
+
+			// create channel
+			channel.createChannel(transport, sid, type, count);
+		}
+		
+	}
+	
+	/**
+	 * Get, or create if necessary, transport of given server address.
+	 * @param serverAddress	required transport address
+	 * @param priority process priority.
+	 * @return transport for given address
+	 */
+	private TCPTransport getTransport(TransportClient client, InetSocketAddress address, short minorRevision, int priority)
+	{		
+		SocketChannel socket = null;
+
+		// first try to check cache w/o named lock...
+		TCPTransport transport = (TCPTransport)transportRegistry.get(address, priority);
+		if (transport != null) {
+			logger.finer(() -> "Reusing existant connection to CA server: " + address);
+			if (transport.acquire(client))
+				return transport;
+		}
+
+		boolean lockAcquired = namedLocker.acquireSynchronizationObject(address, LOCK_TIMEOUT);
+		if (lockAcquired) {
+			try {
+				// ... transport created during waiting in lock
+				transport = (TCPTransport)transportRegistry.get(address, priority);
+				if (transport != null) {
+					logger.finer(() -> "Reusing existant connection to CA server: " + address);
+					if (transport.acquire(client))
+						return transport;
+				}
+
+				logger.finer(() -> "Connecting to CA server: " + address);
+
+				socket = tryConnect(address, 3);
+
+				// use non-blocking channel (no need for soTimeout)
+				socket.configureBlocking(false);
+
+				// enable TCP_NODELAY (disable Nagle's algorithm)
+				socket.socket().setTcpNoDelay(true);
+
+				// enable TCP_KEEPALIVE
+				socket.socket().setKeepAlive(true);
+
+				// create transport
+				transport = new TCPTransport(this, client, ResponseHandlers::handleResponse,
+						socket, minorRevision, priority);
+				
+				ReactorHandler handler = transport;
+				if (leaderFollowersThreadPool != null)
+					handler = new LeaderFollowersHandler(reactor, handler, leaderFollowersThreadPool);
+
+				// register to reactor
+				reactor.register(socket, SelectionKey.OP_READ, handler);
+
+				// TODO
+				// issue version including priority, username and local hostname
+				// Messages.versionMessage(transport, priority, 0, false);
+				// Messages.userNameMessage(transport, userName);
+				// Messages.hostNameMessage(transport, hostName);
+				// transport.flush();
+
+				logger.finer(() -> "Connected to CA server: " + address);
+
+				return transport;
+
+			} catch (Throwable th) {
+				// close socket, if open
+				try {
+					if (socket != null)
+						socket.close();
+				} catch (Throwable t) { /* noop */
+				}
+
+				logger.log(Level.WARNING, th, () -> "Failed to connect to '" + address + "'.");
+				return null;
+			} finally {
+				namedLocker.releaseSynchronizationObject(address);
+			}
+		} else {
+			logger.severe(() -> "Failed to obtain synchronization lock for '" + address + "', possible deadlock.");
+			return null;
+		}
+	}
+
+	/**
+	 * Tries to connect to the given adresss.
+	 * 
+	 * @param address
+	 * @param tries
+	 * @return
+	 * @throws IOException
+	 */
+	private SocketChannel tryConnect(InetSocketAddress address, int tries)
+			throws IOException {
+
+		IOException lastException = null;
+
+		for (int tryCount = 0; tryCount < tries; tryCount++) {
+
+			// sleep for a while
+			if (tryCount > 0) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException ie) {
+				}
+			}
+
+			if (logger.isLoggable(Level.FINEST))
+				logger.finest("Openning socket to CA server " + address
+						+ ", attempt " + (tryCount + 1) + ".");
+
+			try {
+				return SocketChannel.open(address);
+			} catch (IOException ioe) {
+				lastException = ioe;
+			}
+
+		}
+
+		throw lastException;
 	}
 	
 }

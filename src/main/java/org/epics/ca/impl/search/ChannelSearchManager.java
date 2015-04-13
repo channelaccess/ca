@@ -253,11 +253,8 @@ public class ChannelSearchManager {
 	/**
 	 * Search response received notification.
 	 * @param channel found channel.
-	 * @param responseSequenceNumber sequence number of search frame which contained search request.
-	 * @param isSequenceNumberValid valid flag of <code>responseSequenceNumber</code>.
-	 * @param responseTime time of search response.
 	 */
-	public void searchResponse(ChannelImpl<?> channel, int responseSequenceNumber, boolean isSequenceNumberValid, long responseTime)
+	public void searchResponse(ChannelImpl<?> channel)
 	{
 		unregisterChannel(channel);
 		

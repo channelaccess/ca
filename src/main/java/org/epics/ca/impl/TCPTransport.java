@@ -102,7 +102,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	 * @param priority
 	 */
 	public TCPTransport(ContextImpl context, TransportClient client, ResponseHandler responseHandler,
-					   SocketChannel channel, short remoteTransportRevision, short priority) {
+					   SocketChannel channel, short remoteTransportRevision, int priority) {
 		this.context = context;
 		this.responseHandler = responseHandler;
 		this.channel = channel;

@@ -1,6 +1,7 @@
 package org.epics.ca.impl;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -16,7 +17,7 @@ import org.epics.ca.data.Metadata;
 
 import com.lmax.disruptor.dsl.Disruptor;
 
-public class ChannelImpl<T> implements Channel<T>
+public class ChannelImpl<T> implements Channel<T>, TransportClient
 {
 	protected final ContextImpl context;
 	protected final String name;
@@ -27,6 +28,10 @@ public class ChannelImpl<T> implements Channel<T>
 	
 	protected final int INVALID_SID = 0xFFFFFFFF;
 	protected int sid = INVALID_SID;
+	
+	protected TCPTransport transport;
+	
+	protected final Map<String, Object> properties = new HashMap<String, Object>();
 
 	protected T value;
 	
@@ -156,8 +161,10 @@ public class ChannelImpl<T> implements Channel<T>
 	
 	@Override
 	public Map<String, Object> getProperties() {
-		// TODO Auto-generated method stub
-		return null;
+		// NOTE: could use Collections.unmodifiableMap(m) here, but leave it writable
+		// in case some code needs to tag channels
+		return properties;
+		
 	}
 
 	/*
@@ -208,12 +215,79 @@ public class ChannelImpl<T> implements Channel<T>
 	}
 
 	/**
+	 * Create a channel, i.e. submit create channel request to the server.
+	 * This method is called after seatch is complete.
+	 * <code>sid</code>, <code>typeCode</code>, <code>elementCount</code> might not be
+	 * valid, this depends on protocol revision.
+	 * @param transport
+	 * @param sid
+	 * @param typeCode
+	 * @param elementCount
+	 */
+	public synchronized boolean createChannel(TCPTransport transport, int sid, short typeCode, int elementCount) 
+	{
+
+		// do not allow duplicate creation to the same transport
+		if (!allowCreation)
+			return false;
+		allowCreation = false;
+		
+		// check existing transport
+		if (this.transport != null && this.transport != transport)
+		{
+			// TODO disconnectPendingIO(false);
+			this.transport.release(this);
+		}
+		else if (this.transport == transport)
+		{
+			// request to sent create request to same transport, ignore
+			// this happens when server is slower (processing search requests) than client generating it
+			return false;
+		}
+		
+		this.transport = transport;
+		
+		// revision < v4.4 supply this info already now
+		if (transport.getMinorRevision() < 4)
+		{
+			this.sid = sid;
+			properties.put("nativeType", typeCode);
+			properties.put("nativeElementCount", elementCount);
+		}
+
+		// TODO !!!
+		// do not submit CreateChannelRequest here, connection loss while submitting and lock
+		// on this channel instance may cause deadlock
+		return true;
+	}
+
+	public void createChannelFailed()
+	{
+		// ... and search again
+		initiateSearch();
+	}
+
+	/**
 	 * Send search message.
 	 * @return success status.  
 	 */
 	public boolean generateSearchRequestMessage(Transport transport, ByteBuffer buffer)
 	{
 		return Messages.generateSearchRequestMessage(transport, buffer, name, cid);
+	}
+
+	public TCPTransport getTransport() {
+		return transport;
+	}
+
+	public int getPriority() {
+		return priority;
+	}
+
+	@Override
+	public void transportClosed() {
+		// TODO Auto-generated method stub
+		
 	}
 	
 	

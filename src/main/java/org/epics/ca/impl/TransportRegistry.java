@@ -47,7 +47,7 @@ public class TransportRegistry {
 	 * @param priority  priority of the transport.
 	 * @return corresponding transport, <code>null</code> if none found.
 	 */
-	public Transport get(InetSocketAddress address, short priority)
+	public Transport get(InetSocketAddress address, int priority)
 	{
 		synchronized (transports) {
 			IntHashMap<Transport> priorities = transports.get(address);
