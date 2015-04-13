@@ -1,4 +1,6 @@
 apply plugin: 'java'
+apply plugin: 'eclipse'
+
 group = 'org.epics'
 archivesBaseName = 'ca'
 sourceCompatibility = 1.8
