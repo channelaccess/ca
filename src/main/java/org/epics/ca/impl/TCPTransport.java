@@ -8,12 +8,15 @@ import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.epics.ca.Constants;
 import org.epics.ca.impl.ResponseHandlers.ResponseHandler;
 import org.epics.ca.impl.reactor.ReactorHandler;
+import org.epics.ca.util.ResettableLatch;
 
 /**
  * CA transport implementation.
@@ -92,6 +95,10 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	 * CA header structure.
 	 */
 	private final Header header = new Header();
+
+	private final Lock sendBufferLock = new ReentrantLock();
+	private ByteBuffer sendBuffer;
+	private int lastSendBufferPosition = 0;
 	
 	/**
 	 * @param context
@@ -112,13 +119,14 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		socketAddress = (InetSocketAddress)channel.socket().getRemoteSocketAddress();
 		
 		// initialize buffers
+		// TODO INITIAL_RX_BUFFER_SIZE
 		receiveBuffer = ByteBuffer.allocateDirect(context.getMaxArrayBytes());
 
 		// acquire transport
 		acquire(client);
 
-		// TODO send
-		//sendBuffer = ByteBuffer.allocateDirect(INITIAL_TX_BUFFER_SIZE);
+		// TODO INITIAL_TX_BUFFER_SIZE
+		sendBuffer = ByteBuffer.allocateDirect(context.getMaxArrayBytes());
 		
 		// TODO beacons
 		// read beacon timeout and start timer (watchdog)
@@ -315,65 +323,6 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		}
 	}
 	
-	/*
-    while (!Closed)
-    {
-
-        // read fields
-        header.command = receiveReader.ReadUInt16();
-        header.payloadSize = receiveReader.ReadUInt16();
-        header.dataType = receiveReader.ReadUInt16();
-        header.dataCount = receiveReader.ReadUInt16();
-        header.parameter1 = receiveReader.ReadInt32();
-        header.parameter2 = receiveReader.ReadInt32();
-
-        // extended header
-        if (header.payloadSize == 0xFFFF)
-        {
-            if (bytesAvailable < CAConstants.CA_EXTENDED_MESSAGE_HEADER_SIZE)
-                break;
-
-            header.payloadSize = receiveReader.ReadUInt32();
-            header.dataCount = receiveReader.ReadUInt32();
-        }
-
-        // we need whole payload
-        if ((bufferLength - receiveMemoryStream.Position) < header.payloadSize)
-            break;
-
-        // check command
-        if (header.command >= handlerTable.Length)
-        {
-            // report error
-            Tracer.Alarm(this, "Invalid message: unknown command ID {0}.", header.command);
-            // disconnect
-            Close(true);
-        }
-
-        // delegate
-        long endMessagePosition = receiveMemoryStream.Position + header.payloadSize;
-        // mark it
-        receiveReader.UserPositionMarker = endMessagePosition;
-        try
-        {
-            // TODO cache RemoteEndPoint?
-            handlerTable[header.command]((IPEndPoint)socket.RemoteEndPoint, this, ref header, receiveReader);
-        } catch (Exception ex)
-        {
-            Tracer.Alarm(this, ex);
-        } finally
-        {
-            receiveMemoryStream.Position = endMessagePosition;
-        }
-    }
-
-    // set new offset to a read receiveBuffer and copy non-process bytes to the beginning
-    receiveBufferOffset = (int)bytesAvailable;
-    if (bytesAvailable > 0)
-        Array.Copy(receiveBuffer, headerIndex, receiveBuffer, 0, bytesAvailable);
-
-  */  
-	
 	/**
 	 * Process input.
 	 */
@@ -567,25 +516,78 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	public ContextImpl getContext() {
 		return context;
 	}
-
+	
 	@Override
 	public ByteBuffer acquireSendBuffer(int requiredSize) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		if (closed.get())
+			throw new RuntimeException("transport closed");
+		
+		sendBufferLock.lock();
+		
+		lastSendBufferPosition = sendBuffer.position();
+		
+		// enough of space
+		if (sendBuffer.remaining() <= requiredSize)
+			return sendBuffer;
+		
+		// sanity check
+		if (sendBuffer.capacity() < requiredSize)
+			throw new RuntimeException("sendBuffer.capacity() < requiredSize");
+		
+		// flush and wait until buffer is actually sent
+		flush(true);
+		
+		// failed to flush check
+		if (sendBuffer.remaining() <= requiredSize)
+			throw new RuntimeException("Failed to acquire buffer - flush failed.");
+		
+		return acquireSendBuffer(requiredSize);
 	}
 
 	@Override
 	public void releaseSendBuffer(boolean ignore, boolean flush) {
-		// TODO Auto-generated method stub
+        try
+        {
+            if (ignore)
+            {
+                sendBuffer.position(lastSendBufferPosition);
+            }
+            else if (flush)
+            {
+                flush();
+            }
+        } 
+        finally
+        {
+        	sendBufferLock.unlock();
+        }
 		
 	}
 
 	@Override
 	public void flush() {
-		// TODO Auto-generated method stub
-		
+		flush(false);
 	}
 
+	private final ResettableLatch sendCompletedLatch = new ResettableLatch(1);
+	
+
+	protected void flush(boolean wait)
+	{
+		// do no reset if flush is in progress !!!
+		
+		sendCompletedLatch.reset(1);
+		
+		// TODO do the flush
+		
+		try {
+			sendCompletedLatch.await();
+		} catch (InterruptedException e) {
+			// noop
+		}
+	}
+	
 	@Override
 	public InetSocketAddress getRemoteAddress() {
 		return socketAddress;
