@@ -112,6 +112,11 @@ public class ContextImpl implements AutoCloseable, Constants {
 	 */
 	@SuppressWarnings("unused")
 	private final NamedLockPattern namedLocker;
+	
+	/**
+	 * TCP transport registry.
+	 */
+	private final TransportRegistry transportRegistry = new TransportRegistry();
 
 	/**
 	 * Channel search manager.
@@ -447,6 +452,18 @@ public class ContextImpl implements AutoCloseable, Constants {
 		return serverPort;
 	}
 	
+	public float getConnectionTimeout() {
+		return connectionTimeout;
+	}
+
+	public int getMaxArrayBytes() {
+		return maxArrayBytes;
+	}
+
+	public TransportRegistry getTransportRegistry() {
+		return transportRegistry;
+	}
+
 	/**
 	 * Search response from server (channel found).
 	 * @param cid	client channel ID.

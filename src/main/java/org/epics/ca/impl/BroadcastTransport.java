@@ -220,6 +220,12 @@ public class BroadcastTransport implements ReactorHandler, Transport {
 	}
 
 	@Override
+	public int getPriority() {
+		// not relevant for UDP/broadcast transport
+		return Constants.CHANNEL_PRIORITY_DEFAULT;
+	}
+
+	@Override
 	public ByteBuffer acquireSendBuffer(int requiredSize) {
 		throw new UnsupportedOperationException("not implemented");
 	}

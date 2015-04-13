@@ -26,6 +26,8 @@ public interface Transport {
 	 */
 	public short getMinorRevision();
 	
+	public int getPriority();
+	
 	public ByteBuffer acquireSendBuffer(int requiredSize);
 	public void releaseSendBuffer(boolean ignore, boolean flush);
 	public void flush();

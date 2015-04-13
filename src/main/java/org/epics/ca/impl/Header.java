@@ -37,9 +37,9 @@ public class Header {
 	
 	/**
 	 * Parse CA response header.
-	 * @param headerBuffer	response header to be parsed.
+	 * @param headerBuffer	response header to be parsed, condition: headerBuffer.remaining() >= CA_MESSAGE_HEADER_SIZE
 	 */
-	public void read(ByteBuffer headerBuffer)
+	public boolean read(ByteBuffer headerBuffer)
 	{
 		//
 		// read fields
@@ -57,6 +57,9 @@ public class Header {
 		// extended header
 		if (payloadSize == 0xFFFF)
 		{
+			if (headerBuffer.remaining() < 8)
+				return false;
+			
 			/*
 			 * Because Java can't represent negative int as a 32 bit positive integer, it has to be promoted to a long:
 			 *  (1) Assign it to a long. 
@@ -69,5 +72,7 @@ public class Header {
 			payloadSize = headerBuffer.getInt();
 			dataCount   = headerBuffer.getInt();
 		}
+		
+		return true;
 	}
 }
