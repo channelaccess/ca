@@ -9,3 +9,5 @@ release.properties
 .settings
 build/
 .gradle/
+.idea/
+ca.iml
