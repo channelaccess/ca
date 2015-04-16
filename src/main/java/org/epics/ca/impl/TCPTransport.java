@@ -74,7 +74,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	/**
 	 * Remote side transport revision.
 	 */
-	private short remoteTransportRevision;
+	private final short remoteTransportRevision;
 
 	/**
 	 * Owners (users) of the transport.
@@ -437,9 +437,8 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	 * NOTE: TCP sent buffer/sending has to be synchronized. 
 	 * @param buffer	buffer to be sent
 	 * @throws IOException 
-	 *
-	// TODO optimize !!!
-	private void noSyncSend(ByteBuffer buffer, boolean asyncCloseOnError) throws IOException
+	 */
+	private void noSyncSend(ByteBuffer buffer) throws IOException
 	{
 		try
 		{
@@ -449,7 +448,6 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 			final int SEND_BUFFER_LIMIT = 16000;
 			int bufferLimit = buffer.limit();
 
-			// TODO remove?!
 			logger.finest(() -> "Sending " + bufferLimit + " bytes to " + socketAddress + ".");
 
 			// limit sending large buffers, split the into parts
@@ -459,7 +457,8 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 				if (parts > 1)
 				{
 					buffer.limit(Math.min(part * SEND_BUFFER_LIMIT, bufferLimit));
-					logger.finest(() -> "[Parted] Sending (part " + part + "/" + parts + ") " + (buffer.limit()-buffer.position()) + " bytes to " + socketAddress + ".");
+					if (logger.isLoggable(Level.FINEST))
+						logger.finest("[Parted] Sending (part " + part + "/" + parts + ") " + (buffer.limit()-buffer.position()) + " bytes to " + socketAddress + ".");
 				}
 				
 				final int TRIES = 10;
@@ -509,7 +508,6 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 			throw ioex;
 		}
 	}
-	*/
 
 
 	@Override
@@ -528,7 +526,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		lastSendBufferPosition = sendBuffer.position();
 		
 		// enough of space
-		if (sendBuffer.remaining() <= requiredSize)
+		if (sendBuffer.remaining() >= requiredSize)
 			return sendBuffer;
 		
 		// sanity check
@@ -570,6 +568,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		flush(false);
 	}
 
+	@SuppressWarnings("unused")
 	private final ResettableLatch sendCompletedLatch = new ResettableLatch(1);
 	
 
@@ -577,15 +576,25 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	{
 		// do no reset if flush is in progress !!!
 		
-		sendCompletedLatch.reset(1);
+//		sendCompletedLatch.reset(1);
 		
 		// TODO do the flush
 		
+		// TODO do not send in this thread, use LF pool
+		try {
+			noSyncSend(sendBuffer);
+			sendBuffer.clear();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+/*		
 		try {
 			sendCompletedLatch.await();
 		} catch (InterruptedException e) {
 			// noop
 		}
+		*/
 	}
 	
 	@Override

@@ -129,4 +129,166 @@ public final class Messages {
 		buffer.putInt(0);
 	}
 	
+	/**
+	 * Version message.
+	 * @param transport
+	 * @param priority
+	 * @param sequenceNumber
+	 * @param isSequenceNumberValid
+	 */
+	public static void versionMessage(
+			Transport transport, short priority, 
+			int sequenceNumber, boolean isSequenceNumberValid)
+	{
+		
+		boolean ignore = true;
+		try
+		{
+			short isSequenceNumberValidCode = isSequenceNumberValid ? (short)1 : (short)0;
+			
+			startCAMessage(transport,
+					(short)0,
+					0,
+					isSequenceNumberValid ? isSequenceNumberValidCode : priority,
+					(short)transport.getMinorRevision(),
+					sequenceNumber,
+					0);
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
+	
+	/**
+	 * Hostname message.
+	 * @param transport
+	 * @param hostName
+	 */
+	public static void hostNameMessage(
+			Transport transport, String hostName)
+	{
+		// compatibility check
+		if (transport.getMinorRevision() < 1)
+			return;
+
+		int unalignedMessageSize = Constants.CA_MESSAGE_HEADER_SIZE + hostName.length() + 1;
+		int alignedMessageSize = calculateAlignedSize(8, unalignedMessageSize);
+	    
+		boolean ignore = true;
+		try
+		{
+			ByteBuffer buffer = startCAMessage(transport,
+					(short)21,
+					alignedMessageSize - Constants.CA_MESSAGE_HEADER_SIZE,
+					(short)0,
+					0,
+					0,
+					0);
+			
+			// append zero-terminated string and align message
+			buffer.put(hostName.getBytes());
+			// terminate with 0 and pad
+	        for (int i = alignedMessageSize - unalignedMessageSize + 1; i > 0; i--)
+	            buffer.put((byte)0);
+			
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
+
+	/**
+	 * Username message.
+	 * @param transport
+	 * @param userName
+	 */
+	public static void userNameMessage(
+			Transport transport, String userName)
+	{
+		// compatibility check
+		if (transport.getMinorRevision() < 1)
+			return;
+
+		int unalignedMessageSize = Constants.CA_MESSAGE_HEADER_SIZE + userName.length() + 1;
+		int alignedMessageSize = calculateAlignedSize(8, unalignedMessageSize);
+	    
+		boolean ignore = true;
+		try
+		{
+			ByteBuffer buffer = startCAMessage(transport,
+					(short)20,
+					alignedMessageSize - Constants.CA_MESSAGE_HEADER_SIZE,
+					(short)0,
+					0,
+					0,
+					0);
+			
+			// append zero-terminated string and align message
+			buffer.put(userName.getBytes());
+			// terminate with 0 and pad
+	        for (int i = alignedMessageSize - unalignedMessageSize + 1; i > 0; i--)
+	            buffer.put((byte)0);
+			
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
+	
+	/**
+	 * Create channel message.
+	 * @param transport
+	 * @param channelName
+	 * @param cid
+	 */
+	public static void createChannelMessage(
+			Transport transport, String channelName, int cid)
+	{
+		// v4.4+ or newer
+		if (transport.getMinorRevision() < 4)
+		{
+			// no name used, since cid as already a sid
+			channelName = null;
+		}
+		 
+		int binaryNameLength = 0;
+		if (channelName != null)
+			binaryNameLength = channelName.length() + 1;
+
+		int unalignedMessageSize = Constants.CA_MESSAGE_HEADER_SIZE + binaryNameLength;
+		int alignedMessageSize = calculateAlignedSize(8, unalignedMessageSize);
+	    
+		boolean ignore = true;
+		try
+		{
+			ByteBuffer buffer = startCAMessage(transport,
+					(short)18,
+					alignedMessageSize - Constants.CA_MESSAGE_HEADER_SIZE,
+					(short)0,
+					0,
+					cid,
+					transport.getMinorRevision());
+			
+			if (binaryNameLength > 0)
+			{
+				// append zero-terminated string and align message
+				buffer.put(channelName.getBytes());
+				// terminate with 0 and pad
+		        for (int i = alignedMessageSize - unalignedMessageSize + 1; i > 0; i--)
+		            buffer.put((byte)0);
+			}
+			
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
 }

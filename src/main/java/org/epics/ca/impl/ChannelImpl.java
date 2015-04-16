@@ -224,41 +224,90 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	 * @param typeCode
 	 * @param elementCount
 	 */
-	public synchronized boolean createChannel(TCPTransport transport, int sid, short typeCode, int elementCount) 
+	public void createChannel(TCPTransport transport, int sid, short typeCode, int elementCount) 
 	{
 
-		// do not allow duplicate creation to the same transport
-		if (!allowCreation)
-			return false;
-		allowCreation = false;
-		
-		// check existing transport
-		if (this.transport != null && this.transport != transport)
+		synchronized (this)
 		{
-			// TODO disconnectPendingIO(false);
-			this.transport.release(this);
-		}
-		else if (this.transport == transport)
-		{
-			// request to sent create request to same transport, ignore
-			// this happens when server is slower (processing search requests) than client generating it
-			return false;
-		}
-		
-		this.transport = transport;
-		
-		// revision < v4.4 supply this info already now
-		if (transport.getMinorRevision() < 4)
-		{
-			this.sid = sid;
-			properties.put("nativeType", typeCode);
-			properties.put("nativeElementCount", elementCount);
+			// do not allow duplicate creation to the same transport
+			if (!allowCreation)
+				return;
+			allowCreation = false;
+			
+			// check existing transport
+			if (this.transport != null && this.transport != transport)
+			{
+				// TODO disconnectPendingIO(false);
+				this.transport.release(this);
+			}
+			else if (this.transport == transport)
+			{
+				// request to sent create request to same transport, ignore
+				// this happens when server is slower (processing search requests) than client generating it
+				return;
+			}
+			
+			this.transport = transport;
+			
+			// revision < v4.4 supply this info already now
+			if (transport.getMinorRevision() < 4)
+			{
+				this.sid = sid;
+				properties.put("nativeType", typeCode);
+				properties.put("nativeElementCount", elementCount);
+			}
+
+			// do not submit CreateChannelRequest here, connection loss while submitting and lock
+			// on this channel instance may cause deadlock
 		}
 
+		try {
+			Messages.createChannelMessage(transport, name, cid);
+			// flush immediately
+			transport.flush();
+		}
+		catch (Throwable th) {
+			createChannelFailed();
+		}
+	}
+
+	/**
+	 * Called when channel crated succeeded on the server.
+	 * <code>sid</code> might not be valid, this depends on protocol revision.
+	 * @param sid
+	 * @param typeCode
+	 * @param elementCount
+	 * @throws IllegalStateException
+	 */
+	public synchronized void connectionCompleted(int sid, short typeCode, int elementCount) 
+		throws IllegalStateException
+	{
 		// TODO !!!
-		// do not submit CreateChannelRequest here, connection loss while submitting and lock
-		// on this channel instance may cause deadlock
-		return true;
+/*		
+		// do this silently
+		if (connectionState == ConnectionState.CLOSED)
+			return;
+		
+		// revision < v4.1 do not have access rights, grant all
+		if (transport.getMinorRevision() < 1)
+			setAccessRights(Constants.CA_PROTO_ACCESS_RIGHT_READ |
+							Constants.CA_PROTO_ACCESS_RIGHT_WRITE);
+*/	
+		// revision < v4.4 supply this info already now
+		if (transport.getMinorRevision() >= 4)
+			this.sid = sid;
+
+		// set properties
+		properties.put("nativeType", typeCode);
+		properties.put("nativeElementCount", elementCount);
+
+/*
+		// user might create monitors in listeners, so this has to be done before this can happen
+		// however, it would not be nice if events would come before connection event is fired
+		// but this cannot happen since transport (TCP) is serving in this thread 
+		resubscribeSubscriptions();
+		setConnectionState(ConnectionState.CONNECTED);
+*/
 	}
 
 	public void createChannelFailed()

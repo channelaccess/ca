@@ -133,6 +133,16 @@ public class ContextImpl implements AutoCloseable, Constants {
 	private int lastCID = 0;
 
 	/**
+	 * Cached hostname.
+	 */
+	private final String hostName;
+
+	/**
+	 * Cached username.
+	 */
+	private final String userName;
+
+	/**
 	 * Map of channels (keys are CIDs).
 	 */
 	// TODO consider using IntHashMap
@@ -147,6 +157,9 @@ public class ContextImpl implements AutoCloseable, Constants {
 	{
 		initializeLogger(properties);
 		loadConfig(properties);
+		
+		hostName = InetAddressUtil.getHostName();
+		userName = System.getProperty("user.name", "nobody");
 
 		// async IO reactor
 		try {
@@ -563,12 +576,11 @@ public class ContextImpl implements AutoCloseable, Constants {
 				// register to reactor
 				reactor.register(socket, SelectionKey.OP_READ, handler);
 
-				// TODO
 				// issue version including priority, username and local hostname
-				// Messages.versionMessage(transport, priority, 0, false);
-				// Messages.userNameMessage(transport, userName);
-				// Messages.hostNameMessage(transport, hostName);
-				// transport.flush();
+				Messages.versionMessage(transport, (short)priority, 0, false);
+				Messages.userNameMessage(transport, userName);
+				Messages.hostNameMessage(transport, hostName);
+				transport.flush();
 
 				logger.finer(() -> "Connected to CA server: " + address);
 

@@ -13,6 +13,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import org.epics.ca.Constants;
+
 /**
  * <code>InetAddress</code> utility methods.
  */
@@ -168,4 +170,41 @@ public class InetAddressUtil {
 		return isar;
 	}
 
+	private static String hostName = null;
+	
+	public static synchronized String getHostName() 
+	{
+		if (hostName == null)
+		{
+			// default fallback
+			hostName = "localhost";
+			
+			try {
+				InetAddress localAddress = InetAddress.getLocalHost();
+				hostName = localAddress.getHostName();
+			} catch (Throwable uhe) {	// not only UnknownHostException
+				// try with environment variable
+				try {
+					String envHN = System.getenv(Constants.CA_HOSTNAME_KEY);
+					if (envHN != null)
+						hostName = envHN;
+				} catch (Throwable th) {
+					// in case not supported by JVM/OS
+				}
+				
+				// and system property (overrides env. var.)
+				hostName = System.getProperty(Constants.CA_HOSTNAME_KEY, hostName);
+			}
+			
+			if (System.getProperties().contains(Constants.CA_STRIP_HOSTNAME))
+			{
+				int dotPos = hostName.indexOf('.');
+				if (dotPos > 0)
+					hostName = hostName.substring(0, dotPos);
+			}
+		}
+		
+		return hostName;
+	}
+	
 }

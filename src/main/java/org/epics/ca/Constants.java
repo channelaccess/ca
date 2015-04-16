@@ -21,6 +21,11 @@ public interface Constants {
      */
     public static final String CA_STRIP_HOSTNAME = "CA_STRIP_HOSTNAME";
 
+    /**
+     * String value of the JVM property key to provide (override) hostname. 
+     */
+    public static final String CA_HOSTNAME_KEY = "HOSTNAME";
+    
     
 	/** Minimal priority. */
 	static final public short CHANNEL_PRIORITY_MIN = 0;

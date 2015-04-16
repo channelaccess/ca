@@ -37,7 +37,28 @@ public class ResponseHandlers {
 			ResponseHandlers::badResponse,	/* 3 */
 			ResponseHandlers::badResponse,	/* 4 */
 			ResponseHandlers::badResponse,	/* 5 */
-			ResponseHandlers::searchResponse	/* 6 */
+			ResponseHandlers::searchResponse,	/* 6 */
+			ResponseHandlers::badResponse,	/* 7 */
+			ResponseHandlers::badResponse,	/* 8 */
+			ResponseHandlers::badResponse,	/* 9 */
+			ResponseHandlers::badResponse,	/* 10 */
+			ResponseHandlers::badResponse,	/* 11 */
+			ResponseHandlers::badResponse,	/* 12 */
+			ResponseHandlers::badResponse,	/* 13 */
+			ResponseHandlers::badResponse,	/* 14 */
+			ResponseHandlers::badResponse,	/* 15 */
+			ResponseHandlers::badResponse,	/* 16 */
+			ResponseHandlers::badResponse,	/* 17 */
+			ResponseHandlers::channelCreateResponse,	/* 18 */
+			ResponseHandlers::badResponse,	/* 19 */
+			ResponseHandlers::badResponse,	/* 20 */
+			ResponseHandlers::badResponse,	/* 21 */
+			ResponseHandlers::badResponse,	/* 22 */
+			ResponseHandlers::badResponse,	/* 23 */
+			ResponseHandlers::badResponse,	/* 24 */
+			ResponseHandlers::badResponse,	/* 25 */
+			ResponseHandlers::badResponse,	/* 26 */
+			ResponseHandlers::badResponse	/* 27 */
 		};
 	
 	public static void handleResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
@@ -114,4 +135,10 @@ public class ResponseHandlers {
 		}
 	}
 
+	public static void channelCreateResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
+	{
+		ChannelImpl<?> channel = transport.getContext().getChannel(header.parameter1);
+		if (channel != null)
+			channel.connectionCompleted(header.parameter2, header.dataType, header.dataCount);
+	}
 }
