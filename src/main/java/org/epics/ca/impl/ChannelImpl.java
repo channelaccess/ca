@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 
 import org.epics.ca.AccessRights;
 import org.epics.ca.Channel;
+import org.epics.ca.ConnectionState;
 import org.epics.ca.Listener;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
@@ -35,6 +36,12 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	protected T value;
 	
+	protected final AtomicReference<ConnectionState> connectionState =
+			new AtomicReference<ConnectionState>(ConnectionState.NEVER_CONNECTED);
+	
+	protected final AtomicReference<AccessRights> accessRights =
+			new AtomicReference<AccessRights>(AccessRights.NO_RIGHTS);
+
 	public ChannelImpl(ContextImpl context, String name, Class<T> channelType, int priority)
 	{
 		this.context = context;
@@ -67,6 +74,16 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public ConnectionState getConnectionState() {
+		return connectionState.get();
+	}
+
+	@Override
+	public AccessRights getAccessRights() {
+		return accessRights.get();
 	}
 
 	public int getCID() {
@@ -271,8 +288,37 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		}
 	}
 
+	public void setAccessRights(int rightsCode)
+	{
+		// code matches enum ordinal
+		setAccessRights(AccessRights.values()[rightsCode]);
+	}
+
+	public void setAccessRights(AccessRights rights)
+	{
+		AccessRights previousRights = accessRights.getAndSet(rights);
+		if (previousRights != rights)
+		{
+			// TODO notify change
+		}
+	}
+
+	public void setConnectionState(ConnectionState state)
+	{
+		ConnectionState previousCS = connectionState.getAndSet(state);
+		if (previousCS != state)
+		{
+			// TODO notify change
+		}
+	}
+	
+	public void resubscribeSubscriptions()
+	{
+		// TODO
+	}
+
 	/**
-	 * Called when channel crated succeeded on the server.
+	 * Called when channel created succeeded on the server.
 	 * <code>sid</code> might not be valid, this depends on protocol revision.
 	 * @param sid
 	 * @param typeCode
@@ -282,17 +328,14 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	public synchronized void connectionCompleted(int sid, short typeCode, int elementCount) 
 		throws IllegalStateException
 	{
-		// TODO !!!
-/*		
 		// do this silently
-		if (connectionState == ConnectionState.CLOSED)
+		if (connectionState.get() == ConnectionState.CLOSED)
 			return;
 		
 		// revision < v4.1 do not have access rights, grant all
 		if (transport.getMinorRevision() < 1)
-			setAccessRights(Constants.CA_PROTO_ACCESS_RIGHT_READ |
-							Constants.CA_PROTO_ACCESS_RIGHT_WRITE);
-*/	
+			setAccessRights(AccessRights.READ_WRITE);
+
 		// revision < v4.4 supply this info already now
 		if (transport.getMinorRevision() >= 4)
 			this.sid = sid;
@@ -301,13 +344,12 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		properties.put("nativeType", typeCode);
 		properties.put("nativeElementCount", elementCount);
 
-/*
 		// user might create monitors in listeners, so this has to be done before this can happen
 		// however, it would not be nice if events would come before connection event is fired
 		// but this cannot happen since transport (TCP) is serving in this thread 
 		resubscribeSubscriptions();
 		setConnectionState(ConnectionState.CONNECTED);
-*/
+
 	}
 
 	public void createChannelFailed()

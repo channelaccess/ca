@@ -14,8 +14,11 @@ public interface Channel<T> extends AutoCloseable {
 	public static final int MONITOR_QUEUE_SIZE_DEFAULT = 2;
 
 	public String getName();
+	public ConnectionState getConnectionState();
+	public AccessRights getAccessRights();
 	
 	public CompletableFuture<Channel<T>> connect();
+	
 	
 	//
 	// listeners
