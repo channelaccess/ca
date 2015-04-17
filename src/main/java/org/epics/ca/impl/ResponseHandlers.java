@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 
 import org.epics.ca.Constants;
+import org.epics.ca.Status;
 import org.epics.ca.util.net.InetAddressUtil;
 
 public class ResponseHandlers {
@@ -46,14 +47,14 @@ public class ResponseHandlers {
 			ResponseHandlers::badResponse,	/* 12 */
 			ResponseHandlers::badResponse,	/* 13 */
 			ResponseHandlers::badResponse,	/* 14 */
-			ResponseHandlers::badResponse,	/* 15 */
+			ResponseHandlers::readNotifyResponse,	/* 15 */
 			ResponseHandlers::badResponse,	/* 16 */
 			ResponseHandlers::badResponse,	/* 17 */
 			ResponseHandlers::channelCreateResponse,	/* 18 */
 			ResponseHandlers::badResponse,	/* 19 */
 			ResponseHandlers::badResponse,	/* 20 */
 			ResponseHandlers::badResponse,	/* 21 */
-			ResponseHandlers::badResponse,	/* 22 */
+			ResponseHandlers::accessRightsResponse,	/* 22 */
 			ResponseHandlers::badResponse,	/* 23 */
 			ResponseHandlers::badResponse,	/* 24 */
 			ResponseHandlers::badResponse,	/* 25 */
@@ -135,10 +136,32 @@ public class ResponseHandlers {
 		}
 	}
 
+	public static void accessRightsResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
+	{
+		ChannelImpl<?> channel = transport.getContext().getChannel(header.parameter1);
+		if (channel != null)
+			channel.setAccessRights(header.parameter2);
+	}
+
 	public static void channelCreateResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
 	{
 		ChannelImpl<?> channel = transport.getContext().getChannel(header.parameter1);
 		if (channel != null)
 			channel.connectionCompleted(header.parameter2, header.dataType, header.dataCount);
+	}
+
+	public static void readNotifyResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
+	{
+		NotifyResponseRequest nrr = (NotifyResponseRequest)transport.getContext().getResponseRequest(header.parameter2);
+		if (nrr == null)
+			return;
+				
+		int status;
+		if (transport.getMinorRevision() < 1)
+			status = Status.NORMAL.getValue();
+		else
+			status = header.parameter1;
+			
+		nrr.response(status, header.dataType, header.dataCount, payloadBuffer);					
 	}
 }

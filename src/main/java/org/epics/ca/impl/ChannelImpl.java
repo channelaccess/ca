@@ -15,6 +15,8 @@ import org.epics.ca.Listener;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
 import org.epics.ca.data.Metadata;
+import org.epics.ca.impl.requests.ReadNotifyRequest;
+import org.epics.ca.util.IntHashMap;
 
 import com.lmax.disruptor.dsl.Disruptor;
 
@@ -41,6 +43,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	
 	protected final AtomicReference<AccessRights> accessRights =
 			new AtomicReference<AccessRights>(AccessRights.NO_RIGHTS);
+
+	protected final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<ResponseRequest>();
 
 	public ChannelImpl(ContextImpl context, String name, Class<T> channelType, int priority)
 	{
@@ -124,8 +128,24 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@Override
 	public CompletableFuture<T> getAsync() {
-		// TODO Auto-generated method stub
-		return null;
+		
+		connectionRequiredCheck();
+		
+		// check read access
+		AccessRights currentRights = getAccessRights();
+		if (currentRights != AccessRights.READ &&
+			currentRights != AccessRights.READ_WRITE)
+			throw new IllegalStateException("No read rights.");
+		
+		TCPTransport t = getTransport();
+		if (t != null)
+		{
+			// TODO
+			int dataType = 1; int dataCount = 1;
+			return new ReadNotifyRequest<T>(this, t, sid, dataType, dataCount);
+		}
+		else
+			throw new IllegalStateException("No channel transprot available, channel disconnected.");
 	}
 
 	@Override
@@ -274,6 +294,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 				properties.put("nativeElementCount", elementCount);
 			}
 
+			properties.put("remoteAddress", transport.getRemoteAddress());
+			
 			// do not submit CreateChannelRequest here, connection loss while submitting and lock
 			// on this channel instance may cause deadlock
 		}
@@ -287,7 +309,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			createChannelFailed();
 		}
 	}
-
+	
 	public void setAccessRights(int rightsCode)
 	{
 		// code matches enum ordinal
@@ -312,7 +334,13 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		}
 	}
 	
-	public void resubscribeSubscriptions()
+    protected void connectionRequiredCheck()
+    {
+        if (connectionState.get() != ConnectionState.CONNECTED)
+            throw new IllegalStateException("Channel not connected.");
+    }
+
+    public void resubscribeSubscriptions()
 	{
 		// TODO
 	}
@@ -367,7 +395,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		return Messages.generateSearchRequestMessage(transport, buffer, name, cid);
 	}
 
-	public TCPTransport getTransport() {
+	// TODO consider different sync maybe
+	public synchronized TCPTransport getTransport() {
 		return transport;
 	}
 
@@ -379,6 +408,30 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	public void transportClosed() {
 		// TODO Auto-generated method stub
 		
+	}
+
+	/** 
+	 * Register a response request.
+	 * @param responseRequest response request to register.
+	 */
+	public void registerResponseRequest(ResponseRequest responseRequest)
+	{
+		synchronized (responseRequests)
+		{
+			responseRequests.put(responseRequest.getIOID(), responseRequest);
+		}
+	}
+
+	/**
+	 * Unregister a response request.
+	 * @param responseRequest response request to unregister.
+	 */
+	public void unregisterResponseRequest(ResponseRequest responseRequest)
+	{
+		synchronized (responseRequests)
+		{
+			responseRequests.remove(responseRequest.getIOID());
+		}
 	}
 	
 	

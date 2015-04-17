@@ -133,6 +133,21 @@ public class ContextImpl implements AutoCloseable, Constants {
 	private int lastCID = 0;
 
 	/**
+	 * Map of channels (keys are CIDs).
+	 */
+	protected final IntHashMap<ChannelImpl<?>> channelsByCID = new IntHashMap<ChannelImpl<?>>();
+	
+	/**
+	 * Last IOID cache. 
+	 */
+	private int lastIOID = 0;
+
+	/**
+	 * Map of requests (keys are IOID).
+	 */
+	protected final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<ResponseRequest>();
+
+	/**
 	 * Cached hostname.
 	 */
 	private final String hostName;
@@ -142,12 +157,6 @@ public class ContextImpl implements AutoCloseable, Constants {
 	 */
 	private final String userName;
 
-	/**
-	 * Map of channels (keys are CIDs).
-	 */
-	// TODO consider using IntHashMap
-	protected IntHashMap<ChannelImpl<?>> channelsByCID = new IntHashMap<ChannelImpl<?>>();
-	
 	public ContextImpl()
 	{
 		this(System.getProperties());
@@ -430,6 +439,63 @@ public class ContextImpl implements AutoCloseable, Constants {
 		synchronized (channelsByCID)
 		{
 			channelsByCID.remove(channel.getCID());
+		}
+	}
+	
+	/**
+	 * Searches for a response request with given channel IOID.
+	 * @param ioid	I/O ID.
+	 * @return request response with given I/O ID.
+	 */
+	public ResponseRequest getResponseRequest(int ioid)
+	{
+		synchronized (responseRequests)
+		{
+			return responseRequests.get(ioid);
+		}
+	}
+
+	/**
+	 * Register response request.
+	 * @param request request to register.
+	 * @return request ID (IOID).
+	 */
+	public int registerResponseRequest(ResponseRequest request)
+	{
+		synchronized (responseRequests)
+		{
+			int ioid = generateIOID();
+			responseRequests.put(ioid, request);
+			return ioid;
+		}
+	}
+
+	/**
+	 * Unregister response request.
+	 * @param request
+	 * @return removed object, can be <code>null</code>
+	 */
+	public ResponseRequest unregisterResponseRequest(ResponseRequest request)
+	{
+		synchronized (responseRequests)
+		{
+			return responseRequests.remove(request.getIOID());
+		}
+	}
+
+	/**
+	 * Generate IOID.
+	 * @return IOID. 
+	 */
+	private int generateIOID()
+	{
+		synchronized (responseRequests)
+		{
+			// search first free (theoretically possible loop of death)
+			while (responseRequests.containsKey(++lastIOID));
+			// reserve IOID
+			responseRequests.put(lastIOID, null);
+			return lastIOID;
 		}
 	}
 	

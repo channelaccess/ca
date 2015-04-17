@@ -291,4 +291,39 @@ public final class Messages {
 			transport.releaseSendBuffer(ignore, false);
 		}
 	}
+	
+	
+	/**
+	 * Read notify message.
+	 * @param transport
+	 * @param dataType
+	 * @param dataCount
+	 * @param sid
+	 * @param ioid
+	 */
+	public static void readNotifyMessage(
+			Transport transport, int dataType, int dataCount, int sid, int ioid)
+	{
+		// TODO optionally check response message size
+	    
+		boolean ignore = true;
+		try
+		{
+			startCAMessage(transport,
+					(short)15,
+					0,
+					(short)dataType,
+					dataCount,
+					sid,
+					ioid);
+			
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
+
+	
 }

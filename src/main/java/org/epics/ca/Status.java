@@ -1,5 +1,7 @@
 package org.epics.ca;
 
+
+
 public enum Status
 {
 	NORMAL(0, Severity.SUCCESS, "Normal successful completion"),
@@ -88,5 +90,51 @@ public enum Status
 
 	public boolean isSuccessful() {
 		return severity == Severity.SUCCESS;
+	}
+
+	/* CA Status Code Definitions */
+
+	public final static int CA_M_MSG_NO = 0x0000FFF8;
+	public final static int CA_M_SEVERITY = 0x00000007;
+	public final static int CA_M_LEVEL = 0x00000003;
+	public final static int CA_M_SUCCESS = 0x00000001;
+	public final static int CA_M_ERROR = 0x00000002;
+	public final static int CA_M_SEVERE = 0x00000004;
+
+	public final static int CA_S_MSG_NO = 0x0D;
+	public final static int CA_S_SEVERITY = 0x03;
+
+	public final static int CA_V_MSG_NO = 0x03;
+	public final static int CA_V_SEVERITY = 0x00;
+	public final static int CA_V_SUCCESS = 0x00;
+
+	/**
+	 * Get EPICS status code.
+	 * 
+	 * @return EPICS status code.
+	 */
+	public final int getStatusCode() {
+		return ((getValue() << CA_V_MSG_NO) & CA_M_MSG_NO)
+				| ((getSeverity().getValue() << CA_V_SEVERITY) & CA_M_SEVERITY);
+	}
+
+	/**
+	 * Get status instance from EPICS status code.
+	 * 
+	 * @param value
+	 *            EPICS status code.
+	 * @return status instance from EPICS status code.
+	 */
+	public static final Status forStatusCode(int code) {
+		return forValue((code & CA_M_MSG_NO) >> CA_V_MSG_NO);
+	}
+
+	public static final Status forValue(int value) {
+		Status[] statusLUT = values();
+
+		if (value < 0 || value >= statusLUT.length)
+			throw new IndexOutOfBoundsException("invalid status code " + value);
+
+		return statusLUT[value];
 	}
 }
