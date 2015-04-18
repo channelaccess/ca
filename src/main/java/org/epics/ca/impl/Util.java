@@ -15,7 +15,8 @@ public class Util {
 	
 	public static interface TypeSupport {
 		public Object newInstance();
-		public int getCode();
+		public int getDataType();
+		public int getElementCount();
 		public void serialize(ByteBuffer buffer, Object object); 
 		public Object deserialize(ByteBuffer buffer, Object object);
 	}
@@ -24,7 +25,8 @@ public class Util {
 		public static final DoubleTypeSupport INSTANCE = new DoubleTypeSupport();
 		private DoubleTypeSupport() {};
 		public Object newInstance() { return Double.valueOf(0); }
-		public int getCode() { return 6; }
+		public int getDataType() { return 6; }
+		public int getElementCount() { return 1; }
 		public void serialize(ByteBuffer buffer, Object object) { buffer.putDouble((Double)object); }
 		public Object deserialize(ByteBuffer buffer, Object object) { return buffer.getDouble(); }
 	}
@@ -33,7 +35,8 @@ public class Util {
 		public static final IntegerTypeSupport INSTANCE = new IntegerTypeSupport();
 		private IntegerTypeSupport() {};
 		public Object newInstance() { return Integer.valueOf(0); }
-		public int getCode() { return 1; }
+		public int getDataType() { return 1; }
+		public int getElementCount() { return 1; }
 		public void serialize(ByteBuffer buffer, Object object) { buffer.putInt((Integer)object); }
 		public Object deserialize(ByteBuffer buffer, Object object) { return buffer.getInt(); }
 	}
@@ -42,7 +45,8 @@ public class Util {
 		public static final StringTypeSupport INSTANCE = new StringTypeSupport();
 		private StringTypeSupport() {};
 		public Object newInstance() { return ""; }
-		public int getCode() { return 0; }
+		public int getDataType() { return 0; }
+		public int getElementCount() { return 1; }
 		public void serialize(ByteBuffer buffer, Object object) { /* TODO */ }
 		public Object deserialize(ByteBuffer buffer, Object object) { return object; }
 	}
@@ -57,7 +61,7 @@ public class Util {
 		set.add(Integer.class);
 		set.add(Short.class);
 		set.add(Float.class);
-		set.add(Enum.class);
+		set.add(Enum.class);	// TODO
 		set.add(Byte.class);
 		set.add(Long.class);
 		set.add(Double.class);
@@ -66,7 +70,7 @@ public class Util {
 		set.add(int[].class);
 		set.add(short[].class);
 		set.add(float[].class);
-		set.add(Enum[].class);
+		set.add(Enum[].class);	// TODO
 		set.add(byte[].class);
 		set.add(long[].class);
 		set.add(double[].class);

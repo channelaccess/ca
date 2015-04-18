@@ -9,6 +9,7 @@ import org.epics.ca.impl.ContextImpl;
 import org.epics.ca.impl.Messages;
 import org.epics.ca.impl.NotifyResponseRequest;
 import org.epics.ca.impl.Transport;
+import org.epics.ca.impl.Util.TypeSupport;
 
 /**
  * CA read notify.
@@ -72,6 +73,7 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 		return ioid;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void response(
 		int status,
@@ -85,10 +87,10 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 			Status caStatus = Status.forStatusCode(status);
 			if (caStatus == Status.NORMAL)
 			{
-				T value = null;
-
-				// TODO got data, decode
-				// dbr = DBRDecoder.getDBR(dbr, dataType, dataCount, dataPayloadBuffer);
+				TypeSupport typeSupport = channel.getTypeSupport();
+				
+				T value = null;	// TODO reuse option
+				value = (T)typeSupport.deserialize(dataPayloadBuffer, value);
 
 				complete(value);
 			}

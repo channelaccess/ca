@@ -15,6 +15,7 @@ import org.epics.ca.Listener;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
 import org.epics.ca.data.Metadata;
+import org.epics.ca.impl.Util.TypeSupport;
 import org.epics.ca.impl.requests.ReadNotifyRequest;
 import org.epics.ca.util.IntHashMap;
 
@@ -36,8 +37,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	
 	protected final Map<String, Object> properties = new HashMap<String, Object>();
 
-	protected T value;
-	
 	protected final AtomicReference<ConnectionState> connectionState =
 			new AtomicReference<ConnectionState>(ConnectionState.NEVER_CONNECTED);
 	
@@ -46,6 +45,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	protected final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<ResponseRequest>();
 
+	protected final TypeSupport typeSupport;
+	
 	public ChannelImpl(ContextImpl context, String name, Class<T> channelType, int priority)
 	{
 		this.context = context;
@@ -55,13 +56,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		
 		this.cid = context.generateCID();
 
-		/*
-		// TODO
-		// map channelType to base DBR type
-		// meta DBR type = meta base + channel base
-		TypeSupport ts = Util.getTypeSupport(channelType);
-		System.out.println(ts.getClass().getName() + " code " + ts.getCode());
-		*/
+		typeSupport = Util.getTypeSupport(channelType);
+		if (typeSupport == null)
+			throw new RuntimeException("unsupported channel data type " + channelType);
 		
 		// register before issuing search request
 		context.registerChannel(this);
@@ -140,9 +137,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		TCPTransport t = getTransport();
 		if (t != null)
 		{
-			// TODO
-			int dataType = 1; int dataCount = 1;
-			return new ReadNotifyRequest<T>(this, t, sid, dataType, dataCount);
+			return new ReadNotifyRequest<T>(this, t, sid,
+					typeSupport.getDataType(), typeSupport.getElementCount());
 		}
 		else
 			throw new IllegalStateException("No channel transprot available, channel disconnected.");
@@ -432,6 +428,10 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		{
 			responseRequests.remove(responseRequest.getIOID());
 		}
+	}
+
+	public TypeSupport getTypeSupport() {
+		return typeSupport;
 	}
 	
 	
