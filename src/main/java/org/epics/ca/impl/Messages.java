@@ -1,8 +1,10 @@
 package org.epics.ca.impl;
 
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
 import org.epics.ca.Constants;
+import org.epics.ca.util.net.InetAddressUtil;
 
 public final class Messages {
 	
@@ -68,6 +70,27 @@ public final class Messages {
 		return buffer;
 	}
 	
+	/**
+	 * Generate repeater registration message.
+	 * A special case implementation since message is sent via UDP.
+	 * @param buffer
+	 */
+	public static final boolean generateRepeaterRegistration(ByteBuffer buffer)
+	{
+		int localAddress = InetAddressUtil.ipv4AddressToInt(InetAddress.getLoopbackAddress());
+		
+		buffer.putShort((short)24);
+		// conversion int -> unsigned short is done right
+		buffer.putShort((short)0);
+		buffer.putShort((short)0);
+		// conversion int -> unsigned short is done right
+		buffer.putShort((short)0);
+		buffer.putInt(0);
+		buffer.putInt(localAddress);
+		
+		return true;
+	}
+
 	/**
 	 * Generate search request message.
 	 * A special case implementation since message is sent via UDP.

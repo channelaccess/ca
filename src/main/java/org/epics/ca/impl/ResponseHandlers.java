@@ -45,11 +45,11 @@ public class ResponseHandlers {
 			ResponseHandlers::badResponse,	/* 10 */
 			ResponseHandlers::badResponse,	/* 11 */
 			ResponseHandlers::badResponse,	/* 12 */
-			ResponseHandlers::badResponse,	/* 13 */
+			ResponseHandlers::noopResponse,	/* 13 */ // TODO
 			ResponseHandlers::badResponse,	/* 14 */
 			ResponseHandlers::readNotifyResponse,	/* 15 */
 			ResponseHandlers::badResponse,	/* 16 */
-			ResponseHandlers::badResponse,	/* 17 */
+			ResponseHandlers::repeaterConfirmResponse,	/* 17 */
 			ResponseHandlers::channelCreateResponse,	/* 18 */
 			ResponseHandlers::badResponse,	/* 19 */
 			ResponseHandlers::badResponse,	/* 20 */
@@ -163,5 +163,10 @@ public class ResponseHandlers {
 			status = header.parameter1;
 			
 		nrr.response(status, header.dataType, header.dataCount, payloadBuffer);					
+	}
+
+	public static void repeaterConfirmResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
+	{
+		transport.getContext().repeaterConfirm(responseFrom);
 	}
 }

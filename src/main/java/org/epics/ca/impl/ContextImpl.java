@@ -1,11 +1,17 @@
 package org.epics.ca.impl;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,6 +23,7 @@ import org.epics.ca.impl.reactor.Reactor;
 import org.epics.ca.impl.reactor.ReactorHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersThreadPool;
+import org.epics.ca.impl.repeater.CARepeater;
 import org.epics.ca.impl.search.ChannelSearchManager;
 import org.epics.ca.util.IntHashMap;
 import org.epics.ca.util.logging.ConsoleLogHandler;
@@ -89,8 +96,13 @@ public class ContextImpl implements AutoCloseable, Constants {
 	/**
 	 * Timer.
 	 */
-	//protected final Timer timer;
+	protected final ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
 
+	/**
+	 * Repeater registration future.
+	 */
+	protected volatile ScheduledFuture<?> repeaterRegistrationFuture;
+	
 	/**
 	 * Reactor.
 	 */
@@ -166,6 +178,10 @@ public class ContextImpl implements AutoCloseable, Constants {
 	{
 		initializeLogger(properties);
 		loadConfig(properties);
+		
+		try {
+			CARepeater.startRepeater(repeaterPort);
+		} catch (Throwable th) { /* noop */ }
 		
 		hostName = InetAddressUtil.getHostName();
 		userName = System.getProperty("user.name", "nobody");
@@ -294,12 +310,30 @@ public class ContextImpl implements AutoCloseable, Constants {
 		}
 	}
 
+	private class RepeaterRegistrationTask implements Runnable {
+		
+		private final InetSocketAddress repeaterLocalAddress;
+		private final ByteBuffer buffer = ByteBuffer.allocate(Constants.CA_MESSAGE_HEADER_SIZE);
+		
+		RepeaterRegistrationTask(InetSocketAddress repeaterLocalAddress)
+		{
+			this.repeaterLocalAddress = repeaterLocalAddress;
+
+			Messages.generateRepeaterRegistration(buffer);
+		}
+		
+		public void run() {
+			try {
+				getBroadcastTransport().send(buffer, repeaterLocalAddress);
+			}
+			catch (Throwable th) {
+				logger.log(Level.FINE, th, () -> "Failed to send repeater registration message to: " + repeaterLocalAddress);
+			}
+		}
+	}
+	
 	protected BroadcastTransport initializeUDPTransport()
 	{
-		// where to bind (listen) address
-		InetSocketAddress connectAddress = new InetSocketAddress(repeaterPort);
-
-		
 		// set broadcast address list
 		InetSocketAddress[] broadcastAddressList = null;
 		if (addressList != null && addressList.length() > 0)
@@ -322,6 +356,8 @@ public class ContextImpl implements AutoCloseable, Constants {
 			for (int i = 0; i < broadcastAddressList.length; i++)
         		logger.config("Broadcast address #" + i + ": " + broadcastAddressList[i] + '.');
 
+		// any address
+		InetSocketAddress connectAddress = new InetSocketAddress(0);
 		logger.finer(() -> "Creating datagram socket to: " + connectAddress);
 		
 		DatagramChannel channel = null;
@@ -337,7 +373,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 			
 			// explicitly bind first
 			channel.socket().setReuseAddress(true);
-			channel.socket().bind(connectAddress /*new InetSocketAddress(0)*/);
+			channel.socket().bind(new InetSocketAddress(0));
 
 			// create transport
 			BroadcastTransport transport = new BroadcastTransport(this, ResponseHandlers::handleResponse, channel,
@@ -346,6 +382,15 @@ public class ContextImpl implements AutoCloseable, Constants {
 			// and register to the selector
 			ReactorHandler handler = new LeaderFollowersHandler(reactor, transport, leaderFollowersThreadPool);
 			reactor.register(channel, SelectionKey.OP_READ, handler);
+			
+			// spawn repeater registration task
+			InetSocketAddress repeaterLocalAddress =
+					new InetSocketAddress(InetAddress.getLoopbackAddress(), repeaterPort);
+			repeaterRegistrationFuture = timer.scheduleWithFixedDelay(
+					new RepeaterRegistrationTask(repeaterLocalAddress), 
+					0,
+					60,
+					TimeUnit.SECONDS);
 			
 			return transport;
 		}
@@ -707,6 +752,15 @@ public class ContextImpl implements AutoCloseable, Constants {
 		}
 
 		throw lastException;
+	}
+	
+	public void repeaterConfirm(InetSocketAddress responseFrom)
+	{
+		logger.fine("Repeater registration confirmed from: " + responseFrom);
+
+		ScheduledFuture<?> sf = repeaterRegistrationFuture;
+		if (sf != null)
+			sf.cancel(false);
 	}
 	
 }
