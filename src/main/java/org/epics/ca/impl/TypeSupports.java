@@ -7,9 +7,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.epics.ca.data.Alarm;
+import org.epics.ca.data.AlarmSeverity;
+import org.epics.ca.data.AlarmStatus;
+
 import com.lmax.disruptor.EventFactory;
 
-public class Util {
+public class TypeSupports {
 
 	// TODO move type support to separate package
 	
@@ -29,6 +33,31 @@ public class Util {
 		public int getElementCount() { return 1; }
 		public void serialize(ByteBuffer buffer, Object object) { buffer.putDouble((Double)object); }
 		public Object deserialize(ByteBuffer buffer, Object object) { return buffer.getDouble(); }
+	}
+
+	private static class STSDoubleTypeSupport implements TypeSupport {
+		public static final STSDoubleTypeSupport INSTANCE = new STSDoubleTypeSupport();
+		private STSDoubleTypeSupport() {};
+		public Object newInstance() { return new Alarm<Double>(); }
+		public int getDataType() { return 13; }
+		public int getElementCount() { return 1; }
+		public void serialize(ByteBuffer buffer, Object object) { /* TODO */ }
+		public Object deserialize(ByteBuffer buffer, Object object)
+		{ 
+			@SuppressWarnings("unchecked")
+			Alarm<Double> data = (object == null) ? 
+					(Alarm<Double>)newInstance() : (Alarm<Double>)object;
+
+			int status = buffer.getShort() & 0xFFFF;
+			int severity = buffer.getShort() & 0xFFFF;
+
+			data.setAlarmStatus(AlarmStatus.values()[status]);
+			data.setAlarmSeverity(AlarmSeverity.values()[severity]);
+
+			data.setValue(buffer.getDouble());
+			
+			return data;
+		}
 	}
 
 	private static class IntegerTypeSupport implements TypeSupport {
@@ -79,11 +108,13 @@ public class Util {
 
 		
 		
-		Map<Class<?>, TypeSupport> map = new HashMap<Class<?>, Util.TypeSupport>();
+		Map<Class<?>, TypeSupport> map = new HashMap<Class<?>, TypeSupport>();
 		map.put(Double.class, DoubleTypeSupport.INSTANCE);
 		map.put(Integer.class, IntegerTypeSupport.INSTANCE);
 		map.put(String.class, StringTypeSupport.INSTANCE);
 		
+		map.put(Alarm.class, STSDoubleTypeSupport.INSTANCE);
+
 		typeSupportMap = Collections.unmodifiableMap(map);
 	}
 	

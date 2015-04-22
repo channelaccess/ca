@@ -421,7 +421,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 		else if (channelName.length() > Math.min(MAX_UDP_SEND - CA_MESSAGE_HEADER_SIZE, UNREASONABLE_CHANNEL_NAME_LENGTH))
 			throw new IllegalArgumentException("name too long");
 		
-		if (!Util.isNativeType(channelType))
+		if (!TypeSupports.isNativeType(channelType))
 			throw new IllegalArgumentException("Invalid channel native type");
 		
 		if (priority < CHANNEL_PRIORITY_MIN || priority > CHANNEL_PRIORITY_MAX)
@@ -440,6 +440,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 		
 		reactor.shutdown();
 	    leaderFollowersThreadPool.shutdown();
+		timer.shutdown();
 	}
 
 	public Reactor getReactor() {

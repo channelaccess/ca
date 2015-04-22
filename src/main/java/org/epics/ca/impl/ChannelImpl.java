@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -15,7 +16,7 @@ import org.epics.ca.Listener;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
 import org.epics.ca.data.Metadata;
-import org.epics.ca.impl.Util.TypeSupport;
+import org.epics.ca.impl.TypeSupports.TypeSupport;
 import org.epics.ca.impl.requests.ReadNotifyRequest;
 import org.epics.ca.util.IntHashMap;
 
@@ -47,6 +48,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	protected final TypeSupport typeSupport;
 	
+	protected final AtomicBoolean connectIssueed = new AtomicBoolean(false);
+	protected final AtomicReference<CompletableFuture<Channel<T>>> connectFuture = new AtomicReference<>();
+	
 	public ChannelImpl(ContextImpl context, String name, Class<T> channelType, int priority)
 	{
 		this.context = context;
@@ -56,15 +60,12 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		
 		this.cid = context.generateCID();
 
-		typeSupport = Util.getTypeSupport(channelType);
+		typeSupport = TypeSupports.getTypeSupport(channelType);
 		if (typeSupport == null)
 			throw new RuntimeException("unsupported channel data type " + channelType);
 		
 		// register before issuing search request
 		context.registerChannel(this);
-
-		// this has to be submitted immediately
-		initiateSearch();
 	}
 	
 	@Override
@@ -93,8 +94,17 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@Override
 	public CompletableFuture<Channel<T>> connect() {
-		// TODO Auto-generated method stub
-		return null;
+		if (!connectIssueed.getAndSet(true))
+		{
+			// this has to be submitted immediately
+			initiateSearch();
+			
+			CompletableFuture<Channel<T>> future = new CompletableFuture<>();
+			connectFuture.set(future);
+			return future;
+		}
+		else
+			throw new IllegalStateException("connect already issued on this channel instance");
 	}
 
 	@Override
@@ -113,8 +123,12 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@Override
 	public T get() {
-		// TODO Auto-generated method stub
-		return null;
+		try {
+			return getAsync().get();
+		} catch (Throwable th) {
+			// TODO is this OK, or should we rather throws exceptions
+			throw new RuntimeException("Failed to do get.", th);
+		}
 	}
 
 	@Override
@@ -160,6 +174,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	@Override
 	public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(
 			Class<? extends Metadata> clazz) {
+		
+		System.out.println(TypeSupports.getTypeSupport(clazz));
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -326,6 +342,11 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		ConnectionState previousCS = connectionState.getAndSet(state);
 		if (previousCS != state)
 		{
+			CompletableFuture<Channel<T>> cf = connectFuture.getAndSet(null);
+			if (cf != null)
+				cf.complete(this);
+			
+			
 			// TODO notify change
 		}
 	}
