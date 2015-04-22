@@ -104,7 +104,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			return future;
 		}
 		else
-			throw new IllegalStateException("connect already issued on this channel instance");
+			throw new IllegalStateException("Connect already issued on this channel instance.");
 	}
 
 	@Override
@@ -151,11 +151,10 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		TCPTransport t = getTransport();
 		if (t != null)
 		{
-			return new ReadNotifyRequest<T>(this, t, sid,
-					typeSupport.getDataType(), typeSupport.getElementCount());
+			return new ReadNotifyRequest<T>(this, t, sid, typeSupport);
 		}
 		else
-			throw new IllegalStateException("No channel transprot available, channel disconnected.");
+			throw new IllegalStateException("Channel not connected.");
 	}
 
 	@Override
@@ -175,9 +174,25 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(
 			Class<? extends Metadata> clazz) {
 		
-		System.out.println(TypeSupports.getTypeSupport(clazz));
-		// TODO Auto-generated method stub
-		return null;
+		connectionRequiredCheck();
+
+		// TODO 
+		TypeSupport metaTypeSupport = TypeSupports.getTypeSupport(clazz);
+		
+		// check read access
+		AccessRights currentRights = getAccessRights();
+		if (currentRights != AccessRights.READ &&
+			currentRights != AccessRights.READ_WRITE)
+			throw new IllegalStateException("No read rights.");
+		
+		TCPTransport t = getTransport();
+		if (t != null)
+		{
+			return new ReadNotifyRequest<MT>(this, t, sid, metaTypeSupport);
+		}
+		else
+			throw new IllegalStateException("Channel not connected.");
+		
 	}
 
 	@Override

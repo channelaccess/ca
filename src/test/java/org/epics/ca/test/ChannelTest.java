@@ -4,9 +4,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.epics.ca.Channel;
 import org.epics.ca.Context;
-import org.epics.ca.Listener;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
+import org.epics.ca.data.Alarm;
 import org.epics.ca.data.Timestamped;
 
 
@@ -18,15 +18,27 @@ public class ChannelTest {
 		try (Context context = new Context())
 		{
 			Channel<Double> adc = context.createChannel("adc01", Double.class);
-			
+
+			/*
 			// add connection listener
 			Listener cl = adc.addConnectionListener((channel, state) -> System.out.println(channel.getName() + "is connected? " + state));
 			// remove listener, or use try-catch-resources
 			cl.close();	
+			*/
 			
 			// wait until connected
 			adc.connect().get();
 			
+			CompletableFuture<Double> ffd = adc.getAsync();
+			System.out.println(ffd.get());
+			
+			CompletableFuture<Alarm<Double>> fts = adc.getAsync(Alarm.class);
+			Alarm<Double> da = fts.get();
+			System.out.println(da.getValue() + " " + da.getAlarmStatus() + " " + da.getAlarmSeverity());
+		
+			if (true)
+				return;
+
 			// sync create channel and connect
 			Channel<Double> adc4 = context.createChannel("adc02", Double.class).connect().get();
 			
@@ -38,7 +50,7 @@ public class ChannelTest {
 			Channel<String> adc3 = context.createChannel("adc03", String.class);
 			
 			// wait for all channels to connect
-			CompletableFuture.allOf(adc.connect(), adc2.connect(), adc3.connect()).
+			CompletableFuture.allOf(adc2.connect(), adc3.connect()).
 				thenAccept((v) -> System.out.println("all connected"));
 			
 			// sync get
@@ -47,7 +59,7 @@ public class ChannelTest {
 			// sync get w/ timestamp 
 			Timestamped<Double> ts = adc.get(Timestamped.class);
 			dv = ts.getValue();
-			long millis = ts.getTimeStamp();
+			long millis = ts.getMillis();
 			
 			// best-effort put
 			adc.put(12.3);

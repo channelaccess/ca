@@ -54,6 +54,9 @@ public class TypeSupports {
 			data.setAlarmStatus(AlarmStatus.values()[status]);
 			data.setAlarmSeverity(AlarmSeverity.values()[severity]);
 
+			// RISC padding
+			buffer.getInt();
+
 			data.setValue(buffer.getDouble());
 			
 			return data;
@@ -113,6 +116,7 @@ public class TypeSupports {
 		map.put(Integer.class, IntegerTypeSupport.INSTANCE);
 		map.put(String.class, StringTypeSupport.INSTANCE);
 		
+		// TODO temporary, we cannot assign STSDouble to all Alarm.class
 		map.put(Alarm.class, STSDoubleTypeSupport.INSTANCE);
 
 		typeSupportMap = Collections.unmodifiableMap(map);

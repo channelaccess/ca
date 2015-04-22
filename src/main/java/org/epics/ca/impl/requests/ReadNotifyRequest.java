@@ -37,34 +37,29 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 	protected final ChannelImpl<?> channel;
 
 	/**
-	 * Requested data type.
+	 * Type support.
 	 */
-	protected final int requestedDataType;
-	
-	/**
-	 * Requested data count.
-	 */
-	protected final int requestedDataCount;
+	protected final TypeSupport typeSupport;
 
 	/**
 	 */
-	public ReadNotifyRequest(ChannelImpl<?> channel, Transport transport, int sid, int dataType, int dataCount) {
+	public ReadNotifyRequest(ChannelImpl<?> channel, Transport transport, int sid, TypeSupport typeSupport) {
 
 		this.channel = channel;
 		this.sid = sid;
-		this.requestedDataType = dataType;
+		this.typeSupport = typeSupport;
+		
+		int dataCount = typeSupport.getElementCount();
 		
 		// TODO not the nicest way
 		if (dataCount == 0 && channel.getTransport().getMinorRevision() < 13)
 			dataCount = (Integer)channel.getProperties().get("nativeElementCount");
 
-		this.requestedDataCount = dataCount;
-		
 		context = transport.getContext();
 		ioid = context.registerResponseRequest(this);
 		channel.registerResponseRequest(this);
 
-		Messages.readNotifyMessage(transport, dataType, dataCount, sid, ioid);
+		Messages.readNotifyMessage(transport, typeSupport.getDataType(), dataCount, sid, ioid);
 		transport.flush();		// TODO auto-flush
 	}
 
@@ -87,8 +82,6 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 			Status caStatus = Status.forStatusCode(status);
 			if (caStatus == Status.NORMAL)
 			{
-				TypeSupport typeSupport = channel.getTypeSupport();
-				
 				T value = null;	// TODO reuse option
 				value = (T)typeSupport.deserialize(dataPayloadBuffer, value);
 
