@@ -179,10 +179,6 @@ public class ContextImpl implements AutoCloseable, Constants {
 		initializeLogger(properties);
 		loadConfig(properties);
 		
-		try {
-			CARepeater.startRepeater(repeaterPort);
-		} catch (Throwable th) { /* noop */ }
-		
 		hostName = InetAddressUtil.getHostName();
 		userName = System.getProperty("user.name", "nobody");
 
@@ -200,6 +196,11 @@ public class ContextImpl implements AutoCloseable, Constants {
 		leaderFollowersThreadPool.promoteLeader(() -> reactor.process());
 
 		broadcastTransport = initializeUDPTransport();
+
+		try {
+			CARepeater.startRepeater(repeaterPort);
+		} catch (Throwable th) { /* noop */ }
+
 		channelSearchManager = new ChannelSearchManager(broadcastTransport);
 	}
 	
