@@ -1,4 +1,4 @@
-# ca [![Build Status](https://travis-ci.org/msekoranja/ca.svg?branch=master)](https://travis-ci.org/msekoranja/ca)
+# ca [![Build Status](https://travis-ci.org/channelaccess/ca.svg?branch=master)](https://travis-ci.org/channelaccess/ca)
 Java CA client implementation using a new API (not using JCA).
 
 # Development
