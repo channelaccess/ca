@@ -94,4 +94,7 @@ public interface Channel<T> extends AutoCloseable {
     // get channel properties, e.g. native type, host, etc.
 	Map<String, Object> getProperties();
 
+	// suppresses AutoCloseable.close() exception
+	@Override
+	void close();
 }
