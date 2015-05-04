@@ -2,7 +2,7 @@ package org.epics.ca.data;
 
 public class Timestamped<T> extends Alarm<T> {
 
-	// private static long EPOCH_SECONDS_PAST_1970 = 7305*86400L;
+	public static long EPOCH_SECONDS_PAST_1970 = 7305*86400L;
 
 	/** past 1.1.2970 */
 	protected long seconds;

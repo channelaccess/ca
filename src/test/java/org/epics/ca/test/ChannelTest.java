@@ -1,5 +1,6 @@
 package org.epics.ca.test;
 
+import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
 import org.epics.ca.Channel;
@@ -7,6 +8,8 @@ import org.epics.ca.Context;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
 import org.epics.ca.data.Alarm;
+import org.epics.ca.data.Control;
+import org.epics.ca.data.Graphic;
 import org.epics.ca.data.Timestamped;
 
 
@@ -36,6 +39,18 @@ public class ChannelTest {
 			Alarm<Double> da = fts.get();
 			System.out.println(da.getValue() + " " + da.getAlarmStatus() + " " + da.getAlarmSeverity());
 		
+			CompletableFuture<Timestamped<Double>> ftt = adc.getAsync(Timestamped.class);
+			Timestamped<Double> dt = ftt.get();
+			System.out.println(dt.getValue() + " " + dt.getAlarmStatus() + " " + dt.getAlarmSeverity() + " " + new Date(dt.getMillis()));
+
+			CompletableFuture<Graphic<Double>> ftg = adc.getAsync(Graphic.class);
+			Graphic<Double> dg = ftg.get();
+			System.out.println(dg.getValue() + " " + dg.getAlarmStatus() + " " + dg.getAlarmSeverity());
+
+			CompletableFuture<Control<Double>> ftc = adc.getAsync(Control.class);
+			Control<Double> dc = ftc.get();
+			System.out.println(dc.getValue() + " " + dc.getAlarmStatus() + " " + dc.getAlarmSeverity());
+
 			if (true)
 				return;
 
