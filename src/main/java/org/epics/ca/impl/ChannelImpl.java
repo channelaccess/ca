@@ -176,8 +176,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		
 		connectionRequiredCheck();
 
-		// TODO 
-		TypeSupport metaTypeSupport = TypeSupports.getTypeSupport(clazz);
+		TypeSupport metaTypeSupport = TypeSupports.getTypeSupport(clazz, channelType);
+		if (metaTypeSupport == null)
+			throw new RuntimeException("unsupported channel metadata type " + metaTypeSupport);
 		
 		// check read access
 		AccessRights currentRights = getAccessRights();

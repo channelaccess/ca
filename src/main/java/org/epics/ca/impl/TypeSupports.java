@@ -63,14 +63,39 @@ public class TypeSupports {
 		}
 	}
 
+	private static class STSIntegerTypeSupport implements TypeSupport {
+		public static final STSIntegerTypeSupport INSTANCE = new STSIntegerTypeSupport();
+		private STSIntegerTypeSupport() {};
+		public Object newInstance() { return new Alarm<Integer>(); }
+		public int getDataType() { return 8; }
+		public int getElementCount() { return 1; }
+		public void serialize(ByteBuffer buffer, Object object) { /* TODO */ }
+		public Object deserialize(ByteBuffer buffer, Object object)
+		{ 
+			@SuppressWarnings("unchecked")
+			Alarm<Integer> data = (object == null) ? 
+					(Alarm<Integer>)newInstance() : (Alarm<Integer>)object;
+
+			int status = buffer.getShort() & 0xFFFF;
+			int severity = buffer.getShort() & 0xFFFF;
+
+			data.setAlarmStatus(AlarmStatus.values()[status]);
+			data.setAlarmSeverity(AlarmSeverity.values()[severity]);
+
+			data.setValue((int)buffer.getShort());
+			
+			return data;
+		}
+	}
+
 	private static class IntegerTypeSupport implements TypeSupport {
 		public static final IntegerTypeSupport INSTANCE = new IntegerTypeSupport();
 		private IntegerTypeSupport() {};
 		public Object newInstance() { return Integer.valueOf(0); }
 		public int getDataType() { return 1; }
 		public int getElementCount() { return 1; }
-		public void serialize(ByteBuffer buffer, Object object) { buffer.putInt((Integer)object); }
-		public Object deserialize(ByteBuffer buffer, Object object) { return buffer.getInt(); }
+		public void serialize(ByteBuffer buffer, Object object) { buffer.putShort(((Integer)object).shortValue()); }
+		public Object deserialize(ByteBuffer buffer, Object object) { return (int)buffer.getShort(); }
 	}
 
 	private static class StringTypeSupport implements TypeSupport {
@@ -84,13 +109,13 @@ public class TypeSupports {
 	}
 
 	static final Set<Class<?>> nativeTypeSet;
-	static final Map<Class<?>, TypeSupport> typeSupportMap;
+	static final Map<Class<?>, Map<Class<?>, TypeSupport>> typeSupportMap;
 
 	static
 	{
 		Set<Class<?>> set = new HashSet<Class<?>>();
 		set.add(String.class);
-		set.add(Integer.class);
+		set.add(Integer.class);	// TODO INT == SHORT
 		set.add(Short.class);
 		set.add(Float.class);
 		set.add(Enum.class);	// TODO
@@ -110,23 +135,45 @@ public class TypeSupports {
 		nativeTypeSet = Collections.unmodifiableSet(set);
 
 		
+		Map<Class<?>, Map<Class<?>, TypeSupport>> rootMap = new HashMap<>();
 		
-		Map<Class<?>, TypeSupport> map = new HashMap<Class<?>, TypeSupport>();
-		map.put(Double.class, DoubleTypeSupport.INSTANCE);
-		map.put(Integer.class, IntegerTypeSupport.INSTANCE);
-		map.put(String.class, StringTypeSupport.INSTANCE);
+		//
+		// native type support (metaType class == Void.class)
+		//
+		{
+			Map<Class<?>, TypeSupport> map = new HashMap<>();
+			map.put(Double.class, DoubleTypeSupport.INSTANCE);
+			map.put(Integer.class, IntegerTypeSupport.INSTANCE);
+			map.put(String.class, StringTypeSupport.INSTANCE);
+			
+			rootMap.put(Void.class, Collections.unmodifiableMap(map));
+		}
 		
-		// TODO temporary, we cannot assign STSDouble to all Alarm.class
-		map.put(Alarm.class, STSDoubleTypeSupport.INSTANCE);
-
-		typeSupportMap = Collections.unmodifiableMap(map);
+		//
+		// native type support (metaType class == Alarm.class)
+		//
+		{
+			Map<Class<?>, TypeSupport> map = new HashMap<>();
+			map.put(Double.class, STSDoubleTypeSupport.INSTANCE);
+			map.put(Integer.class, STSIntegerTypeSupport.INSTANCE);
+	
+			rootMap.put(Alarm.class, Collections.unmodifiableMap(map));
+		}
+		
+		
+		typeSupportMap = Collections.unmodifiableMap(rootMap);
 	}
 	
 	static final TypeSupport getTypeSupport(Class<?> clazz)
 	{
-		return typeSupportMap.get(clazz);
+		return getTypeSupport(Void.class, clazz);
 	}
 	
+	static final TypeSupport getTypeSupport(Class<?> metaTypeClass, Class<?> typeClass)
+	{
+		return typeSupportMap.get(metaTypeClass).get(typeClass);
+	}
+
 	static final boolean isNativeType(Class<?> clazz)
 	{
 		return nativeTypeSet.contains(clazz);
