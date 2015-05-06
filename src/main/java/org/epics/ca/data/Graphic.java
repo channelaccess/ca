@@ -1,16 +1,19 @@
 package org.epics.ca.data;
 
-public class Graphic<T> extends Alarm<T> {
+// T is a value class, ST is a scalar of T (or same as T,  if T is already a scalar)
+// e.g. Graphic<Double, Double>
+// e.g. Graphic<double[], Double>
+public class Graphic<T, ST> extends Alarm<T> {
 	
 	protected String units = "";
 	protected int precision = 0;		// for floating-point values only (float, double)
 	
-	protected T upperDisplay;
-	protected T lowerDisplay;
-	protected T upperAlarm;
-	protected T upperWarning;
-	protected T lowerWarning;
-	protected T lowerAlarm;
+	protected ST upperDisplay;
+	protected ST lowerDisplay;
+	protected ST upperAlarm;
+	protected ST upperWarning;
+	protected ST lowerWarning;
+	protected ST lowerAlarm;
 	
 	public String getUnits() { return units; }
 	public void setUnits(String units) { this.units = units; }
@@ -19,40 +22,40 @@ public class Graphic<T> extends Alarm<T> {
 	public void setPrecision(int precision) { this.precision = precision; }
 	
 	
-	public T getUpperDisplay() {
+	public ST getUpperDisplay() {
 		return upperDisplay;
 	}
-	public void setUpperDisplay(T upperDisplay) {
+	public void setUpperDisplay(ST upperDisplay) {
 		this.upperDisplay = upperDisplay;
 	}
-	public T getLowerDisplay() {
+	public ST getLowerDisplay() {
 		return lowerDisplay;
 	}
-	public void setLowerDisplay(T lowerDisplay) {
+	public void setLowerDisplay(ST lowerDisplay) {
 		this.lowerDisplay = lowerDisplay;
 	}
-	public T getUpperAlarm() {
+	public ST getUpperAlarm() {
 		return upperAlarm;
 	}
-	public void setUpperAlarm(T upperAlarm) {
+	public void setUpperAlarm(ST upperAlarm) {
 		this.upperAlarm = upperAlarm;
 	}
-	public T getUpperWarning() {
+	public ST getUpperWarning() {
 		return upperWarning;
 	}
-	public void setUpperWarning(T upperWarning) {
+	public void setUpperWarning(ST upperWarning) {
 		this.upperWarning = upperWarning;
 	}
-	public T getLowerWarning() {
+	public ST getLowerWarning() {
 		return lowerWarning;
 	}
-	public void setLowerWarning(T lowerWarning) {
+	public void setLowerWarning(ST lowerWarning) {
 		this.lowerWarning = lowerWarning;
 	}
-	public T getLowerAlarm() {
+	public ST getLowerAlarm() {
 		return lowerAlarm;
 	}
-	public void setLowerAlarm(T lowerAlarm) {
+	public void setLowerAlarm(ST lowerAlarm) {
 		this.lowerAlarm = lowerAlarm;
 	}
 	

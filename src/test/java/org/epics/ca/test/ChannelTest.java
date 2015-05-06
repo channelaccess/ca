@@ -43,14 +43,26 @@ public class ChannelTest {
 			Timestamped<Double> dt = ftt.get();
 			System.out.println(dt.getValue() + " " + dt.getAlarmStatus() + " " + dt.getAlarmSeverity() + " " + new Date(dt.getMillis()));
 
-			CompletableFuture<Graphic<Double>> ftg = adc.getAsync(Graphic.class);
-			Graphic<Double> dg = ftg.get();
+			CompletableFuture<Graphic<Double, Double>> ftg = adc.getAsync(Graphic.class);
+			Graphic<Double, Double> dg = ftg.get();
 			System.out.println(dg.getValue() + " " + dg.getAlarmStatus() + " " + dg.getAlarmSeverity());
 
-			CompletableFuture<Control<Double>> ftc = adc.getAsync(Control.class);
-			Control<Double> dc = ftc.get();
+			CompletableFuture<Control<Double, Double>> ftc = adc.getAsync(Control.class);
+			Control<Double, Double> dc = ftc.get();
 			System.out.println(dc.getValue() + " " + dc.getAlarmStatus() + " " + dc.getAlarmSeverity());
 
+			
+			/*
+			Channel<double[]> adca = context.createChannel("msekoranjaHost:compressExample", double[].class).connect().get();
+
+			CompletableFuture<double[]> ffda = adca.getAsync();
+			System.out.println(Arrays.toString(ffda.get()));
+
+			CompletableFuture<Graphic<double[], Double>> ftga = adca.getAsync(Graphic.class);
+			Graphic<double[], Double> dga = ftga.get();
+			System.out.println(Arrays.toString(dga.getValue()) + " " + dga.getAlarmStatus() + " " + dga.getAlarmSeverity());
+			*/
+			
 			if (true)
 				return;
 

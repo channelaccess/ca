@@ -49,7 +49,7 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 		this.sid = sid;
 		this.typeSupport = typeSupport;
 		
-		int dataCount = typeSupport.getElementCount();
+		int dataCount = typeSupport.getForcedElementCount();
 		
 		// TODO not the nicest way
 		if (dataCount == 0 && channel.getTransport().getMinorRevision() < 13)
@@ -83,7 +83,7 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 			if (caStatus == Status.NORMAL)
 			{
 				T value = null;	// TODO reuse option
-				value = (T)typeSupport.deserialize(dataPayloadBuffer, value);
+				value = (T)typeSupport.deserialize(dataPayloadBuffer, value, dataCount);
 
 				complete(value);
 			}

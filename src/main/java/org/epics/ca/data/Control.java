@@ -1,20 +1,20 @@
 package org.epics.ca.data;
 
-public class Control<T> extends Graphic<T> {
+public class Control<T, ST> extends Graphic<T, ST> {
 	
-	protected T upperControl;
-	protected T lowerControl;
+	protected ST upperControl;
+	protected ST lowerControl;
 	
-	public T getUpperControl() {
+	public ST getUpperControl() {
 		return upperControl;
 	}
-	public void setUpperControl(T upperControl) {
+	public void setUpperControl(ST upperControl) {
 		this.upperControl = upperControl;
 	}
-	public T getLowerControl() {
+	public ST getLowerControl() {
 		return lowerControl;
 	}
-	public void setLowerControl(T lowerControl) {
+	public void setLowerControl(ST lowerControl) {
 		this.lowerControl = lowerControl;
 	}
 	
