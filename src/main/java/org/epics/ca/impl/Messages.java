@@ -96,7 +96,7 @@ public final class Messages {
 	 * Generate search request message.
 	 * A special case implementation since message is sent via UDP.
 	 * @param transport
-	 * @param requestMessage
+	 * @param buffer
 	 * @param name
 	 * @param cid
 	 */
@@ -330,6 +330,77 @@ public final class Messages {
 	{
 		// TODO optionally check response message size
 	    
+		boolean ignore = true;
+		try
+		{
+			startCAMessage(transport,
+					(short)15,
+					0,
+					(short)dataType,
+					dataCount,
+					sid,
+					ioid);
+			
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
+
+	/**
+	 * Create subscription (aka event add) message.
+	 * @param transport
+	 * @param dataType
+	 * @param dataCount
+	 * @param sid
+	 * @param ioid
+	 * @param mask
+	 */
+	public static void createSubscriptionMessage(
+			Transport transport, int dataType, int dataCount, int sid, int ioid, int mask)
+	{
+		// TODO optionally check response message size
+	    
+		boolean ignore = true;
+		try
+		{
+			ByteBuffer buffer = startCAMessage(transport,
+					(short)1,
+					16,
+					(short)dataType,
+					dataCount,
+					sid,
+					ioid);
+			
+			// low, high, to - all 0.0
+			buffer.putFloat((float)0.0);
+			buffer.putFloat((float)0.0);
+			buffer.putFloat((float)0.0);
+			// mask and alignment
+			buffer.putShort((short)mask);
+			buffer.putShort((short)0);
+			
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
+
+	/**
+	 * Update subscription message.
+	 * @param transport
+	 * @param dataType
+	 * @param dataCount
+	 * @param sid
+	 * @param ioid
+	 */
+	public static void subscriptionUpdateMessage(
+			Transport transport, int dataType, int dataCount, int sid, int ioid)
+	{
 		boolean ignore = true;
 		try
 		{

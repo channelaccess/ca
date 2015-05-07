@@ -12,7 +12,7 @@ import org.epics.ca.impl.Transport;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
 
 /**
- * CA read notify.
+ * CA write notify.
  */
 public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements NotifyResponseRequest {
 

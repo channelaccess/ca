@@ -33,7 +33,7 @@ public class ResponseHandlers {
 	private static final ResponseHandler[] handlers = 
 		{
 			ResponseHandlers::noopResponse,	/* 0 */
-			ResponseHandlers::badResponse,	/* 1 */
+			ResponseHandlers::monitorResponse,	/* 1 */
 			ResponseHandlers::badResponse,	/* 2 */
 			ResponseHandlers::badResponse,	/* 3 */
 			ResponseHandlers::badResponse,	/* 4 */
@@ -151,6 +151,21 @@ public class ResponseHandlers {
 	}
 
 	public static void readNotifyResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
+	{
+		NotifyResponseRequest nrr = (NotifyResponseRequest)transport.getContext().getResponseRequest(header.parameter2);
+		if (nrr == null)
+			return;
+				
+		int status;
+		if (transport.getMinorRevision() < 1)
+			status = Status.NORMAL.getValue();
+		else
+			status = header.parameter1;
+			
+		nrr.response(status, header.dataType, header.dataCount, payloadBuffer);					
+	}
+
+	public static void monitorResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
 	{
 		NotifyResponseRequest nrr = (NotifyResponseRequest)transport.getContext().getResponseRequest(header.parameter2);
 		if (nrr == null)

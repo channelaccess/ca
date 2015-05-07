@@ -104,8 +104,9 @@ public class TypeSupports {
 		data.setLowerControl(valueReader.readValue(buffer, data.getLowerControl()));
 	}	
 	
-	public static interface TypeSupport {
-		public Object newInstance();
+	@SuppressWarnings("rawtypes")
+	public static interface TypeSupport extends EventFactory {
+		//public Object newInstance();
 		public int getDataType();
 		public default int getForcedElementCount() { return 0; }
 		public default void serialize(ByteBuffer buffer, Object object, int count) { throw new UnsupportedOperationException(); };

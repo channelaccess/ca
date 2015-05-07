@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -18,11 +20,15 @@ import org.epics.ca.Monitor;
 import org.epics.ca.Status;
 import org.epics.ca.data.Metadata;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
+import org.epics.ca.impl.requests.MonitorRequest;
 import org.epics.ca.impl.requests.ReadNotifyRequest;
 import org.epics.ca.impl.requests.WriteNotifyRequest;
 import org.epics.ca.util.IntHashMap;
 
+import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.SleepingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
 
 public class ChannelImpl<T> implements Channel<T>, TransportClient
 {
@@ -240,8 +246,33 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@Override
 	public Monitor<T> addValueMonitor(Consumer<? extends T> handler, int queueSize) {
-		// TODO Auto-generated method stub
-		return null;
+
+		connectionRequiredCheck();
+
+		TCPTransport t = getTransport();
+		if (t != null)
+		{
+			// Executor that will be used to construct new threads for consumers
+	        Executor executor = Executors.newCachedThreadPool();
+
+	        // NOTE: queueSize specifies the size of the ring buffer, must be power of 2.
+	        @SuppressWarnings("unchecked")
+			EventFactory<T> eventFactory = typeSupport;
+	        
+	        Disruptor<T> disruptor = 
+	         new Disruptor<>(eventFactory, queueSize, executor,
+		    		ProducerType.SINGLE, new SleepingWaitStrategy(10));
+	        // TODO null !!!
+	        //disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(null));
+
+	        // TODO
+	        int mask = Monitor.VALUE_MASK;
+	        return new MonitorRequest<T>(this, t, sid, typeSupport, mask, disruptor);
+		}
+		else
+			throw new IllegalStateException("Channel not connected.");
+        
+        
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -272,28 +303,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		// in case some code needs to tag channels
 		return properties;
 	}
-
-	/*
-	public <VT extends Metadata<T>> Monitor<VT> createMonitor(@SuppressWarnings("rawtypes") Class<? extends Metadata> clazz)
-	{
-        // Executor that will be used to construct new threads for consumers
-        Executor executor = Executors.newCachedThreadPool();
-
-        // Specify the size of the ring buffer, must be power of 2.
-        int bufferSize = 4;
-        
-        // Event factory.... get out of TypeSupport
-        @SuppressWarnings("unchecked")
-		EventFactory<VT> eventFactory = (EventFactory<VT>)Util.getEventFactory(clazz);
-        
-        //Disruptor<VT> disruptor = 
-         new Disruptor<>(eventFactory, bufferSize, executor,
-	    		ProducerType.SINGLE, new SleepingWaitStrategy(10));
-        
-        return null;
-	}
-
-	*/
 	
 	protected final AtomicReference<Object> timerIdRef = new AtomicReference<Object>();
 	
