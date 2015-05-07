@@ -70,10 +70,16 @@ public class ChannelTest {
 			CompletableFuture<Short> fec = ec.getAsync();
 			System.out.println(fec.get());
 
+			Short s = ec.get();
+			System.out.println(s);
+			
 			CompletableFuture<GraphicEnum> ftec = ec.getAsync(GraphicEnum.class);
 			GraphicEnum dtec = ftec.get();
 			System.out.println(dtec.getValue() + " " + Arrays.toString(dtec.getLabels()));
 
+			GraphicEnum ss = ec.get(GraphicEnum.class);
+			System.out.println(Arrays.toString(ss.getLabels()));
+			
 			if (true)
 				return;
 

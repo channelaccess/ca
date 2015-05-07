@@ -126,7 +126,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		try {
 			return getAsync().get();
 		} catch (Throwable th) {
-			// TODO is this OK, or should we rather throws exceptions
 			throw new RuntimeException("Failed to do get.", th);
 		}
 	}
@@ -163,10 +162,14 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <MT extends Metadata<T>> MT get(@SuppressWarnings("rawtypes") Class<? extends Metadata> clazz) {
-		// TODO Auto-generated method stub
-		return null;
+		try {
+			return (MT)getAsync(clazz).get();
+		} catch (Throwable th) {
+			throw new RuntimeException("Failed to do get.", th);
+		}
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -229,7 +232,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		// NOTE: could use Collections.unmodifiableMap(m) here, but leave it writable
 		// in case some code needs to tag channels
 		return properties;
-		
 	}
 
 	/*
