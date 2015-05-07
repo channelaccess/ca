@@ -1,5 +1,6 @@
 package org.epics.ca.test;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
@@ -10,6 +11,7 @@ import org.epics.ca.Status;
 import org.epics.ca.data.Alarm;
 import org.epics.ca.data.Control;
 import org.epics.ca.data.Graphic;
+import org.epics.ca.data.GraphicEnum;
 import org.epics.ca.data.Timestamped;
 
 
@@ -63,6 +65,15 @@ public class ChannelTest {
 			System.out.println(Arrays.toString(dga.getValue()) + " " + dga.getAlarmStatus() + " " + dga.getAlarmSeverity());
 			*/
 			
+			Channel<Short> ec = context.createChannel("enum", Short.class).connect().get();
+
+			CompletableFuture<Short> fec = ec.getAsync();
+			System.out.println(fec.get());
+
+			CompletableFuture<GraphicEnum> ftec = ec.getAsync(GraphicEnum.class);
+			GraphicEnum dtec = ftec.get();
+			System.out.println(dtec.getValue() + " " + Arrays.toString(dtec.getLabels()));
+
 			if (true)
 				return;
 

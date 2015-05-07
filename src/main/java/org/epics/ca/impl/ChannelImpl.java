@@ -178,7 +178,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 		TypeSupport metaTypeSupport = TypeSupports.getTypeSupport(clazz, channelType);
 		if (metaTypeSupport == null)
-			throw new RuntimeException("unsupported channel metadata type " + metaTypeSupport);
+			throw new RuntimeException("unsupported channel metadata type " + clazz + "<" + channelType + ">");
 		
 		// check read access
 		AccessRights currentRights = getAccessRights();
