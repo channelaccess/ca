@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
 import org.epics.ca.Constants;
+import org.epics.ca.impl.TypeSupports.TypeSupport;
 import org.epics.ca.util.net.InetAddressUtil;
 
 public final class Messages {
@@ -348,5 +349,86 @@ public final class Messages {
 		}
 	}
 
+	/**
+	 * Write (best-effort) message.
+	 * @param transport
+	 * @param dataType
+	 * @param dataCount
+	 * @param sid
+	 * @param cid
+	 * @param typeSupport
+	 * @param value
+	 */
+	public static void writeMessage(
+			Transport transport, int sid, int cid, TypeSupport typeSupport, Object value, int count)
+	{
+		int calculatedPayloadSize = typeSupport.serializeSize(value, count);
+		int alignedPayloadSize = calculateAlignedSize(8, calculatedPayloadSize);
+		
+		boolean ignore = true;
+		try
+		{
+			ByteBuffer buffer = startCAMessage(transport,
+					(short)4,
+					alignedPayloadSize,
+					(short)typeSupport.getDataType(),
+					count,
+					sid,
+					cid);
+			
+			typeSupport.serialize(buffer, value, count);
+
+			// align
+			for (int i = alignedPayloadSize - calculatedPayloadSize; i > 0; i--)
+	            buffer.put((byte)0);
+
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
 	
+	/**
+	 * Write notify message.
+	 * @param transport
+	 * @param dataType
+	 * @param dataCount
+	 * @param sid
+	 * @param ioid
+	 * @param typeSupport
+	 * @param value
+	 */
+	public static void writeNotifyMessage(
+			Transport transport, int sid, int ioid, TypeSupport typeSupport, Object value, int count)
+	{
+		int calculatedPayloadSize = typeSupport.serializeSize(value, count);
+		int alignedPayloadSize = calculateAlignedSize(8, calculatedPayloadSize);
+		
+		boolean ignore = true;
+		try
+		{
+			ByteBuffer buffer = startCAMessage(transport,
+					(short)19,
+					alignedPayloadSize,
+					(short)typeSupport.getDataType(),
+					count,
+					sid,
+					ioid);
+			
+			typeSupport.serialize(buffer, value, count);
+
+			// align
+			for (int i = alignedPayloadSize - calculatedPayloadSize; i > 0; i--)
+	            buffer.put((byte)0);
+
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
+
 }

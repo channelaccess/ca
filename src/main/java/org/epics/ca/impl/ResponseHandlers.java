@@ -51,7 +51,7 @@ public class ResponseHandlers {
 			ResponseHandlers::badResponse,	/* 16 */
 			ResponseHandlers::repeaterConfirmResponse,	/* 17 */
 			ResponseHandlers::channelCreateResponse,	/* 18 */
-			ResponseHandlers::badResponse,	/* 19 */
+			ResponseHandlers::writeNotifyResponse,	/* 19 */
 			ResponseHandlers::badResponse,	/* 20 */
 			ResponseHandlers::badResponse,	/* 21 */
 			ResponseHandlers::accessRightsResponse,	/* 22 */
@@ -151,6 +151,21 @@ public class ResponseHandlers {
 	}
 
 	public static void readNotifyResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
+	{
+		NotifyResponseRequest nrr = (NotifyResponseRequest)transport.getContext().getResponseRequest(header.parameter2);
+		if (nrr == null)
+			return;
+				
+		int status;
+		if (transport.getMinorRevision() < 1)
+			status = Status.NORMAL.getValue();
+		else
+			status = header.parameter1;
+			
+		nrr.response(status, header.dataType, header.dataCount, payloadBuffer);					
+	}
+
+	public static void writeNotifyResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
 	{
 		NotifyResponseRequest nrr = (NotifyResponseRequest)transport.getContext().getResponseRequest(header.parameter2);
 		if (nrr == null)

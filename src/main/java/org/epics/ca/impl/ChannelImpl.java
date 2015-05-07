@@ -1,5 +1,6 @@
 package org.epics.ca.impl;
 
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.epics.ca.Status;
 import org.epics.ca.data.Metadata;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
 import org.epics.ca.impl.requests.ReadNotifyRequest;
+import org.epics.ca.impl.requests.WriteNotifyRequest;
 import org.epics.ca.util.IntHashMap;
 
 import com.lmax.disruptor.dsl.Disruptor;
@@ -132,8 +134,26 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@Override
 	public void put(T value) {
-		// TODO Auto-generated method stub
+		connectionRequiredCheck();
 		
+		// check read access
+		AccessRights currentRights = getAccessRights();
+		if (currentRights != AccessRights.WRITE &&
+			currentRights != AccessRights.READ_WRITE)
+			throw new IllegalStateException("No write rights.");
+		
+		int count = typeSupport.getForcedElementCount();
+		if (count == 0)
+			count = Array.getLength(value);
+		
+		TCPTransport t = getTransport();
+		if (t != null)
+		{
+			Messages.writeMessage(t, sid, cid, typeSupport, value, count);
+			transport.flush();		// TODO auto-flush
+		}
+		else
+			throw new IllegalStateException("Channel not connected.");
 	}
 
 	@Override
@@ -158,8 +178,27 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@Override
 	public CompletableFuture<Status> putAsync(T value) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		connectionRequiredCheck();
+		
+		// check read access
+		AccessRights currentRights = getAccessRights();
+		if (currentRights != AccessRights.WRITE &&
+			currentRights != AccessRights.READ_WRITE)
+			throw new IllegalStateException("No write rights.");
+		
+		int count = typeSupport.getForcedElementCount();
+		if (count == 0)
+			count = Array.getLength(value);
+		
+		TCPTransport t = getTransport();
+		if (t != null)
+		{
+			return new WriteNotifyRequest<T>(this, t, sid, typeSupport, value, count);
+		}
+		else
+			throw new IllegalStateException("Channel not connected.");
+		
 	}
 
 	@SuppressWarnings("unchecked")

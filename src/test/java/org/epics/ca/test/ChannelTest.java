@@ -34,6 +34,11 @@ public class ChannelTest {
 			// wait until connected
 			adc.connect().get();
 			
+			adc.put(3.11);
+			
+			CompletableFuture<Status> fp = adc.putAsync(12.8);
+			System.out.println(fp.get());
+			
 			CompletableFuture<Double> ffd = adc.getAsync();
 			System.out.println(ffd.get());
 			
@@ -79,6 +84,8 @@ public class ChannelTest {
 
 			GraphicEnum ss = ec.get(GraphicEnum.class);
 			System.out.println(Arrays.toString(ss.getLabels()));
+			
+			ec.put((short)(s + 1));
 			
 			if (true)
 				return;

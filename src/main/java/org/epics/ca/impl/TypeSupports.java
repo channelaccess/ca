@@ -109,6 +109,7 @@ public class TypeSupports {
 		public int getDataType();
 		public default int getForcedElementCount() { return 0; }
 		public default void serialize(ByteBuffer buffer, Object object, int count) { throw new UnsupportedOperationException(); };
+		public default int serializeSize(Object object, int count) { throw new UnsupportedOperationException(); };
 		public Object deserialize(ByteBuffer buffer, Object object, int count);
 	}
 	
@@ -124,6 +125,8 @@ public class TypeSupports {
 		public int getForcedElementCount() { return 1; }
 		@Override
 		public void serialize(ByteBuffer buffer, Object object, int count) { buffer.putDouble((Double)object); }
+		@Override
+		public int serializeSize(Object object, int count) { return 8; };
 		@Override
 		public Object deserialize(ByteBuffer buffer, Object object, int count) { return buffer.getDouble(); }
 	}
@@ -253,6 +256,8 @@ public class TypeSupports {
 		public Object newInstance() { return DUMMY_INSTANCE; }
 		@Override
 		public int getDataType() { return 6; }
+		@Override
+		public int serializeSize(Object object, int count) { return 8 * count; };
 		@Override
 		public void serialize(ByteBuffer buffer, Object object, int count) {
 			
@@ -419,6 +424,8 @@ public class TypeSupports {
 		@Override
 		public int getForcedElementCount() { return 1; }
 		@Override
+		public int serializeSize(Object object, int count) { return 2; };
+		@Override
 		public void serialize(ByteBuffer buffer, Object object, int count) { buffer.putShort(((Short)object)); }
 		@Override
 		public Object deserialize(ByteBuffer buffer, Object object, int count) { return buffer.getShort(); }
@@ -478,13 +485,15 @@ public class TypeSupports {
 		@Override
 		public Object newInstance() { return DUMMY_INSTANCE; }
 		@Override
-		public int getDataType() { return 1; }
+		public int getDataType() { return 5; }
 		@Override
 		public int getForcedElementCount() { return 1; }
 		@Override
-		public void serialize(ByteBuffer buffer, Object object, int count) { buffer.putShort(((Integer)object).shortValue()); }
+		public int serializeSize(Object object, int count) { return 4; };
 		@Override
-		public Object deserialize(ByteBuffer buffer, Object object, int count) { return (int)buffer.getShort(); }
+		public void serialize(ByteBuffer buffer, Object object, int count) { buffer.putInt((Integer)object); }
+		@Override
+		public Object deserialize(ByteBuffer buffer, Object object, int count) { return buffer.getInt(); }
 	}
 
 	private static final class STSIntegerTypeSupport implements TypeSupport {
@@ -493,7 +502,7 @@ public class TypeSupports {
 		@Override
 		public Object newInstance() { return new Alarm<Integer>(); }
 		@Override
-		public int getDataType() { return 8; }
+		public int getDataType() { return 12; }
 		@Override
 		public int getForcedElementCount() { return 1; }
 		@Override
@@ -505,7 +514,7 @@ public class TypeSupports {
 
 			readAlarm(buffer, data);
 
-			data.setValue((int)buffer.getShort());
+			data.setValue(buffer.getInt());
 			
 			return data;
 		}
@@ -565,7 +574,7 @@ public class TypeSupports {
 	{
 		Set<Class<?>> set = new HashSet<Class<?>>();
 		set.add(String.class);
-		set.add(Integer.class);	// TODO INT == SHORT
+		set.add(Integer.class);
 		set.add(Short.class);
 		set.add(Float.class);
 		set.add(Byte.class);
