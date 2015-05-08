@@ -132,15 +132,14 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	}
 
 	@Override
-	public Disruptor<T> getDisruptor() {
-		// TODO 
-		return null;//disruptor;
+	public Disruptor<Holder<T>> getDisruptor() {
+		return disruptor;
 	}
 
 	@Override
 	public void close() {
+		disruptor.shutdown();
 		// TODO Auto-generated method stub
-		
 	}
 	
 	

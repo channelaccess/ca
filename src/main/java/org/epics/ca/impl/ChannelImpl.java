@@ -247,7 +247,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Monitor<T> addValueMonitor(Consumer<? super T> handler, int queueSize) {
+	public Monitor<T> addValueMonitor(Consumer<? super T> handler, int queueSize, int mask) {
 
 		connectionRequiredCheck();
 
@@ -273,8 +273,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	        disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(event.value));
 	        disruptor.start();
 	        
-	        // TODO
-	        int mask = Monitor.VALUE_MASK;
 	        return new MonitorRequest<T>(this, t, sid, typeSupport, mask, disruptor);
 		}
 		else
@@ -286,13 +284,13 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	@SuppressWarnings("rawtypes")
 	@Override
 	public <MT extends Metadata<T>> Monitor<MT> addMonitor(
-			Class<? extends Metadata> clazz, Consumer<? super Metadata> handler, int queueSize) {
+			Class<? extends Metadata> clazz, Consumer<? super Metadata> handler, int queueSize, int mask) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Monitor<T> addValueMonitor(Disruptor<T> disruptor) {
+	public Monitor<T> addValueMonitor(Disruptor<Holder<T>> disruptor, int mask) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -300,7 +298,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	@SuppressWarnings("rawtypes")
 	@Override
 	public <MT extends Metadata<T>> Monitor<MT> addMonitor(
-			Class<? extends Metadata> clazz, Disruptor<? extends Metadata> disruptor) {
+			Class<? extends Metadata> clazz, Disruptor<Holder<? extends Metadata>> disruptor, int mask) {
 		// TODO Auto-generated method stub
 		return null;
 	}

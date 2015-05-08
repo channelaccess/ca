@@ -6,6 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.epics.ca.data.Metadata;
+import org.epics.ca.util.Holder;
 
 import com.lmax.disruptor.dsl.Disruptor;
 
@@ -65,27 +66,27 @@ public interface Channel<T> extends AutoCloseable {
 	// value only, queueSize = DEFAULT_MONITOR_QUEUE_SIZE, called from its own thread
 	default Monitor<T> addValueMonitor(Consumer<? super T> handler)
 	{
-		return addValueMonitor(handler, MONITOR_QUEUE_SIZE_DEFAULT);
+		return addValueMonitor(handler, MONITOR_QUEUE_SIZE_DEFAULT, Monitor.VALUE_MASK);
 	}
 	
 	// value only, called from its own thread
-	public Monitor<T> addValueMonitor(Consumer<? super T> handler, int queueSize); 
+	public Monitor<T> addValueMonitor(Consumer<? super T> handler, int queueSize, int mask); 
 
 	// queueSize = DEFAULT_MONITOR_QUEUE_SIZE, called from its own thread
 	@SuppressWarnings("rawtypes")
 	default <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Consumer<? super Metadata> handler)
 	{
-		return addMonitor(clazz, handler, MONITOR_QUEUE_SIZE_DEFAULT);
+		return addMonitor(clazz, handler, MONITOR_QUEUE_SIZE_DEFAULT, Monitor.VALUE_MASK);
 	}
 	
 	// called from its own thread
 	@SuppressWarnings("rawtypes")
-	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Consumer<? super Metadata> handler, int queueSize); 
+	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Consumer<? super Metadata> handler, int queueSize, int mask); 
 
 	// advanced monitor, user provides its own Disruptor
-	public Monitor<T> addValueMonitor(Disruptor<T> disruptor); 
+	public Monitor<T> addValueMonitor(Disruptor<Holder<T>> disruptor, int mask); 
 	@SuppressWarnings("rawtypes")
-	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Disruptor<? extends Metadata> disruptor);
+	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Disruptor<Holder<? extends Metadata>> disruptor, int mask);
 
 	//
 	// misc
