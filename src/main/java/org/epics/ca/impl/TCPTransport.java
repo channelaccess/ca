@@ -265,7 +265,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		try
 		{
 			
-			// position must be set (what's before position stays untact) 
+			// position must be set (what's before position stays intact) 
 			receiveBuffer.limit(receiveBuffer.capacity());
 			
 			int bufferFullCount = 0;
@@ -288,6 +288,8 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 						disableFlowControl();
 					break;
 				}
+				
+				//logger.finest(() -> "Received " + bytesRead + " bytes from " + socketAddress + ".");
 				
 				// flow control check
 				if (receiveBuffer.hasRemaining())
@@ -354,7 +356,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 					logger.log(Level.SEVERE,
 							"Received payload size (" + header.payloadSize + 
 							") is larger than configured maximum array size (" +
-							context.getMaxArrayBytes() + "), disconnecting...");
+							context.getMaxArrayBytes() + "), disconnecting from " + socketAddress + ".");
 					close(true);
 					return;
 	        	}
@@ -394,7 +396,10 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 				receiveBuffer.put(remainingBuffer);
 			}
 		}
+		else
+			receiveBuffer.position(0);
 		
+		receiveBuffer.limit(receiveBuffer.capacity());
 	}
 
 			
