@@ -63,24 +63,24 @@ public interface Channel<T> extends AutoCloseable {
 	//
 
 	// value only, queueSize = DEFAULT_MONITOR_QUEUE_SIZE, called from its own thread
-	default Monitor<T> addValueMonitor(Consumer<? extends T> handler)
+	default Monitor<T> addValueMonitor(Consumer<? super T> handler)
 	{
 		return addValueMonitor(handler, MONITOR_QUEUE_SIZE_DEFAULT);
 	}
 	
 	// value only, called from its own thread
-	public Monitor<T> addValueMonitor(Consumer<? extends T> handler, int queueSize); 
+	public Monitor<T> addValueMonitor(Consumer<? super T> handler, int queueSize); 
 
 	// queueSize = DEFAULT_MONITOR_QUEUE_SIZE, called from its own thread
 	@SuppressWarnings("rawtypes")
-	default <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Consumer<? extends Metadata> handler)
+	default <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Consumer<? super Metadata> handler)
 	{
 		return addMonitor(clazz, handler, MONITOR_QUEUE_SIZE_DEFAULT);
 	}
 	
 	// called from its own thread
 	@SuppressWarnings("rawtypes")
-	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Consumer<? extends Metadata> handler, int queueSize); 
+	public <MT extends Metadata<T>> Monitor<MT> addMonitor(Class<? extends Metadata> clazz, Consumer<? super Metadata> handler, int queueSize); 
 
 	// advanced monitor, user provides its own Disruptor
 	public Monitor<T> addValueMonitor(Disruptor<T> disruptor); 

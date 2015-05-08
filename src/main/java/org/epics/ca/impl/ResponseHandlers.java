@@ -33,7 +33,7 @@ public class ResponseHandlers {
 	private static final ResponseHandler[] handlers = 
 		{
 			ResponseHandlers::noopResponse,	/* 0 */
-			ResponseHandlers::monitorResponse,	/* 1 */
+			ResponseHandlers::notifyResponse,	/* 1 - monitor */
 			ResponseHandlers::badResponse,	/* 2 */
 			ResponseHandlers::badResponse,	/* 3 */
 			ResponseHandlers::badResponse,	/* 4 */
@@ -47,11 +47,11 @@ public class ResponseHandlers {
 			ResponseHandlers::badResponse,	/* 12 */
 			ResponseHandlers::noopResponse,	/* 13 */ // TODO
 			ResponseHandlers::badResponse,	/* 14 */
-			ResponseHandlers::readNotifyResponse,	/* 15 */
+			ResponseHandlers::notifyResponse,	/* 15 - read */
 			ResponseHandlers::badResponse,	/* 16 */
 			ResponseHandlers::repeaterConfirmResponse,	/* 17 */
 			ResponseHandlers::channelCreateResponse,	/* 18 */
-			ResponseHandlers::writeNotifyResponse,	/* 19 */
+			ResponseHandlers::notifyResponse,	/* 19 - write */
 			ResponseHandlers::badResponse,	/* 20 */
 			ResponseHandlers::badResponse,	/* 21 */
 			ResponseHandlers::accessRightsResponse,	/* 22 */
@@ -69,6 +69,8 @@ public class ResponseHandlers {
 			logger.warning(() -> "Invalid response message (command = " + header.command + ") received from: " + responseFrom);
 			return;
 		}
+		
+		//logger.finest(() -> "Message " + header.command + " received from " + responseFrom + ", payload size " + header.payloadSize + "."); 
 		
 		handlers[header.command].handleResponse(responseFrom, transport, header, payloadBuffer);
 	}
@@ -150,37 +152,7 @@ public class ResponseHandlers {
 			channel.connectionCompleted(header.parameter2, header.dataType, header.dataCount);
 	}
 
-	public static void readNotifyResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
-	{
-		NotifyResponseRequest nrr = (NotifyResponseRequest)transport.getContext().getResponseRequest(header.parameter2);
-		if (nrr == null)
-			return;
-				
-		int status;
-		if (transport.getMinorRevision() < 1)
-			status = Status.NORMAL.getValue();
-		else
-			status = header.parameter1;
-			
-		nrr.response(status, header.dataType, header.dataCount, payloadBuffer);					
-	}
-
-	public static void monitorResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
-	{
-		NotifyResponseRequest nrr = (NotifyResponseRequest)transport.getContext().getResponseRequest(header.parameter2);
-		if (nrr == null)
-			return;
-				
-		int status;
-		if (transport.getMinorRevision() < 1)
-			status = Status.NORMAL.getValue();
-		else
-			status = header.parameter1;
-			
-		nrr.response(status, header.dataType, header.dataCount, payloadBuffer);					
-	}
-
-	public static void writeNotifyResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
+	public static void notifyResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
 	{
 		NotifyResponseRequest nrr = (NotifyResponseRequest)transport.getContext().getResponseRequest(header.parameter2);
 		if (nrr == null)

@@ -23,6 +23,7 @@ import org.epics.ca.impl.TypeSupports.TypeSupport;
 import org.epics.ca.impl.requests.MonitorRequest;
 import org.epics.ca.impl.requests.ReadNotifyRequest;
 import org.epics.ca.impl.requests.WriteNotifyRequest;
+import org.epics.ca.util.Holder;
 import org.epics.ca.util.IntHashMap;
 
 import com.lmax.disruptor.EventFactory;
@@ -244,8 +245,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Monitor<T> addValueMonitor(Consumer<? extends T> handler, int queueSize) {
+	public Monitor<T> addValueMonitor(Consumer<? super T> handler, int queueSize) {
 
 		connectionRequiredCheck();
 
@@ -256,15 +258,21 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	        Executor executor = Executors.newCachedThreadPool();
 
 	        // NOTE: queueSize specifies the size of the ring buffer, must be power of 2.
-	        @SuppressWarnings("unchecked")
-			EventFactory<T> eventFactory = typeSupport;
+			EventFactory<Holder<T>> eventFactory = new EventFactory<Holder<T>>() {
+
+				@Override
+				public Holder<T> newInstance() {
+					return new Holder<T>((T)typeSupport.newInstance());
+				}
+				
+			};
 	        
-	        Disruptor<T> disruptor = 
+	        Disruptor<Holder<T>> disruptor = 
 	         new Disruptor<>(eventFactory, queueSize, executor,
 		    		ProducerType.SINGLE, new SleepingWaitStrategy(10));
-	        // TODO null !!!
-	        //disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(null));
-
+	        disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(event.value));
+	        disruptor.start();
+	        
 	        // TODO
 	        int mask = Monitor.VALUE_MASK;
 	        return new MonitorRequest<T>(this, t, sid, typeSupport, mask, disruptor);
@@ -278,7 +286,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	@SuppressWarnings("rawtypes")
 	@Override
 	public <MT extends Metadata<T>> Monitor<MT> addMonitor(
-			Class<? extends Metadata> clazz, Consumer<? extends Metadata> handler, int queueSize) {
+			Class<? extends Metadata> clazz, Consumer<? super Metadata> handler, int queueSize) {
 		// TODO Auto-generated method stub
 		return null;
 	}

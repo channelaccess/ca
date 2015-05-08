@@ -10,6 +10,7 @@ import org.epics.ca.impl.Messages;
 import org.epics.ca.impl.NotifyResponseRequest;
 import org.epics.ca.impl.Transport;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
+import org.epics.ca.util.Holder;
 
 import com.lmax.disruptor.InsufficientCapacityException;
 import com.lmax.disruptor.RingBuffer;
@@ -48,12 +49,12 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	/**
 	 * Disruptor (event dispatcher).
 	 */
-	protected final Disruptor<T> disruptor;
+	protected final Disruptor<Holder<T>> disruptor;
 
 	/**
 	 */
 	public MonitorRequest(ChannelImpl<?> channel, Transport transport, int sid, TypeSupport typeSupport, int mask,
-			Disruptor<T> disruptor) {
+			Disruptor<Holder<T>> disruptor) {
 
 		this.channel = channel;
 		this.sid = sid;
@@ -90,16 +91,13 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 		Status caStatus = Status.forStatusCode(status);
 		if (caStatus == Status.NORMAL)
 		{
-			RingBuffer<T> ringBuffer = disruptor.getRingBuffer();
+			RingBuffer<Holder<T>> ringBuffer = disruptor.getRingBuffer();
         	try
         	{
 	        	long next = ringBuffer.tryNext();
 	        	try {
-	            	T value = ringBuffer.get(next);
-	            	// TODO it is required that value instance is changed, so T must be mutable!!!
-	    			value = (T)typeSupport.deserialize(dataPayloadBuffer, value, dataCount);
-	            	// TODO for test only
-	    			System.out.println("received: " + value);
+	            	Holder<T> holder = ringBuffer.get(next);
+	    			holder.value = (T)typeSupport.deserialize(dataPayloadBuffer, holder.value, dataCount);
 	        	}
 	        	finally {
 	            	ringBuffer.publish(next);
@@ -135,7 +133,8 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 
 	@Override
 	public Disruptor<T> getDisruptor() {
-		return disruptor;
+		// TODO 
+		return null;//disruptor;
 	}
 
 	@Override
