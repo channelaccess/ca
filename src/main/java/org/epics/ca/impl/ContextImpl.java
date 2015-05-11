@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -137,7 +138,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 	/**
 	 * Broadcast (search) transport.
 	 */
-	private final BroadcastTransport broadcastTransport;
+	private final AtomicReference<BroadcastTransport> broadcastTransport = new AtomicReference<>();
 	
 	/**
 	 * Last CID cache. 
@@ -195,13 +196,13 @@ public class ContextImpl implements AutoCloseable, Constants {
 		// spawn initial leader
 		leaderFollowersThreadPool.promoteLeader(() -> reactor.process());
 
-		broadcastTransport = initializeUDPTransport();
+		broadcastTransport.set(initializeUDPTransport());
 
 		try {
 			CARepeater.startRepeater(repeaterPort);
 		} catch (Throwable th) { /* noop */ }
 
-		channelSearchManager = new ChannelSearchManager(broadcastTransport);
+		channelSearchManager = new ChannelSearchManager(broadcastTransport.get());
 	}
 	
 	protected String readStringProperty(Properties properties, String key, String defaultValue)
@@ -434,7 +435,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 	@Override
 	public void close() {
 		channelSearchManager.cancel();
-		broadcastTransport.close();
+		broadcastTransport.get().close();
 		
 		// this will also close all CA transports
 		//destroyAllChannels();
@@ -564,7 +565,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 	}
 
 	public BroadcastTransport getBroadcastTransport() {
-		return broadcastTransport;
+		return broadcastTransport.get();
 	}
 
 	public int getServerPort() {

@@ -11,6 +11,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.epics.ca.AccessRights;
 import org.epics.ca.Channel;
@@ -33,6 +35,9 @@ import com.lmax.disruptor.dsl.ProducerType;
 
 public class ChannelImpl<T> implements Channel<T>, TransportClient
 {
+	// Get Logger
+	private static final Logger logger = Logger.getLogger(ChannelImpl.class.getName());
+
 	protected final ContextImpl context;
 	protected final String name;
 	protected final Class<T> channelType;
@@ -59,6 +64,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	
 	protected final AtomicBoolean connectIssueed = new AtomicBoolean(false);
 	protected final AtomicReference<CompletableFuture<Channel<T>>> connectFuture = new AtomicReference<>();
+	
+	protected volatile int nativeElementCount = 0;
 	
 	public ChannelImpl(ContextImpl context, String name, Class<T> channelType, int priority)
 	{
@@ -101,6 +108,10 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		return cid;
 	}
 
+	public int getSID() {
+		return sid;
+	}
+
 	@Override
 	public CompletableFuture<Channel<T>> connect() {
 		if (!connectIssueed.getAndSet(true))
@@ -141,7 +152,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@Override
 	public void put(T value) {
-		connectionRequiredCheck();
+		
+		TCPTransport t = connectionRequiredCheck();
 		
 		// check read access
 		AccessRights currentRights = getAccessRights();
@@ -153,20 +165,14 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		if (count == 0)
 			count = Array.getLength(value);
 		
-		TCPTransport t = getTransport();
-		if (t != null)
-		{
-			Messages.writeMessage(t, sid, cid, typeSupport, value, count);
-			transport.flush();		// TODO auto-flush
-		}
-		else
-			throw new IllegalStateException("Channel not connected.");
+		Messages.writeMessage(t, sid, cid, typeSupport, value, count);
+		transport.flush();		// TODO auto-flush
 	}
 
 	@Override
 	public CompletableFuture<T> getAsync() {
 		
-		connectionRequiredCheck();
+		TCPTransport t = connectionRequiredCheck();
 		
 		// check read access
 		AccessRights currentRights = getAccessRights();
@@ -174,19 +180,13 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			currentRights != AccessRights.READ_WRITE)
 			throw new IllegalStateException("No read rights.");
 		
-		TCPTransport t = getTransport();
-		if (t != null)
-		{
-			return new ReadNotifyRequest<T>(this, t, sid, typeSupport);
-		}
-		else
-			throw new IllegalStateException("Channel not connected.");
+		return new ReadNotifyRequest<T>(this, t, sid, typeSupport);
 	}
 
 	@Override
 	public CompletableFuture<Status> putAsync(T value) {
 		
-		connectionRequiredCheck();
+		TCPTransport t = connectionRequiredCheck();
 		
 		// check read access
 		AccessRights currentRights = getAccessRights();
@@ -198,14 +198,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		if (count == 0)
 			count = Array.getLength(value);
 		
-		TCPTransport t = getTransport();
-		if (t != null)
-		{
-			return new WriteNotifyRequest<T>(this, t, sid, typeSupport, value, count);
-		}
-		else
-			throw new IllegalStateException("Channel not connected.");
-		
+		return new WriteNotifyRequest<T>(this, t, sid, typeSupport, value, count);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -223,7 +216,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(
 			Class<? extends Metadata> clazz) {
 		
-		connectionRequiredCheck();
+		TCPTransport t = connectionRequiredCheck();
 
 		TypeSupport metaTypeSupport = TypeSupports.getTypeSupport(clazz, channelType);
 		if (metaTypeSupport == null)
@@ -235,50 +228,43 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			currentRights != AccessRights.READ_WRITE)
 			throw new IllegalStateException("No read rights.");
 		
-		TCPTransport t = getTransport();
-		if (t != null)
-		{
-			return new ReadNotifyRequest<MT>(this, t, sid, metaTypeSupport);
-		}
-		else
-			throw new IllegalStateException("Channel not connected.");
-		
+		return new ReadNotifyRequest<MT>(this, t, sid, metaTypeSupport);
 	}
 
+	static class HolderEventFactory<TT> implements EventFactory<Holder<TT>> {
+
+		private final TypeSupport typeSupport;
+		
+		public HolderEventFactory(TypeSupport typeSupport)
+		{
+			this.typeSupport = typeSupport;
+		}
+		
+		@SuppressWarnings("unchecked")
+		@Override
+		public Holder<TT> newInstance() {
+			return new Holder<TT>((TT)typeSupport.newInstance());
+		}
+		
+	};
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public Monitor<T> addValueMonitor(Consumer<? super T> handler, int queueSize, int mask) {
 
-		connectionRequiredCheck();
+		// Executor that will be used to construct new threads for consumers
+        Executor executor = Executors.newCachedThreadPool();
 
-		TCPTransport t = getTransport();
-		if (t != null)
-		{
-			// Executor that will be used to construct new threads for consumers
-	        Executor executor = Executors.newCachedThreadPool();
-
-	        // NOTE: queueSize specifies the size of the ring buffer, must be power of 2.
-			EventFactory<Holder<T>> eventFactory = new EventFactory<Holder<T>>() {
-
-				@Override
-				public Holder<T> newInstance() {
-					return new Holder<T>((T)typeSupport.newInstance());
-				}
-				
-			};
-	        
-	        Disruptor<Holder<T>> disruptor = 
-	         new Disruptor<>(eventFactory, queueSize, executor,
-		    		ProducerType.SINGLE, new SleepingWaitStrategy(10));
-	        disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(event.value));
-	        disruptor.start();
-	        
-	        return new MonitorRequest<T>(this, t, sid, typeSupport, mask, disruptor);
-		}
-		else
-			throw new IllegalStateException("Channel not connected.");
+        // NOTE: queueSize specifies the size of the ring buffer, must be power of 2.
+		EventFactory<Holder<T>> eventFactory = new HolderEventFactory<T>(typeSupport);
         
+        Disruptor<Holder<T>> disruptor = 
+         new Disruptor<>(eventFactory, queueSize, executor,
+	    		ProducerType.SINGLE, new SleepingWaitStrategy(10));
+        disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(event.value));
+        disruptor.start();
         
+        return addValueMonitor(disruptor, mask);
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -291,8 +277,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@Override
 	public Monitor<T> addValueMonitor(Disruptor<Holder<T>> disruptor, int mask) {
-		// TODO Auto-generated method stub
-		return null;
+		TCPTransport t = connectionRequiredCheck();
+        return new MonitorRequest<T>(this, t, typeSupport, mask, disruptor);
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -374,6 +360,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			if (transport.getMinorRevision() < 4)
 			{
 				this.sid = sid;
+				this.nativeElementCount = elementCount;
 				properties.put("nativeType", typeCode);
 				properties.put("nativeElementCount", elementCount);
 			}
@@ -423,15 +410,35 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		}
 	}
 	
-    protected void connectionRequiredCheck()
+    protected TCPTransport connectionRequiredCheck()
     {
-        if (connectionState.get() != ConnectionState.CONNECTED)
+    	TCPTransport t = getTransport();
+        if (connectionState.get() != ConnectionState.CONNECTED || t == null)
             throw new IllegalStateException("Channel not connected.");
+        return t;
     }
 
-    public void resubscribeSubscriptions()
+    public void resubscribeSubscriptions(Transport transport)
 	{
-		// TODO
+		ResponseRequest[] requests;
+		synchronized (responseRequests) {
+			int count = responseRequests.size();
+			if (count == 0)
+				return;
+			requests = new ResponseRequest[count];
+			requests = responseRequests.toArray(requests);
+		}
+
+		for (int i = 0; i < requests.length; i++)
+		{
+			try
+			{
+				if (requests[i] instanceof MonitorRequest<?>)
+					((MonitorRequest<?>)requests[i]).resubscribe(transport);				
+			} catch(Throwable th) {
+				logger.log(Level.WARNING, "Unexpected exception caught during resubscription notification.", th);
+			}
+        }
 	}
 
 	/**
@@ -455,16 +462,17 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 		// revision < v4.4 supply this info already now
 		if (transport.getMinorRevision() >= 4)
+		{
 			this.sid = sid;
-
-		// set properties
-		properties.put("nativeType", typeCode);
-		properties.put("nativeElementCount", elementCount);
+			this.nativeElementCount = elementCount;
+			properties.put("nativeType", typeCode);
+			properties.put("nativeElementCount", elementCount);
+		}
 
 		// user might create monitors in listeners, so this has to be done before this can happen
 		// however, it would not be nice if events would come before connection event is fired
 		// but this cannot happen since transport (TCP) is serving in this thread 
-		resubscribeSubscriptions();
+		resubscribeSubscriptions(transport);
 		setConnectionState(ConnectionState.CONNECTED);
 
 	}
@@ -492,13 +500,58 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	public int getPriority() {
 		return priority;
 	}
+	
+	public int getNativeElementCount() {
+		return nativeElementCount;
+	}
 
 	@Override
 	public void transportClosed() {
-		// TODO Auto-generated method stub
-		
+		disconnect(true);
 	}
 
+	public synchronized void disconnect(boolean reconnect)
+	{
+		if (connectionState.get() != ConnectionState.CONNECTED && transport == null)
+			return;
+
+		setConnectionState(ConnectionState.DISCONNECTED);
+		
+        disconnectPendingIO(false);
+
+        // release transport
+        if (transport != null)
+        {
+            transport.release(this);
+            transport = null;
+        }
+
+        if (reconnect)
+            initiateSearch();
+		
+	}
+	
+	private void disconnectPendingIO(boolean destroy)
+	{
+		Status status = destroy ? Status.CHANDESTROY : Status.DISCONN;
+
+		ResponseRequest[] requests;
+		synchronized (responseRequests) {
+			requests = new ResponseRequest[responseRequests.size()];
+			requests = responseRequests.toArray(requests);
+		}
+
+		for (int i = 0; i < requests.length; i++)
+		{
+			try
+			{
+				requests[i].exception(status.getStatusCode(), null);
+			} catch(Throwable th) {
+				logger.log(Level.WARNING, "Unexpected exception caught during disconnect/destroy notification.", th);
+			}
+        }
+	}
+	
 	/** 
 	 * Register a response request.
 	 * @param responseRequest response request to register.

@@ -51,9 +51,8 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 		
 		int dataCount = typeSupport.getForcedElementCount();
 		
-		// TODO not the nicest way
 		if (dataCount == 0 && channel.getTransport().getMinorRevision() < 13)
-			dataCount = (Integer)channel.getProperties().get("nativeElementCount");
+			dataCount = channel.getNativeElementCount();
 
 		context = transport.getContext();
 		ioid = context.registerResponseRequest(this);

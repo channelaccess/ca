@@ -87,6 +87,11 @@ public class ChannelTest {
 			
 			ec.put((short)(s + 1));
 			
+			Monitor<Double> mon = adc.addValueMonitor(value -> System.out.println(value));
+			//Thread.sleep(10000);
+			//mon.close();
+
+			Thread.sleep(100000);
 			if (true)
 				return;
 

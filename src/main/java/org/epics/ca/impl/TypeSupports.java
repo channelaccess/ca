@@ -684,20 +684,4 @@ public class TypeSupports {
 		return nativeTypeSet.contains(clazz);
 	}
 
-	// TODO move to TypeSupport
-	static final <T> EventFactory<T> getEventFactory(Class<T> clazz)
-	{
-		// TODO cache factories using Map<Class<T>, EventFactory>
-		return new EventFactory<T>() {
-			@Override
-			public T newInstance() {
-				try {
-					return clazz.newInstance();
-				} catch (Throwable th) {
-					throw new RuntimeException("failed to instantiate new instance of " + clazz, th);
-				}
-			}
-		};
-	}
-
 }

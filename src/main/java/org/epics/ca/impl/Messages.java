@@ -391,6 +391,37 @@ public final class Messages {
 	}
 
 	/**
+	 * Cancel subscription (aka event add) message.
+	 * @param transport
+	 * @param dataType
+	 * @param dataCount
+	 * @param sid
+	 * @param ioid
+	 * @param mask
+	 */
+	public static void cancelSubscriptionMessage(
+			Transport transport, int dataType, int dataCount, int sid, int ioid)
+	{
+		boolean ignore = true;
+		try
+		{
+			startCAMessage(transport,
+					(short)2,
+					0,
+					(short)dataType,
+					dataCount,
+					sid,
+					ioid);
+			
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
+
+	/**
 	 * Update subscription message.
 	 * @param transport
 	 * @param dataType

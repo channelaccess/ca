@@ -1,6 +1,7 @@
 package org.epics.ca.impl.requests;
 
 import java.nio.ByteBuffer;
+import java.util.logging.Logger;
 
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
@@ -21,6 +22,9 @@ import com.lmax.disruptor.dsl.Disruptor;
  */
 public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 
+	// Get Logger
+	private static final Logger logger = Logger.getLogger(MonitorRequest.class.getName());
+
 	/**
 	 * Context.
 	 */
@@ -30,11 +34,6 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	 * I/O ID given by the context when registered.
 	 */
 	protected final int ioid;
-
-	/**
-	 * Channel server ID.
-	 */
-	protected final int sid;
 
 	/**
 	 * Channel.
@@ -47,32 +46,31 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	protected final TypeSupport typeSupport;
 
 	/**
+	 * Monitor mask.
+	 */
+	protected final int mask;
+
+	/**
 	 * Disruptor (event dispatcher).
 	 */
 	protected final Disruptor<Holder<T>> disruptor;
 
 	/**
 	 */
-	public MonitorRequest(ChannelImpl<?> channel, Transport transport, int sid, TypeSupport typeSupport, int mask,
+	public MonitorRequest(ChannelImpl<?> channel, Transport transport, TypeSupport typeSupport, int mask,
 			Disruptor<Holder<T>> disruptor) {
 
 		this.channel = channel;
-		this.sid = sid;
 		this.typeSupport = typeSupport;
+		this.mask = mask;
 		this.disruptor = disruptor;
 		
-		int dataCount = typeSupport.getForcedElementCount();
-		
-		// TODO not the nicest way
-		if (dataCount == 0 && channel.getTransport().getMinorRevision() < 13)
-			dataCount = (Integer)channel.getProperties().get("nativeElementCount");
 
 		context = transport.getContext();
 		ioid = context.registerResponseRequest(this);
 		channel.registerResponseRequest(this);
 
-		Messages.createSubscriptionMessage(transport, typeSupport.getDataType(), dataCount, sid, ioid, mask);
-		transport.flush();		// TODO auto-flush
+		resubscribe(transport);
 	}
 
 	@Override
@@ -120,15 +118,32 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 		channel.unregisterResponseRequest(this);
 	}
 	
+	public void resubscribe(Transport transport)
+	{
+		int dataCount = typeSupport.getForcedElementCount();
+		
+		if (dataCount == 0 && channel.getTransport().getMinorRevision() < 13)
+			dataCount = channel.getNativeElementCount();
+
+		Messages.createSubscriptionMessage(
+				transport, typeSupport.getDataType(),
+				dataCount, channel.getSID(), ioid, mask);
+		transport.flush();		// TODO auto-flush
+	}
+	
 	@Override
 	public void exception(int errorCode, String errorMessage)
 	{
-		cancel();
+		Status status = Status.forStatusCode(errorCode);
+		if (status == null)
+		{
+			logger.warning(() -> "Unknown CA status code received for monitor, code: " + errorCode + ", message: " + errorMessage);
+			return;
+		}
 		
-		// TODO notify !!!
-		//Status status = Status.forStatusCode(errorCode);
-		//if (status == null)
-		//    status = Status.GETFAIL;
+		// remove subscribtion on channel destroy only
+		if (status == Status.CHANDESTROY)
+			cancel();
 	}
 
 	@Override
@@ -139,7 +154,22 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	@Override
 	public void close() {
 		disruptor.shutdown();
-		// TODO Auto-generated method stub
+		cancel();
+
+		Transport transport = channel.getTransport();
+		if (transport == null)
+			return;
+
+		int dataCount = typeSupport.getForcedElementCount();
+		
+		if (dataCount == 0 && channel.getTransport().getMinorRevision() < 13)
+			dataCount = channel.getNativeElementCount();
+
+		Messages.cancelSubscriptionMessage(
+				transport, typeSupport.getDataType(), dataCount,
+				channel.getSID(), ioid);
+		transport.flush();	// TODO auto flush
+		// TODO should this be exception guarded
 	}
 	
 	
