@@ -586,12 +586,15 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		// TODO do the flush
 		
 		// TODO do not send in this thread, use LF pool
+		sendBufferLock.lock();
 		try {
 			noSyncSend(sendBuffer);
 			sendBuffer.clear();
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
+		} finally {
+			sendBufferLock.unlock();
 		}
 /*		
 		try {
