@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -22,6 +23,7 @@ import org.epics.ca.Monitor;
 import org.epics.ca.Status;
 import org.epics.ca.data.Metadata;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
+import org.epics.ca.impl.disruptor.MonitorBatchEventProcessor;
 import org.epics.ca.impl.requests.MonitorRequest;
 import org.epics.ca.impl.requests.ReadNotifyRequest;
 import org.epics.ca.impl.requests.WriteNotifyRequest;
@@ -67,6 +69,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	
 	protected volatile int nativeElementCount = 0;
 	
+	// on every connection loss the value gets incremented
+	private final AtomicInteger connectionLossId = new AtomicInteger();
+	
 	public ChannelImpl(ContextImpl context, String name, Class<T> channelType, int priority)
 	{
 		this.context = context;
@@ -97,6 +102,10 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	@Override
 	public ConnectionState getConnectionState() {
 		return connectionState.get();
+	}
+	
+	public int getConnectionLossId() {
+		return connectionLossId.get();
 	}
 
 	@Override
@@ -261,7 +270,14 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
         Disruptor<Holder<T>> disruptor = 
          new Disruptor<>(eventFactory, queueSize, executor,
 	    		ProducerType.SINGLE, new SleepingWaitStrategy(10));
-        disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(event.value));
+        //disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(event.value));
+        
+        disruptor.handleEventsWith(
+        		(ringBuffer, barrierSequences) ->
+        		new MonitorBatchEventProcessor<Holder<T>>(
+                		this, new Holder<T>(), (value) -> (value.value == null),
+                		disruptor.getRingBuffer(), ringBuffer.newBarrier(barrierSequences),
+                		(event, sequence, endOfBatch) -> handler.accept(event.value)));        
         disruptor.start();
         
         return addValueMonitor(disruptor, mask);
@@ -344,7 +360,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			// check existing transport
 			if (this.transport != null && this.transport != transport)
 			{
-				// TODO disconnectPendingIO(false);
+				disconnectPendingIO(false);
 				this.transport.release(this);
 			}
 			else if (this.transport == transport)
@@ -516,6 +532,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			return;
 
 		setConnectionState(ConnectionState.DISCONNECTED);
+		
+		connectionLossId.incrementAndGet();
 		
         disconnectPendingIO(false);
 

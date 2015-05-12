@@ -13,7 +13,6 @@ import org.epics.ca.impl.Transport;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
 import org.epics.ca.util.Holder;
 
-import com.lmax.disruptor.InsufficientCapacityException;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 
@@ -64,7 +63,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 		this.typeSupport = typeSupport;
 		this.mask = mask;
 		this.disruptor = disruptor;
-		
+
 
 		context = transport.getContext();
 		ioid = context.registerResponseRequest(this);
@@ -90,9 +89,10 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 		if (caStatus == Status.NORMAL)
 		{
 			RingBuffer<Holder<T>> ringBuffer = disruptor.getRingBuffer();
-        	try
-        	{
-	        	long next = ringBuffer.tryNext();
+			// this is OK only for single producer
+			if (ringBuffer.hasAvailableCapacity(1))
+			{
+	        	long next = ringBuffer.next();
 	        	try {
 	            	Holder<T> holder = ringBuffer.get(next);
 	    			holder.value = (T)typeSupport.deserialize(dataPayloadBuffer, holder.value, dataCount);
@@ -100,9 +100,11 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	        	finally {
 	            	ringBuffer.publish(next);
 	        	}
-        	} catch (InsufficientCapacityException ice) {
-        		// TODO can we avoid exception
-        		System.out.println("skipping...");
+			}
+			else
+			{
+				// TODO
+        		System.out.println("monitor queue full, monitor lost");
         	}
 		}
 		else
@@ -141,9 +143,26 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 			return;
 		}
 		
-		// remove subscribtion on channel destroy only
+		// remove subscription on channel destroy only
 		if (status == Status.CHANDESTROY)
 			cancel();
+		else if (status == Status.DISCONN)
+		{
+			RingBuffer<Holder<T>> ringBuffer = disruptor.getRingBuffer();
+			// this is OK only for single producer
+			if (ringBuffer.hasAvailableCapacity(1))
+			{
+	        	long next = ringBuffer.next();
+	        	try {
+	            	Holder<T> holder = ringBuffer.get(next);
+	            	// holder.value will be restored by deserialize method
+	    			holder.value = null;
+	        	}
+	        	finally {
+	            	ringBuffer.publish(next);
+	        	}
+			}
+		}
 	}
 
 	@Override
