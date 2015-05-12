@@ -3,7 +3,6 @@ package org.epics.ca.impl.types;
 import java.nio.ByteBuffer;
 
 import org.epics.ca.data.Graphic;
-import org.epics.ca.impl.types.TypeSupports.ValueReader;
 
 final class GraphicDoubleTypeSupport implements TypeSupport, ValueReader<Double> {
 	public static final GraphicDoubleTypeSupport INSTANCE = new GraphicDoubleTypeSupport();
