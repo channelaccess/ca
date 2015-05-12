@@ -3,6 +3,7 @@ package org.epics.ca.impl.requests;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
+import org.epics.ca.CompletionException;
 import org.epics.ca.Status;
 import org.epics.ca.impl.ChannelImpl;
 import org.epics.ca.impl.ContextImpl;
@@ -88,7 +89,7 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 			}
 			else
 			{
-				exception(status, caStatus.getMessage());
+				completeExceptionally(caStatus, caStatus.getMessage());
 			}
 			
 		}
@@ -111,10 +112,15 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 	{
 		cancel();
 		
-		// TODO notify !!!
-		//Status status = Status.forStatusCode(errorCode);
-		//if (status == null)
-		//    status = Status.GETFAIL;
+		Status status = Status.forStatusCode(errorCode);
+		if (status == null)
+		    status = Status.GETFAIL;
+		
+		completeExceptionally(status, errorMessage);
 	}
-
+	
+	protected void completeExceptionally(Status status, String message)
+	{
+		completeExceptionally(new CompletionException(status, message));
+	}
 }

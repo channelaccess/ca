@@ -163,6 +163,10 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	        	}
 			}
 		}
+		else
+		{
+			logger.warning(() -> "Exception with CA status " + status + " received for monitor, message: " + ((errorMessage != null) ? errorMessage : status.getMessage()));
+		}
 	}
 
 	@Override
