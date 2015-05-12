@@ -4,7 +4,7 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
 import org.epics.ca.Constants;
-import org.epics.ca.impl.types.TypeSupports.TypeSupport;
+import org.epics.ca.impl.types.TypeSupport;
 import org.epics.ca.util.net.InetAddressUtil;
 
 public final class Messages {

@@ -24,8 +24,8 @@ import org.epics.ca.data.Metadata;
 import org.epics.ca.impl.requests.MonitorRequest;
 import org.epics.ca.impl.requests.ReadNotifyRequest;
 import org.epics.ca.impl.requests.WriteNotifyRequest;
+import org.epics.ca.impl.types.TypeSupport;
 import org.epics.ca.impl.types.TypeSupports;
-import org.epics.ca.impl.types.TypeSupports.TypeSupport;
 import org.epics.ca.util.Holder;
 import org.epics.ca.util.IntHashMap;
 

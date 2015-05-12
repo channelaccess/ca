@@ -10,7 +10,7 @@ import org.epics.ca.impl.ContextImpl;
 import org.epics.ca.impl.Messages;
 import org.epics.ca.impl.NotifyResponseRequest;
 import org.epics.ca.impl.Transport;
-import org.epics.ca.impl.types.TypeSupports.TypeSupport;
+import org.epics.ca.impl.types.TypeSupport;
 import org.epics.ca.util.Holder;
 
 import com.lmax.disruptor.InsufficientCapacityException;
