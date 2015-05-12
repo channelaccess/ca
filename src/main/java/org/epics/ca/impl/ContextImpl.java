@@ -13,7 +13,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,7 +26,6 @@ import org.epics.ca.impl.reactor.lf.LeaderFollowersThreadPool;
 import org.epics.ca.impl.repeater.CARepeater;
 import org.epics.ca.impl.search.ChannelSearchManager;
 import org.epics.ca.util.IntHashMap;
-import org.epics.ca.util.logging.ConsoleLogHandler;
 import org.epics.ca.util.net.InetAddressUtil;
 import org.epics.ca.util.sync.NamedLockPattern;
 
@@ -177,7 +175,6 @@ public class ContextImpl implements AutoCloseable, Constants {
 	
 	public ContextImpl(Properties properties)
 	{
-		initializeLogger(properties);
 		loadConfig(properties);
 		
 		hostName = InetAddressUtil.getHostName();
@@ -280,36 +277,6 @@ public class ContextImpl implements AutoCloseable, Constants {
 
 		maxArrayBytes = readIntegerProperty(properties, MAX_ARRAY_BYTES_KEY, maxArrayBytes);
 		logger.config(() -> MAX_ARRAY_BYTES_KEY + ": " + maxArrayBytes);
-	}
-	
-	/**
-	 * Initialize context logger.
-	 */
-	protected void initializeLogger(Properties properties)
-	{
-		debugLevel = readIntegerProperty(properties, CA_DEBUG, debugLevel);
-		
-		if (debugLevel > 0)
-		{
-			logger.setLevel(Level.ALL);
-			
-			// install console logger only if there is no already installed
-			Logger inspectedLogger = logger;
-			boolean found = false;
-			while (inspectedLogger != null)
-			{
-				for (Handler handler : inspectedLogger.getHandlers())
-					if (handler instanceof ConsoleLogHandler)
-					{
-						found = true;
-						break;
-					}
-				inspectedLogger = inspectedLogger.getParent();
-			}
-			
-			if (!found)
-				logger.addHandler(new ConsoleLogHandler());
-		}
 	}
 
 	private class RepeaterRegistrationTask implements Runnable {
