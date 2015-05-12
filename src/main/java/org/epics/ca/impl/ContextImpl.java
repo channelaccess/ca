@@ -26,6 +26,7 @@ import org.epics.ca.impl.reactor.lf.LeaderFollowersHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersThreadPool;
 import org.epics.ca.impl.repeater.CARepeater;
 import org.epics.ca.impl.search.ChannelSearchManager;
+import org.epics.ca.impl.types.TypeSupports;
 import org.epics.ca.util.IntHashMap;
 import org.epics.ca.util.logging.ConsoleLogHandler;
 import org.epics.ca.util.net.InetAddressUtil;

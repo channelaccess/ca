@@ -9,7 +9,7 @@ import org.epics.ca.impl.ContextImpl;
 import org.epics.ca.impl.Messages;
 import org.epics.ca.impl.NotifyResponseRequest;
 import org.epics.ca.impl.Transport;
-import org.epics.ca.impl.TypeSupports.TypeSupport;
+import org.epics.ca.impl.types.TypeSupport;
 
 /**
  * CA read notify.
