@@ -1,4 +1,4 @@
-package org.epics.ca.impl;
+package org.epics.ca.impl.types;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -664,12 +664,12 @@ public class TypeSupports {
 		typeSupportMap = Collections.unmodifiableMap(rootMap);
 	}
 	
-	static final TypeSupport getTypeSupport(Class<?> clazz)
+	public static final TypeSupport getTypeSupport(Class<?> clazz)
 	{
 		return getTypeSupport(Void.class, clazz);
 	}
 	
-	static final TypeSupport getTypeSupport(Class<?> metaTypeClass, Class<?> typeClass)
+	public static final TypeSupport getTypeSupport(Class<?> metaTypeClass, Class<?> typeClass)
 	{
 		// special case(s)
 		if (metaTypeClass == GraphicEnum.class)
@@ -679,7 +679,7 @@ public class TypeSupports {
 		return (m != null) ? m.get(typeClass) : null;
 	}
 
-	static final boolean isNativeType(Class<?> clazz)
+	public static final boolean isNativeType(Class<?> clazz)
 	{
 		return nativeTypeSet.contains(clazz);
 	}

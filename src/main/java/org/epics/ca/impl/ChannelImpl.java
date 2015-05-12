@@ -21,10 +21,11 @@ import org.epics.ca.Listener;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
 import org.epics.ca.data.Metadata;
-import org.epics.ca.impl.TypeSupports.TypeSupport;
 import org.epics.ca.impl.requests.MonitorRequest;
 import org.epics.ca.impl.requests.ReadNotifyRequest;
 import org.epics.ca.impl.requests.WriteNotifyRequest;
+import org.epics.ca.impl.types.TypeSupports;
+import org.epics.ca.impl.types.TypeSupports.TypeSupport;
 import org.epics.ca.util.Holder;
 import org.epics.ca.util.IntHashMap;
 
