@@ -11,10 +11,10 @@ public interface Constants {
 	public static final String SERVER_PORT_KEY = "EPICS_CA_SERVER_PORT";
 	public static final String MAX_ARRAY_BYTES_KEY = "EPICS_CA_MAX_ARRAY_BYTES";
 	
-    /**
-     * String value of the JVM property key to turn on debugging. 
-     */
-    public static final String CA_DEBUG = "CA_DEBUG";
+//    /**
+//     * String value of the JVM property key to turn on debugging. 
+//     */
+//    public static final String CA_DEBUG = "CA_DEBUG";
 
     /**
      * String value of the JVM property key to strip hostname returned by InetAddress.getLocalHost().getHostName(). 
