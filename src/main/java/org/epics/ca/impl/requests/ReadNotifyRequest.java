@@ -40,11 +40,11 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 	/**
 	 * Type support.
 	 */
-	protected final TypeSupport typeSupport;
+	protected final TypeSupport<T> typeSupport;
 
 	/**
 	 */
-	public ReadNotifyRequest(ChannelImpl<?> channel, Transport transport, int sid, TypeSupport typeSupport) {
+	public ReadNotifyRequest(ChannelImpl<?> channel, Transport transport, int sid, TypeSupport<T> typeSupport) {
 
 		this.channel = channel;
 		this.sid = sid;
@@ -68,7 +68,6 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 		return ioid;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void response(
 		int status,
@@ -83,7 +82,7 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 			if (caStatus == Status.NORMAL)
 			{
 				T value = null;	// TODO reuse option
-				value = (T)typeSupport.deserialize(dataPayloadBuffer, value, dataCount);
+				value = typeSupport.deserialize(dataPayloadBuffer, value, dataCount);
 
 				complete(value);
 			}

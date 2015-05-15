@@ -42,7 +42,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	/**
 	 * Type support.
 	 */
-	protected final TypeSupport typeSupport;
+	protected final TypeSupport<T> typeSupport;
 
 	/**
 	 * Monitor mask.
@@ -56,7 +56,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 
 	/**
 	 */
-	public MonitorRequest(ChannelImpl<?> channel, Transport transport, TypeSupport typeSupport, int mask,
+	public MonitorRequest(ChannelImpl<?> channel, Transport transport, TypeSupport<T> typeSupport, int mask,
 			Disruptor<Holder<T>> disruptor) {
 
 		this.channel = channel;
@@ -77,7 +77,6 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 		return ioid;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void response(
 		int status,
@@ -95,7 +94,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	        	long next = ringBuffer.next();
 	        	try {
 	            	Holder<T> holder = ringBuffer.get(next);
-	    			holder.value = (T)typeSupport.deserialize(dataPayloadBuffer, holder.value, dataCount);
+	    			holder.value = typeSupport.deserialize(dataPayloadBuffer, holder.value, dataCount);
 	        	}
 	        	finally {
 	            	ringBuffer.publish(next);

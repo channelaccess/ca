@@ -461,8 +461,8 @@ public final class Messages {
 	 * @param typeSupport
 	 * @param value
 	 */
-	public static void writeMessage(
-			Transport transport, int sid, int cid, TypeSupport typeSupport, Object value, int count)
+	public static <T> void writeMessage(
+			Transport transport, int sid, int cid, TypeSupport<T> typeSupport, T value, int count)
 	{
 		int calculatedPayloadSize = typeSupport.serializeSize(value, count);
 		int alignedPayloadSize = calculateAlignedSize(8, calculatedPayloadSize);
@@ -502,8 +502,8 @@ public final class Messages {
 	 * @param typeSupport
 	 * @param value
 	 */
-	public static void writeNotifyMessage(
-			Transport transport, int sid, int ioid, TypeSupport typeSupport, Object value, int count)
+	public static <T> void writeNotifyMessage(
+			Transport transport, int sid, int ioid, TypeSupport<T> typeSupport, T value, int count)
 	{
 		int calculatedPayloadSize = typeSupport.serializeSize(value, count);
 		int alignedPayloadSize = calculateAlignedSize(8, calculatedPayloadSize);

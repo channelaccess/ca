@@ -39,8 +39,8 @@ public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements 
 
 	/**
 	 */
-	public WriteNotifyRequest(ChannelImpl<?> channel, Transport transport, int sid, TypeSupport typeSupport,
-			Object value, int count) {
+	public WriteNotifyRequest(ChannelImpl<?> channel, Transport transport, int sid, TypeSupport<T> typeSupport,
+			T value, int count) {
 
 		this.channel = channel;
 		this.sid = sid;

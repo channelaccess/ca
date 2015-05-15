@@ -62,7 +62,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	protected final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<ResponseRequest>();
 
-	protected final TypeSupport typeSupport;
+	protected final TypeSupport<T> typeSupport;
 	
 	protected final AtomicBoolean connectIssueed = new AtomicBoolean(false);
 	protected final AtomicReference<CompletableFuture<Channel<T>>> connectFuture = new AtomicReference<>();
@@ -72,6 +72,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	// on every connection loss the value gets incremented
 	private final AtomicInteger connectionLossId = new AtomicInteger();
 	
+	@SuppressWarnings("unchecked")
 	public ChannelImpl(ContextImpl context, String name, Class<T> channelType, int priority)
 	{
 		this.context = context;
@@ -81,7 +82,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		
 		this.cid = context.generateCID();
 
-		typeSupport = TypeSupports.getTypeSupport(channelType);
+		typeSupport = (TypeSupport<T>)TypeSupports.getTypeSupport(channelType);
 		if (typeSupport == null)
 			throw new RuntimeException("unsupported channel data type " + channelType);
 		
@@ -227,7 +228,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		
 		TCPTransport t = connectionRequiredCheck();
 
-		TypeSupport metaTypeSupport = TypeSupports.getTypeSupport(clazz, channelType);
+		@SuppressWarnings("unchecked")
+		TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>)TypeSupports.getTypeSupport(clazz, channelType);
 		if (metaTypeSupport == null)
 			throw new RuntimeException("unsupported channel metadata type " + clazz + "<" + channelType + ">");
 		
@@ -242,17 +244,16 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	static class HolderEventFactory<TT> implements EventFactory<Holder<TT>> {
 
-		private final TypeSupport typeSupport;
+		private final TypeSupport<TT> typeSupport;
 		
-		public HolderEventFactory(TypeSupport typeSupport)
+		public HolderEventFactory(TypeSupport<TT> typeSupport)
 		{
 			this.typeSupport = typeSupport;
 		}
 		
-		@SuppressWarnings("unchecked")
 		@Override
 		public Holder<TT> newInstance() {
-			return new Holder<TT>((TT)typeSupport.newInstance());
+			return new Holder<TT>(typeSupport.newInstance());
 		}
 		
 	};
@@ -594,7 +595,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		}
 	}
 
-	public TypeSupport getTypeSupport() {
+	public TypeSupport<T> getTypeSupport() {
 		return typeSupport;
 	}
 	
