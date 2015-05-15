@@ -258,38 +258,51 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		
 	};
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	public Monitor<T> addValueMonitor(Consumer<? super T> handler, int queueSize, int mask) {
+		Disruptor<Holder<T>> disruptor = createMonitorDisruptor(typeSupport, handler, queueSize);
+        return addValueMonitor(disruptor, mask);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected <MT> Disruptor<Holder<MT>> createMonitorDisruptor(TypeSupport<MT> typeSupport, Consumer<? super MT> handler, int queueSize) {
 
 		// Executor that will be used to construct new threads for consumers
         Executor executor = Executors.newCachedThreadPool();
 
         // NOTE: queueSize specifies the size of the ring buffer, must be power of 2.
-		EventFactory<Holder<T>> eventFactory = new HolderEventFactory<T>(typeSupport);
+		EventFactory<Holder<MT>> eventFactory = new HolderEventFactory<MT>(typeSupport);
         
-        Disruptor<Holder<T>> disruptor = 
+        Disruptor<Holder<MT>> disruptor = 
          new Disruptor<>(eventFactory, queueSize, executor,
 	    		ProducerType.SINGLE, new SleepingWaitStrategy(10));
         //disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(event.value));
         
         disruptor.handleEventsWith(
         		(ringBuffer, barrierSequences) ->
-        		new MonitorBatchEventProcessor<Holder<T>>(
-                		this, new Holder<T>(), (value) -> (value.value == null),
+        		new MonitorBatchEventProcessor<Holder<MT>>(
+                		this, new Holder<MT>(), (value) -> (value.value == null),
                 		disruptor.getRingBuffer(), ringBuffer.newBarrier(barrierSequences),
                 		(event, sequence, endOfBatch) -> handler.accept(event.value)));        
         disruptor.start();
-        
-        return addValueMonitor(disruptor, mask);
+		return disruptor;
 	}
 
 	@SuppressWarnings("rawtypes")
 	@Override
 	public <MT extends Metadata<T>> Monitor<MT> addMonitor(
-			Class<? extends Metadata> clazz, Consumer<? super Metadata> handler, int queueSize, int mask) {
-		// TODO Auto-generated method stub
-		return null;
+			Class<? extends Metadata> clazz, Consumer<MT> handler, int queueSize, int mask) {
+		
+		TCPTransport t = connectionRequiredCheck();
+
+		@SuppressWarnings("unchecked")
+		TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>)TypeSupports.getTypeSupport(clazz, channelType);
+		if (metaTypeSupport == null)
+			throw new RuntimeException("unsupported channel metadata type " + clazz + "<" + channelType + ">");
+    
+		Disruptor<Holder<MT>> disruptor = createMonitorDisruptor(metaTypeSupport, handler, queueSize);
+
+		return new MonitorRequest<MT>(this, t, metaTypeSupport, mask, disruptor);
 	}
 
 	@Override
@@ -301,9 +314,16 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	@SuppressWarnings("rawtypes")
 	@Override
 	public <MT extends Metadata<T>> Monitor<MT> addMonitor(
-			Class<? extends Metadata> clazz, Disruptor<Holder<? extends Metadata>> disruptor, int mask) {
-		// TODO Auto-generated method stub
-		return null;
+			Class<? extends Metadata> clazz, Disruptor<Holder<MT>> disruptor, int mask) {
+
+		TCPTransport t = connectionRequiredCheck();
+		
+		@SuppressWarnings("unchecked")
+		TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>)TypeSupports.getTypeSupport(clazz, channelType);
+		if (metaTypeSupport == null)
+			throw new RuntimeException("unsupported channel metadata type " + clazz + "<" + channelType + ">");
+    
+		return new MonitorRequest<MT>(this, t, metaTypeSupport, mask, disruptor);
 	}
 	
 	@Override
