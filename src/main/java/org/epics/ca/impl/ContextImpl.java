@@ -8,6 +8,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -98,6 +99,11 @@ public class ContextImpl implements AutoCloseable, Constants {
 	 * Timer.
 	 */
 	protected final ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
+
+	/**
+	 * General executor service (e.g. event dispatcher).
+	 */
+	protected final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
 	/**
 	 * Repeater registration future.
@@ -198,6 +204,15 @@ public class ContextImpl implements AutoCloseable, Constants {
 
 		broadcastTransport.set(initializeUDPTransport());
 
+		// spawn repeater registration task
+		InetSocketAddress repeaterLocalAddress =
+				new InetSocketAddress(InetAddress.getLoopbackAddress(), repeaterPort);
+		repeaterRegistrationFuture = timer.scheduleWithFixedDelay(
+				new RepeaterRegistrationTask(repeaterLocalAddress), 
+				0,
+				60,
+				TimeUnit.SECONDS);
+		
 		try {
 			CARepeater.startRepeater(repeaterPort);
 		} catch (Throwable th) { /* noop */ }
@@ -385,15 +400,6 @@ public class ContextImpl implements AutoCloseable, Constants {
 			ReactorHandler handler = new LeaderFollowersHandler(reactor, transport, leaderFollowersThreadPool);
 			reactor.register(channel, SelectionKey.OP_READ, handler);
 			
-			// spawn repeater registration task
-			InetSocketAddress repeaterLocalAddress =
-					new InetSocketAddress(InetAddress.getLoopbackAddress(), repeaterPort);
-			repeaterRegistrationFuture = timer.scheduleWithFixedDelay(
-					new RepeaterRegistrationTask(repeaterLocalAddress), 
-					0,
-					60,
-					TimeUnit.SECONDS);
-			
 			return transport;
 		}
 		catch (Throwable th)
@@ -443,6 +449,15 @@ public class ContextImpl implements AutoCloseable, Constants {
 		reactor.shutdown();
 	    leaderFollowersThreadPool.shutdown();
 		timer.shutdown();
+		
+		executorService.shutdown();
+		try {
+			executorService.awaitTermination(3, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			// noop
+		}
+		executorService.shutdownNow();
+		
 	}
 
 	public Reactor getReactor() {
@@ -764,6 +779,17 @@ public class ContextImpl implements AutoCloseable, Constants {
 		ScheduledFuture<?> sf = repeaterRegistrationFuture;
 		if (sf != null)
 			sf.cancel(false);
+	}
+	
+	public boolean enqueueStatefullEvent(StatefullEventSource event)
+	{
+		if (event.allowEnqueue())
+		{
+			executorService.execute(event);
+			return true;
+		}
+		else
+			return false;
 	}
 	
 }

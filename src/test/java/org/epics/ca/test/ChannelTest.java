@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.epics.ca.Channel;
 import org.epics.ca.Context;
+import org.epics.ca.Listener;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
 import org.epics.ca.data.Alarm;
@@ -24,13 +25,13 @@ public class ChannelTest {
 		{
 			Channel<Double> adc = context.createChannel("adc01", Double.class);
 
-			/*
 			// add connection listener
-			Listener cl = adc.addConnectionListener((channel, state) -> System.out.println(channel.getName() + "is connected? " + state));
+			Listener cl = adc.addConnectionListener((channel, state) -> System.out.println(channel.getName() + " is connected? " + state));
 			// remove listener, or use try-catch-resources
-			cl.close();	
-			*/
-			
+			//cl.close();	
+
+			Listener cl2 = adc.addAccessRightListener((channel, rights) -> System.out.println(channel.getName() + " is rights? " + rights));
+
 			// wait until connected
 			adc.connect().get();
 			
@@ -94,7 +95,7 @@ public class ChannelTest {
 			Monitor<Timestamped<Double>> mon2 =
 					adc.addMonitor(
 									Timestamped.class, 
-									value -> System.out.println(new Date(value.getMillis()) + " / " + value.getValue())
+									value -> { if (value != null) System.out.println(new Date(value.getMillis()) + " / " + value.getValue()); }
 									);
 			
 			Thread.sleep(100000);

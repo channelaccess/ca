@@ -136,19 +136,56 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		else
 			throw new IllegalStateException("Connect already issued on this channel instance.");
 	}
+	
+	
+	protected final Map<ConnectionListener, BiConsumer<Channel<T>, Boolean>> connectionListeners =
+			new HashMap<>();
 
+	class ConnectionListener implements Listener {
+
+		@Override
+		public void close() {
+			synchronized (connectionListeners) {
+				connectionListeners.remove(this);
+			}
+		}
+	}
+	
 	@Override
 	public Listener addConnectionListener(
 			BiConsumer<Channel<T>, Boolean> handler) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		ConnectionListener cl = new ConnectionListener();
+		synchronized (connectionListeners) {
+			connectionListeners.put(cl, handler);
+		}
+		
+		return cl;
+	}
+
+	protected final Map<AccessRightsListener, BiConsumer<Channel<T>, AccessRights>> accessRightsListeners =
+			new HashMap<>();
+
+	class AccessRightsListener implements Listener {
+
+		@Override
+		public void close() {
+			synchronized (accessRightsListeners) {
+				accessRightsListeners.remove(this);
+			}
+		}
 	}
 
 	@Override
 	public Listener addAccessRightListener(
 			BiConsumer<Channel<T>, AccessRights> handler) {
-		// TODO Auto-generated method stub
-		return null;
+
+		AccessRightsListener arl = new AccessRightsListener();
+		synchronized (accessRightsListeners) {
+			accessRightsListeners.put(arl, handler);
+		}
+		
+		return arl;
 	}
 
 	@Override
@@ -424,14 +461,75 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		setAccessRights(AccessRights.values()[rightsCode]);
 	}
 
+	class AccessRightsStatefullEventSource extends StatefullEventSource
+	{
+		@SuppressWarnings("unchecked")
+		@Override
+		public void dispatch() {
+
+			final AccessRights acr = getAccessRights();
+
+			// copy listeners
+			final BiConsumer<Channel<T>, AccessRights>[] listeners;
+			synchronized (accessRightsListeners) {
+				listeners = (BiConsumer<Channel<T>, AccessRights>[])new BiConsumer[accessRightsListeners.size()];
+				accessRightsListeners.values().toArray(listeners);
+			}
+			
+			// dispatch
+			for (int i = 0; i < listeners.length; i++)
+			{
+				try
+				{
+					listeners[i].accept(ChannelImpl.this, acr);
+				} catch (Throwable th) {
+					logger.log(Level.WARNING, "Unexpected exception caught when dispatching access rights listener event.", th);
+				}
+			}
+		}
+	}
+	protected final AccessRightsStatefullEventSource accessRightsEventSource = 
+			new AccessRightsStatefullEventSource();
+	
 	public void setAccessRights(AccessRights rights)
 	{
 		AccessRights previousRights = accessRights.getAndSet(rights);
 		if (previousRights != rights)
 		{
-			// TODO notify change
+			context.enqueueStatefullEvent(accessRightsEventSource);
 		}
 	}
+
+	class ConnectionStateStatefullEventSource extends StatefullEventSource
+	{
+		@SuppressWarnings("unchecked")
+		@Override
+		public void dispatch() {
+
+			final boolean connected = (getConnectionState() == ConnectionState.CONNECTED);
+
+			// copy listeners
+			final BiConsumer<Channel<T>, Boolean>[] listeners;
+			synchronized (connectionListeners) {
+				listeners = (BiConsumer<Channel<T>, Boolean>[])new BiConsumer[connectionListeners.size()];
+				connectionListeners.values().toArray(listeners);
+			}
+			
+			// dispatch
+			for (int i = 0; i < listeners.length; i++)
+			{
+				try
+				{
+					listeners[i].accept(ChannelImpl.this, connected);
+				} catch (Throwable th) {
+					logger.log(Level.WARNING, "Unexpected exception caught when dispatching connection listener event.", th);
+				}
+			}
+		}
+	}
+	
+	protected final ConnectionStateStatefullEventSource connectionStateEventSource = 
+			new ConnectionStateStatefullEventSource();
 
 	public void setConnectionState(ConnectionState state)
 	{
@@ -442,8 +540,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			if (cf != null)
 				cf.complete(this);
 			
-			
-			// TODO notify change
+			context.enqueueStatefullEvent(connectionStateEventSource);
 		}
 	}
 	
