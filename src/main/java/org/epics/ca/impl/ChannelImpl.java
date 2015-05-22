@@ -30,8 +30,8 @@ import org.epics.ca.impl.requests.WriteNotifyRequest;
 import org.epics.ca.util.Holder;
 import org.epics.ca.util.IntHashMap;
 
+import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.SleepingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 
@@ -92,7 +92,26 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
+		// TODO temp. impl.
+		
+		if (connectionState.getAndSet(ConnectionState.CLOSED) == ConnectionState.CLOSED)
+			return;
+		
+		// stop searching...
+		context.getChannelSearchManager().unregisterChannel(this);
+
+		// destroy IOs
+		disconnectPendingIO(true);
+
+        // release transport
+        if (transport != null)
+        {
+            // TODO send clear channel message
+
+        	transport.release(this);
+            transport = null;
+        }
+		
 	}
 
 	@Override
@@ -312,7 +331,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
         
         Disruptor<Holder<MT>> disruptor = 
          new Disruptor<>(eventFactory, queueSize, executor,
-	    		ProducerType.SINGLE, new SleepingWaitStrategy(10));
+	    		ProducerType.SINGLE, new BlockingWaitStrategy());
         //disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(event.value));
         
         disruptor.handleEventsWith(

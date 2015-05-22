@@ -117,6 +117,11 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 		// unregister response request
 		context.unregisterResponseRequest(this);
 		channel.unregisterResponseRequest(this);
+		
+		// NOTE: this does not wait until all events in the ring buffer are processed
+		// but we do not want to block by calling shutdown()
+		// TODO disruptor bug: processor thread is still not halted !!!!
+		disruptor.halt();
 	}
 	
 	public void resubscribe(Transport transport)
@@ -142,9 +147,11 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 			return;
 		}
 		
-		// remove subscription on channel destroy only
+		// shutdown disruptor and remove subscription on channel destroy only
 		if (status == Status.CHANDESTROY)
+		{
 			cancel();
+		}
 		else if (status == Status.DISCONN)
 		{
 			RingBuffer<Holder<T>> ringBuffer = disruptor.getRingBuffer();
@@ -175,7 +182,6 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 
 	@Override
 	public void close() {
-		disruptor.shutdown();
 		cancel();
 
 		Transport transport = channel.getTransport();

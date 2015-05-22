@@ -444,8 +444,8 @@ public class ContextImpl implements AutoCloseable, Constants {
 		broadcastTransport.get().close();
 		
 		// this will also close all CA transports
-		//destroyAllChannels();
-		
+		destroyAllChannels();
+	
 		reactor.shutdown();
 	    leaderFollowersThreadPool.shutdown();
 		timer.shutdown();
@@ -458,6 +458,32 @@ public class ContextImpl implements AutoCloseable, Constants {
 		}
 		executorService.shutdownNow();
 		
+	}
+	
+	/**
+	 * Destroy all channels.
+	 */
+	private void destroyAllChannels() {
+		
+		ChannelImpl<?>[] channels;
+		synchronized (channelsByCID)
+		{
+			channels = (ChannelImpl<?>[])new ChannelImpl[channelsByCID.size()];
+			channelsByCID.toArray(channels);
+			channelsByCID.clear();
+		}
+		
+		for (int i = 0; i < channels.length; i++)
+		{
+			try
+			{
+				channels[i].close();
+			}
+			catch (Throwable th)
+			{
+				logger.log(Level.SEVERE, "Unexpected exception caught while closing a channel", th);
+			}
+		}
 	}
 
 	public Reactor getReactor() {
