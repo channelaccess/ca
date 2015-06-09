@@ -20,16 +20,20 @@ import org.epics.ca.Context;
 public class ChannelTest extends TestCase {
 
 	private Context context;
+	private CAJTestServer server;
 	private static final int TIMEOUT_SEC = 5;
 	
 	@Override
 	protected void setUp() throws Exception {
+		server = new CAJTestServer();
+		server.runInSeparateThread();
 		context = new Context();
 	}
 
 	@Override
 	protected void tearDown() throws Exception {
 		context.close();
+		server.destroy();
 	}
 
 	public void testConnect() throws Throwable {
@@ -71,9 +75,7 @@ public class ChannelTest extends TestCase {
 			final AtomicInteger connectedCount = new AtomicInteger();
 			final AtomicInteger disconnectedCount = new AtomicInteger();
 			
-			System.out.println(channel);
 			channel.addConnectionListener((c, connected) -> {
-				System.out.println(c + " " + connected);
 				if (c == channel)
 				{
 					if (connected.booleanValue())

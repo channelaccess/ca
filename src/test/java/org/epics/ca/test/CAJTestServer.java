@@ -20,7 +20,7 @@ public class CAJTestServer {
 	/**
      * JCA server context.
      */
-    private ServerContext context = null;
+    private volatile ServerContext context = null;
     
     /**
      * Initialize JCA context.
@@ -36,10 +36,6 @@ public class CAJTestServer {
 		
 		// Create a context with default configuration values.
 		context = jca.createServerContext(JCALibrary.CHANNEL_ACCESS_SERVER_JAVA, server);
-
-		// Display basic information about the context.
-        System.out.println(context.getVersion().getVersionString());
-        context.printInfo(); System.out.println();
 
         // register process variables
 		registerProcessVariables(server); 
@@ -97,7 +93,7 @@ public class CAJTestServer {
     /**
      * Destroy JCA server  context.
      */
-    private void destroy() {
+    public void destroy() {
         
         try {
 
@@ -120,7 +116,11 @@ public class CAJTestServer {
 			// initialize context
 			initialize();
 		    
-			System.out.println("Running server...");
+			// Display basic information about the context.
+	        System.out.println(context.getVersion().getVersionString());
+	        context.printInfo(); System.out.println();
+
+	        System.out.println("Running server...");
 
 			// run server 
 			context.run(0);
@@ -135,6 +135,27 @@ public class CAJTestServer {
 		    destroy();
 		}
 
+	}
+	
+	public void runInSeparateThread()
+	{
+		try {
+			
+			// initialize context
+			initialize();
+		    
+			// run server 
+			new Thread(() -> { 
+				try { 
+					context.run(0);
+				} catch(Throwable th) { 
+					th.printStackTrace(); 
+				}
+			}).start();
+
+		} catch (Throwable th) {
+			throw new RuntimeException("Failed to start CA server.", th);
+		}
 	}
 	
 	
