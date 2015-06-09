@@ -11,6 +11,10 @@ public interface Constants {
 	public static final String SERVER_PORT_KEY = "EPICS_CA_SERVER_PORT";
 	public static final String MAX_ARRAY_BYTES_KEY = "EPICS_CA_MAX_ARRAY_BYTES";
 	
+	public static enum Configuration { EPICS_CA_ADDR_LIST, EPICS_CA_AUTO_ADDR_LIST, EPICS_CA_CONN_TMO,
+		EPICS_CA_BEACON_PERIOD, EPICS_CA_REPEATER_PORT, EPICS_CA_SERVER_PORT,
+		EPICS_CA_MAX_ARRAY_BYTES };
+		
     /**
      * String value of the JVM property key to turn on debugging. 
      */

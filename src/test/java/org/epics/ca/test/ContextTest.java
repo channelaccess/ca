@@ -39,6 +39,7 @@ public class ContextTest extends TestCase {
 			assertNotNull(context);
 		};
 
+		
 		// TODO test configuration
 	}
 	
