@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -175,6 +176,11 @@ public class ContextImpl implements AutoCloseable, Constants {
 	 * Cached username.
 	 */
 	private final String userName;
+	
+	/**
+	 * Closed flag.
+	 */
+	private final AtomicBoolean closed = new AtomicBoolean();
 
 	public ContextImpl()
 	{
@@ -183,6 +189,9 @@ public class ContextImpl implements AutoCloseable, Constants {
 	
 	public ContextImpl(Properties properties)
 	{
+		if (properties == null)
+			throw new IllegalArgumentException("null properties");
+		
 		initializeLogger(properties);
 		loadConfig(properties);
 		
@@ -424,6 +433,9 @@ public class ContextImpl implements AutoCloseable, Constants {
 
 	public <T> Channel<T> createChannel(String channelName, Class<T> channelType, int priority)
 	{
+		if (closed.get())
+			throw new RuntimeException("context closed");
+			
 		if (channelName == null || channelName.length() == 0)
 			throw new IllegalArgumentException("null or empty channel name");
 		else if (channelName.length() > Math.min(MAX_UDP_SEND - CA_MESSAGE_HEADER_SIZE, UNREASONABLE_CHANNEL_NAME_LENGTH))
@@ -440,6 +452,10 @@ public class ContextImpl implements AutoCloseable, Constants {
 
 	@Override
 	public void close() {
+		
+		if (closed.getAndSet(true))
+			throw new RuntimeException("context already closed");
+		
 		channelSearchManager.cancel();
 		broadcastTransport.get().close();
 		

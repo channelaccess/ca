@@ -450,7 +450,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 			// prepare buffer
 			buffer.flip();
 
-			final int SEND_BUFFER_LIMIT = 16000;
+			final int SEND_BUFFER_LIMIT = 64000;
 			int bufferLimit = buffer.limit();
 
 			logger.finest(() -> "Sending " + bufferLimit + " bytes to " + socketAddress + ".");
@@ -466,7 +466,6 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 						logger.finest("[Parted] Sending (part " + part + "/" + parts + ") " + (buffer.limit()-buffer.position()) + " bytes to " + socketAddress + ".");
 				}
 				
-				final int TRIES = 10;
 				for (int tries = 0; ; tries++)
 				{
 					
@@ -481,7 +480,8 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 						if (closed.get())
 							throw new IOException("transport closed on the client side");
 						
-						if (tries >= TRIES)
+						final int WARNING_MESSAGE_TRIES = 10;
+						if (tries >= WARNING_MESSAGE_TRIES)
 						{
 							logger.warning(() -> "Failed to send message to " + socketAddress + " - buffer full, will retry.");
 
@@ -539,6 +539,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 			throw new RuntimeException("sendBuffer.capacity() < requiredSize");
 		
 		// flush and wait until buffer is actually sent
+		// TODO wait w/ timeout?
 		flush(true);
 		
 		// failed to flush check

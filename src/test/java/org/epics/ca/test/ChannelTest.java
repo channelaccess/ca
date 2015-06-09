@@ -98,7 +98,9 @@ public class ChannelTest {
 									value -> { if (value != null) System.out.println(new Date(value.getMillis()) + " / " + value.getValue()); }
 									);
 			
-			Thread.sleep(100000);
+			Thread.sleep(5000);
+			
+			context.close();
 			if (true)
 				return;
 
