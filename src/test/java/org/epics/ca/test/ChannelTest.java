@@ -193,12 +193,14 @@ public class ChannelTest extends TestCase {
 	    return (Boolean) Arrays.class.getMethod("equals", c, c).invoke(null, arr1, arr2);
 	}
 	
-	private <T> void internalTestGet(String channelName, Class<T> clazz, T expectedValue) throws Throwable
+	private <T> void internalTestPutAndGet(String channelName, Class<T> clazz, T expectedValue) throws Throwable
 	{
 		try (Channel<T> channel = context.createChannel(channelName, clazz))
 		{
 			channel.connect().get();
 
+			channel.put(expectedValue);
+			
 			T value = channel.get();
 			
 			if (clazz.isArray())
@@ -210,19 +212,19 @@ public class ChannelTest extends TestCase {
 	
 	public void testValueGet() throws Throwable
 	{
-		internalTestGet("adc01", String.class, "12.080");	// precision == 3
-		internalTestGet("adc01", Short.class, Short.valueOf((short)12));
-		internalTestGet("adc01", Float.class, Float.valueOf(12.08f));
-		internalTestGet("adc01", Byte.class, Byte.valueOf((byte)12));
-		internalTestGet("adc01", Integer.class, Integer.valueOf(12));
-		internalTestGet("adc01", Double.class, Double.valueOf(12.08));
+		internalTestPutAndGet("adc01", String.class, "12.346");	// precision == 3
+		internalTestPutAndGet("adc01", Short.class, Short.valueOf((short)123));
+		internalTestPutAndGet("adc01", Float.class, Float.valueOf(-123.4f));
+		internalTestPutAndGet("adc01", Byte.class, Byte.valueOf((byte)100));
+		internalTestPutAndGet("adc01", Integer.class, Integer.valueOf(123456));
+		internalTestPutAndGet("adc01", Double.class, Double.valueOf(12.3456));
 
-		internalTestGet("adc01", String[].class, new String[] { "12.080", "3.110" });	// precision == 3
-		internalTestGet("adc01", short[].class, new short[] { (short)12, (short)3 } );
-		internalTestGet("adc01", float[].class, new float[] { 12.08f, 3.11f });
-		internalTestGet("adc01", byte[].class, new byte[] { (byte)12, (byte)3 });
-		internalTestGet("adc01", int[].class, new int[] { 12, 3 });
-		internalTestGet("adc01", double[].class, new double[] { 12.8, 3.11 });
+		internalTestPutAndGet("adc01", String[].class, new String[] { "12.356", "3.112" });	// precision == 3
+		internalTestPutAndGet("adc01", short[].class, new short[] { (short)123, (short)-321 } );
+		internalTestPutAndGet("adc01", float[].class, new float[] { -123.4f, 321.98f });
+		internalTestPutAndGet("adc01", byte[].class, new byte[] { (byte)120, (byte)-120 });
+		internalTestPutAndGet("adc01", int[].class, new int[] { 123456, 654321 });
+		internalTestPutAndGet("adc01", double[].class, new double[] { 12.82, 3.112 });
 	}
 	
 }
