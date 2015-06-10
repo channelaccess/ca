@@ -728,7 +728,7 @@ public class TypeSupports {
 		@Override
 		public String[] newInstance() { return DUMMY_INSTANCE; }
 		@Override
-		public int getDataType() { return 1; }
+		public int getDataType() { return 0; }
 		@Override
 		public int serializeSize(String[] object, int count)
 		{ 
