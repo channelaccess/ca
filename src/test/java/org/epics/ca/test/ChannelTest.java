@@ -16,6 +16,7 @@ import org.epics.ca.Channel;
 import org.epics.ca.ConnectionState;
 import org.epics.ca.Context;
 import org.epics.ca.Listener;
+import org.epics.ca.Status;
 
 /**
  * @author msekoranja
@@ -193,15 +194,28 @@ public class ChannelTest extends TestCase {
 	    return (Boolean) Arrays.class.getMethod("equals", c, c).invoke(null, arr1, arr2);
 	}
 	
-	private <T> void internalTestPutAndGet(String channelName, Class<T> clazz, T expectedValue) throws Throwable
+	private <T> void internalTestPutAndGet(String channelName, Class<T> clazz, T expectedValue, boolean async) throws Throwable
 	{
 		try (Channel<T> channel = context.createChannel(channelName, clazz))
 		{
 			channel.connect().get();
 
-			channel.put(expectedValue);
+			if (async)
+			{
+				Status status = channel.putAsync(expectedValue).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+				assertTrue(status.isSuccessful());
+			}
+			else
+				channel.put(expectedValue);
 			
-			T value = channel.get();
+			T value;
+			if (async)
+			{
+				value = channel.getAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+				assertNotNull(value);
+			}
+			else
+				value = channel.get();
 			
 			if (clazz.isArray())
 				arrayEquals(expectedValue, value);
@@ -210,21 +224,30 @@ public class ChannelTest extends TestCase {
 		}
 	}
 	
-	public void testValueGet() throws Throwable
+	private void internalTestValuePutAndGet(boolean async) throws Throwable
 	{
-		internalTestPutAndGet("adc01", String.class, "12.346");	// precision == 3
-		internalTestPutAndGet("adc01", Short.class, Short.valueOf((short)123));
-		internalTestPutAndGet("adc01", Float.class, Float.valueOf(-123.4f));
-		internalTestPutAndGet("adc01", Byte.class, Byte.valueOf((byte)100));
-		internalTestPutAndGet("adc01", Integer.class, Integer.valueOf(123456));
-		internalTestPutAndGet("adc01", Double.class, Double.valueOf(12.3456));
+		internalTestPutAndGet("adc01", String.class, "12.346", async);	// precision == 3
+		internalTestPutAndGet("adc01", Short.class, Short.valueOf((short)123), async);
+		internalTestPutAndGet("adc01", Float.class, Float.valueOf(-123.4f), async);
+		internalTestPutAndGet("adc01", Byte.class, Byte.valueOf((byte)100), async);
+		internalTestPutAndGet("adc01", Integer.class, Integer.valueOf(123456), async);
+		internalTestPutAndGet("adc01", Double.class, Double.valueOf(12.3456), async);
 
-		internalTestPutAndGet("adc01", String[].class, new String[] { "12.356", "3.112" });	// precision == 3
-		internalTestPutAndGet("adc01", short[].class, new short[] { (short)123, (short)-321 } );
-		internalTestPutAndGet("adc01", float[].class, new float[] { -123.4f, 321.98f });
-		internalTestPutAndGet("adc01", byte[].class, new byte[] { (byte)120, (byte)-120 });
-		internalTestPutAndGet("adc01", int[].class, new int[] { 123456, 654321 });
-		internalTestPutAndGet("adc01", double[].class, new double[] { 12.82, 3.112 });
+		internalTestPutAndGet("adc01", String[].class, new String[] { "12.356", "3.112" }, async);	// precision == 3
+		internalTestPutAndGet("adc01", short[].class, new short[] { (short)123, (short)-321 }, async);
+		internalTestPutAndGet("adc01", float[].class, new float[] { -123.4f, 321.98f }, async);
+		internalTestPutAndGet("adc01", byte[].class, new byte[] { (byte)120, (byte)-120 }, async);
+		internalTestPutAndGet("adc01", int[].class, new int[] { 123456, 654321 }, async);
+		internalTestPutAndGet("adc01", double[].class, new double[] { 12.82, 3.112 }, async);
 	}
 	
+	public void testValuePutAndGetSync() throws Throwable
+	{
+		internalTestValuePutAndGet(false);
+	}
+	
+	public void testValuePutAndGetAsync() throws Throwable
+	{
+		internalTestValuePutAndGet(true);
+	}
 }
