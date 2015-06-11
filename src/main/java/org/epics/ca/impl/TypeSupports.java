@@ -891,14 +891,14 @@ public class TypeSupports {
 		//
 		{
 			Map<Class<?>, TypeSupport<?>> map = new HashMap<>();
-			map.put(String.class, new GraphicTypeSupport<String, String>(StringTypeSupport.INSTANCE, 0, StringTypeSupport.INSTANCE));
+			// there is no real Graphic<String>
 			map.put(Short.class, new GraphicTypeSupport<Short, Short>(ShortTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
 			map.put(Float.class, new GraphicTypeSupport<Float, Float>(FloatTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
 			map.put(Byte.class, new GraphicTypeSupport<Byte, Byte>(ByteTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
 			map.put(Integer.class, new GraphicTypeSupport<Integer, Integer>(IntegerTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
 			map.put(Double.class, new GraphicTypeSupport<Double, Double>(DoubleTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
 			
-			map.put(String[].class, new GraphicTypeSupport<String[], String>(StringArrayTypeSupport.INSTANCE, 0, StringTypeSupport.INSTANCE));
+			// there is no real Graphic<String[]>
 			map.put(short[].class, new GraphicTypeSupport<short[], Short>(ShortArrayTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
 			map.put(float[].class, new GraphicTypeSupport<float[], Float>(FloatArrayTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
 			map.put(byte[].class, new GraphicTypeSupport<byte[], Byte>(ByteArrayTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
@@ -913,14 +913,14 @@ public class TypeSupports {
 		//
 		{
 			Map<Class<?>, TypeSupport<?>> map = new HashMap<>();
-			map.put(String.class, new ControlTypeSupport<String, String>(StringTypeSupport.INSTANCE, 0, StringTypeSupport.INSTANCE));
+			// there is no real Control<String>
 			map.put(Short.class, new ControlTypeSupport<Short, Short>(ShortTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
 			map.put(Float.class, new ControlTypeSupport<Float, Float>(FloatTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
 			map.put(Byte.class, new ControlTypeSupport<Byte, Byte>(ByteTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
 			map.put(Integer.class, new ControlTypeSupport<Integer, Integer>(IntegerTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
 			map.put(Double.class, new ControlTypeSupport<Double, Double>(DoubleTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
 			
-			map.put(String[].class, new ControlTypeSupport<String[], String>(StringArrayTypeSupport.INSTANCE, 0, StringTypeSupport.INSTANCE));
+			// there is no real Control<String[]>
 			map.put(short[].class, new ControlTypeSupport<short[], Short>(ShortArrayTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
 			map.put(float[].class, new ControlTypeSupport<float[], Float>(FloatArrayTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
 			map.put(byte[].class, new ControlTypeSupport<byte[], Byte>(ByteArrayTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
