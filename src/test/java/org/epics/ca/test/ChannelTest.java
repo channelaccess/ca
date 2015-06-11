@@ -31,6 +31,8 @@ import org.epics.ca.data.Timestamped;
  */
 public class ChannelTest extends TestCase {
 
+	static final double DELTA = 1e-10; 
+
 	private Context context;
 	private CAJTestServer server;
 	private static final int TIMEOUT_SEC = 5;
@@ -259,7 +261,7 @@ public class ChannelTest extends TestCase {
 	}
 	
 	@SuppressWarnings({"unchecked", "rawtypes"})
-	private <T, ST, MT extends Metadata<T>> void internalTestMetaPutAndGet(String channelName, Class<T> clazz, Class<ST> scalarClazz, T expectedValue, Class<? extends Metadata> meta, Alarm expectedAlarm, boolean async) throws Throwable
+	private <T, ST, MT extends Metadata<T>> void internalTestMetaPutAndGet(String channelName, Class<T> clazz, Class<ST> scalarClazz, T expectedValue, Class<? extends Metadata> meta, Alarm<?> expectedAlarm, Control<?, Double> expectedMeta, boolean async) throws Throwable
 	{
 		try (Channel<T> channel = context.createChannel(channelName, clazz))
 		{
@@ -296,20 +298,28 @@ public class ChannelTest extends TestCase {
 				assertTrue(dt < (TIMEOUT_SEC * 1000));
 			}
 
-			System.out.println(meta);
+			
 			if (Graphic.class.isAssignableFrom(meta))
 			{
-				System.out.println("graphics");
 				Graphic<T, ST> v = (Graphic<T, ST>)value;
-				// TODO 
-				// System.out.println(Number.class.cast(v.getLowerAlarm()).doubleValue());
+
+				assertEquals(expectedMeta.getUnits(), v.getUnits());
+				if (scalarClazz.equals(Double.class) || scalarClazz.equals(Float.class))
+					assertEquals(expectedMeta.getPrecision(), v.getPrecision());
+				// no NaN or other special values allowed
+				assertEquals(expectedMeta.getLowerAlarm(), Number.class.cast(v.getLowerAlarm()).doubleValue(), DELTA);
+				assertEquals(expectedMeta.getLowerDisplay(), Number.class.cast(v.getLowerDisplay()).doubleValue(), DELTA);
+				assertEquals(expectedMeta.getLowerWarning(), Number.class.cast(v.getLowerWarning()).doubleValue(), DELTA);
+				assertEquals(expectedMeta.getUpperAlarm(), Number.class.cast(v.getUpperAlarm()).doubleValue(), DELTA);
+				assertEquals(expectedMeta.getUpperDisplay(), Number.class.cast(v.getUpperDisplay()).doubleValue(), DELTA);
+				assertEquals(expectedMeta.getUpperWarning(), Number.class.cast(v.getUpperWarning()).doubleValue(), DELTA);
 			}
 
 			if (Control.class.isAssignableFrom(meta))
 			{
 				Control<T, ST> v = (Control<T, ST>)value;
-				
-				// TODO
+				assertEquals(expectedMeta.getLowerControl(), Number.class.cast(v.getLowerControl()).doubleValue(), DELTA);
+				assertEquals(expectedMeta.getUpperControl(), Number.class.cast(v.getUpperControl()).doubleValue(), DELTA);
 			}
 		
 			if (clazz.isArray())
@@ -319,14 +329,14 @@ public class ChannelTest extends TestCase {
 		}
 	}
 	
-	private <T, ST> void internalTestMetaPutAndGet(String channelName, Class<T> clazz, Class<ST> scalarClazz, T expectedValue, Alarm expectedAlarm, boolean async) throws Throwable
+	private <T, ST> void internalTestMetaPutAndGet(String channelName, Class<T> clazz, Class<ST> scalarClazz, T expectedValue, Alarm<?> expectedAlarm, Control<?, Double> expectedMeta, boolean async) throws Throwable
 	{
-		internalTestMetaPutAndGet(channelName, clazz, scalarClazz, expectedValue, Alarm.class, expectedAlarm, async);	// precision == 3
-		internalTestMetaPutAndGet(channelName, clazz, scalarClazz, expectedValue, Timestamped.class, expectedAlarm, async);
+		internalTestMetaPutAndGet(channelName, clazz, scalarClazz, expectedValue, Alarm.class, expectedAlarm, expectedMeta, async);	// precision == 3
+		internalTestMetaPutAndGet(channelName, clazz, scalarClazz, expectedValue, Timestamped.class, expectedAlarm, expectedMeta, async);
 		if (!clazz.equals(String.class) && !clazz.equals(String[].class))
 		{
-			internalTestMetaPutAndGet(channelName, clazz, scalarClazz, expectedValue, Graphic.class, expectedAlarm, async);
-			internalTestMetaPutAndGet(channelName, clazz, scalarClazz, expectedValue, Control.class, expectedAlarm, async);
+			internalTestMetaPutAndGet(channelName, clazz, scalarClazz, expectedValue, Graphic.class, expectedAlarm, expectedMeta, async);
+			internalTestMetaPutAndGet(channelName, clazz, scalarClazz, expectedValue, Control.class, expectedAlarm, expectedMeta, async);
 		}
 	}
 	
@@ -336,19 +346,32 @@ public class ChannelTest extends TestCase {
 		alarm.setAlarmStatus(AlarmStatus.UDF_ALARM);
 		alarm.setAlarmSeverity(AlarmSeverity.INVALID_ALARM);
 		
-		internalTestMetaPutAndGet("adc01", String.class, String.class, "12.346", alarm, async);	// precision == 3
-		internalTestMetaPutAndGet("adc01", Short.class, Short.class, Short.valueOf((short)123), alarm, async);
-		internalTestMetaPutAndGet("adc01", Float.class, Float.class, Float.valueOf(-123.4f), alarm, async);
-		internalTestMetaPutAndGet("adc01", Byte.class, Byte.class, Byte.valueOf((byte)100), alarm, async);
-		internalTestMetaPutAndGet("adc01", Integer.class, Integer.class, Integer.valueOf(123456), alarm, async);
-		internalTestMetaPutAndGet("adc01", Double.class, Double.class, Double.valueOf(12.3456), alarm, async);
+		Control<Double, Double> meta = new Control<Double, Double>();
+		meta.setUpperDisplay(new Double(10));
+		meta.setLowerDisplay(new Double(-10));
+		meta.setUpperAlarm(new Double(9));
+		meta.setLowerAlarm(new Double(-9));
+		meta.setUpperControl(new Double(8));
+		meta.setLowerControl(new Double(-8));
+		meta.setUpperWarning(new Double(7));
+		meta.setLowerWarning(new Double(-7));
+		meta.setUnits("units");
+		meta.setPrecision((short)3);
 
-		internalTestMetaPutAndGet("adc01", String[].class, String.class, new String[] { "12.356", "3.112" }, alarm, async);	// precision == 3
-		internalTestMetaPutAndGet("adc01", short[].class, Short.class, new short[] { (short)123, (short)-321 }, alarm, async);
-		internalTestMetaPutAndGet("adc01", float[].class, Float.class, new float[] { -123.4f, 321.98f }, alarm, async);
-		internalTestMetaPutAndGet("adc01", byte[].class, Byte.class, new byte[] { (byte)120, (byte)-120 }, alarm, async);
-		internalTestMetaPutAndGet("adc01", int[].class, Integer.class, new int[] { 123456, 654321 }, alarm, async);
-		internalTestMetaPutAndGet("adc01", double[].class, Double.class, new double[] { 12.82, 3.112 }, alarm, async);
+		
+		internalTestMetaPutAndGet("adc01", String.class, String.class, "12.346", alarm, meta, async);	// precision == 3
+		internalTestMetaPutAndGet("adc01", Short.class, Short.class, Short.valueOf((short)123), alarm, meta, async);
+		internalTestMetaPutAndGet("adc01", Float.class, Float.class, Float.valueOf(-123.4f), alarm, meta, async);
+		internalTestMetaPutAndGet("adc01", Byte.class, Byte.class, Byte.valueOf((byte)100), alarm, meta, async);
+		internalTestMetaPutAndGet("adc01", Integer.class, Integer.class, Integer.valueOf(123456), alarm, meta, async);
+		internalTestMetaPutAndGet("adc01", Double.class, Double.class, Double.valueOf(12.3456), alarm, meta, async);
+
+		internalTestMetaPutAndGet("adc01", String[].class, String.class, new String[] { "12.356", "3.112" }, alarm, meta, async);	// precision == 3
+		internalTestMetaPutAndGet("adc01", short[].class, Short.class, new short[] { (short)123, (short)-321 }, alarm, meta, async);
+		internalTestMetaPutAndGet("adc01", float[].class, Float.class, new float[] { -123.4f, 321.98f }, alarm, meta, async);
+		internalTestMetaPutAndGet("adc01", byte[].class, Byte.class, new byte[] { (byte)120, (byte)-120 }, alarm, meta, async);
+		internalTestMetaPutAndGet("adc01", int[].class, Integer.class, new int[] { 123456, 654321 }, alarm, meta, async);
+		internalTestMetaPutAndGet("adc01", double[].class, Double.class, new double[] { 12.82, 3.112 }, alarm, meta, async);
 	}
 	
 	public void testMetaPutAndGetSync() throws Throwable
