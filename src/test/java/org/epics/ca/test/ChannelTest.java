@@ -3,6 +3,7 @@
  */
 package org.epics.ca.test;
 
+import java.awt.GraphicsEnvironment;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +23,8 @@ import org.epics.ca.data.AlarmSeverity;
 import org.epics.ca.data.AlarmStatus;
 import org.epics.ca.data.Control;
 import org.epics.ca.data.Graphic;
+import org.epics.ca.data.GraphicEnum;
+import org.epics.ca.data.GraphicEnumArray;
 import org.epics.ca.data.Metadata;
 import org.epics.ca.data.Timestamped;
 
@@ -384,5 +387,62 @@ public class ChannelTest extends TestCase {
 		internalTestMetaPutAndGet(true);
 	}
 	
+	private <T> void internalTestGraphicEnum(String channelName, Class<T> clazz, T expectedValue, Alarm<?> expectedAlarm, String[] expectedLabels, boolean async) throws Throwable
+	{
+		// put
+		try (Channel<T> channel = context.createChannel(channelName, clazz))
+		{
+			channel.connect().get();
+
+			if (async)
+			{
+				Status status = channel.putAsync(expectedValue).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+				assertTrue(status.isSuccessful());
+			}
+			else
+				channel.put(expectedValue);
+		
+			Alarm<T> value;
+			@SuppressWarnings("rawtypes")
+			Class<? extends Metadata> gec = clazz.isArray() ? GraphicEnumArray.class : GraphicEnum.class;
+			if (async)
+			{
+				// TODO explicit cast needed
+				value = (Alarm<T>)channel.getAsync(gec).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+				assertNotNull(value);
+			}
+			else
+			{
+				// TODO explicit cast needed
+				value = (Alarm<T>)channel.get(gec);
+			}
 	
+			if (clazz.isArray())
+				arrayEquals(expectedValue, value.getValue());
+			else
+				assertEquals(expectedValue, value.getValue());
+
+			assertEquals(expectedAlarm.getAlarmStatus(), value.getAlarmStatus());
+			assertEquals(expectedAlarm.getAlarmSeverity(), value.getAlarmSeverity());
+			
+			String[] labels = clazz.isArray() ? ((GraphicEnumArray)value).getLabels() : ((GraphicEnum)value).getLabels();
+			assertTrue(Arrays.equals(expectedLabels, labels));
+		}
+	}
+	
+	public void testGraphicEnum() throws Throwable
+	{
+		Alarm<Double> alarm = new Alarm<Double>();
+		alarm.setAlarmStatus(AlarmStatus.UDF_ALARM);
+		alarm.setAlarmSeverity(AlarmSeverity.INVALID_ALARM);
+
+		final String[] labels =
+			{ "zero", "one", "two", "three", "four", "five", "six", "seven" }; 
+
+		internalTestGraphicEnum("enum", Short.class, (short)2, alarm, labels, false);
+		internalTestGraphicEnum("enum", Short.class, (short)3, alarm, labels, true);
+
+		internalTestGraphicEnum("enum", short[].class, new short[] { 1, 2 }, alarm, labels, false);
+		internalTestGraphicEnum("enum", short[].class, new short[] { 3, 4 }, alarm, labels, true);
+	}
 }
