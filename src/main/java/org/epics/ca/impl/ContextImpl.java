@@ -440,9 +440,12 @@ public class ContextImpl implements AutoCloseable, Constants {
 			throw new IllegalArgumentException("null or empty channel name");
 		else if (channelName.length() > Math.min(MAX_UDP_SEND - CA_MESSAGE_HEADER_SIZE, UNREASONABLE_CHANNEL_NAME_LENGTH))
 			throw new IllegalArgumentException("name too long");
-		
+	
+		if (channelType == null)
+			throw new IllegalArgumentException("null channel type");
+			
 		if (!TypeSupports.isNativeType(channelType) && !channelType.equals(Object.class))
-			throw new IllegalArgumentException("Invalid channel native type");
+			throw new IllegalArgumentException("invalid channel native type");
 		
 		if (priority < CHANNEL_PRIORITY_MIN || priority > CHANNEL_PRIORITY_MAX)
 			throw new IllegalArgumentException("priority out of bounds");
