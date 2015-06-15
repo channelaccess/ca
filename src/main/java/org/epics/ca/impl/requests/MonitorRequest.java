@@ -1,6 +1,7 @@
 package org.epics.ca.impl.requests;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 import org.epics.ca.Monitor;
@@ -53,6 +54,11 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	 * Disruptor (event dispatcher).
 	 */
 	protected final Disruptor<Holder<T>> disruptor;
+	
+	/**
+	 * Closed flag.
+	 */
+	protected final AtomicBoolean closed = new AtomicBoolean();
 
 	/**
 	 */
@@ -182,6 +188,10 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 
 	@Override
 	public void close() {
+		
+		if (closed.getAndSet(true))
+			return;
+		
 		cancel();
 
 		Transport transport = channel.getTransport();

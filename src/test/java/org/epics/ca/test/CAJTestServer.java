@@ -86,7 +86,7 @@ public class CAJTestServer {
 		server.registerProcessVaribale(enumPV);
 
 		// counter PV
-		CounterProcessVariable counter = new CounterProcessVariable("counter", null, -10, 10, 1, 1, -7, 7, -9, 9);
+		CounterProcessVariable counter = new CounterProcessVariable("counter", null, -10, 10, 1, 1000, -7, 7, -9, 9);
 		server.registerProcessVaribale(counter);
 	}
 

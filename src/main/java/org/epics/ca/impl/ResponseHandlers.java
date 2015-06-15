@@ -30,6 +30,8 @@ public class ResponseHandlers {
 
 	}
 
+	// TODO beacon monitoring
+	
 	private static final ResponseHandler[] handlers = 
 		{
 			ResponseHandlers::noopResponse,	/* 0 */
@@ -43,7 +45,7 @@ public class ResponseHandlers {
 			ResponseHandlers::badResponse,	/* 8 */
 			ResponseHandlers::badResponse,	/* 9 */
 			ResponseHandlers::badResponse,	/* 10 */
-			ResponseHandlers::badResponse,	/* 11 */
+			ResponseHandlers::badResponse,	/* 11 */	// TODO
 			ResponseHandlers::badResponse,	/* 12 */
 			ResponseHandlers::noopResponse,	/* 13 */ // TODO
 			ResponseHandlers::badResponse,	/* 14 */

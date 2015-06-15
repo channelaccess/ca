@@ -316,6 +316,10 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	
 	@Override
 	public Monitor<T> addValueMonitor(Consumer<? super T> handler, int queueSize, int mask) {
+
+		if (mask == 0)
+			throw new IllegalArgumentException("null mask");
+
 		Disruptor<Holder<T>> disruptor = createMonitorDisruptor(typeSupport, handler, queueSize);
         return addValueMonitor(disruptor, mask);
 	}
@@ -323,6 +327,10 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	@SuppressWarnings("unchecked")
 	protected <MT> Disruptor<Holder<MT>> createMonitorDisruptor(TypeSupport<MT> typeSupport, Consumer<? super MT> handler, int queueSize) {
 
+		// check handler fist
+		if (handler == null)
+			throw new IllegalArgumentException("null handler");
+		
 		// Executor that will be used to construct new threads for consumers
         Executor executor = Executors.newCachedThreadPool();
 
@@ -349,6 +357,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	public <MT extends Metadata<T>> Monitor<MT> addMonitor(
 			Class<? extends Metadata> clazz, Consumer<MT> handler, int queueSize, int mask) {
 		
+		if (mask == 0)
+			throw new IllegalArgumentException("null mask");
+
 		TCPTransport t = connectionRequiredCheck();
 
 		@SuppressWarnings("unchecked")
@@ -363,6 +374,10 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@Override
 	public Monitor<T> addValueMonitor(Disruptor<Holder<T>> disruptor, int mask) {
+
+		if (mask == 0)
+			throw new IllegalArgumentException("null mask");
+
 		TCPTransport t = connectionRequiredCheck();
         return new MonitorRequest<T>(this, t, typeSupport, mask, disruptor);
 	}
@@ -372,6 +387,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	public <MT extends Metadata<T>> Monitor<MT> addMonitor(
 			Class<? extends Metadata> clazz, Disruptor<Holder<MT>> disruptor, int mask) {
 
+		if (mask == 0)
+			throw new IllegalArgumentException("null mask");
+		
 		TCPTransport t = connectionRequiredCheck();
 		
 		@SuppressWarnings("unchecked")

@@ -3,7 +3,6 @@
  */
 package org.epics.ca.test;
 
-import java.awt.GraphicsEnvironment;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -17,6 +16,7 @@ import org.epics.ca.Channel;
 import org.epics.ca.ConnectionState;
 import org.epics.ca.Context;
 import org.epics.ca.Listener;
+import org.epics.ca.Monitor;
 import org.epics.ca.Status;
 import org.epics.ca.data.Alarm;
 import org.epics.ca.data.AlarmSeverity;
@@ -444,5 +444,68 @@ public class ChannelTest extends TestCase {
 
 		internalTestGraphicEnum("enum", short[].class, new short[] { 1, 2 }, alarm, labels, false);
 		internalTestGraphicEnum("enum", short[].class, new short[] { 3, 4 }, alarm, labels, true);
+	}
+	
+	public void testMonitors() throws Throwable {
+		
+		try (Channel<Integer> channel = context.createChannel("counter", Integer.class))
+		{
+			channel.connect().get();
+			
+			try {
+				channel.addValueMonitor(null);
+				fail("null handler accepted");
+			} catch (IllegalArgumentException iae) {
+				// ok
+			}
+			
+			try {
+				channel.addValueMonitor((value) -> {}, 0, Monitor.VALUE_MASK);
+				fail("invalid (0) queue size accepted");
+			} catch (IllegalArgumentException iae) {
+				// ok
+			}
+			
+			try {
+				channel.addValueMonitor((value) -> {}, -1, Monitor.VALUE_MASK);
+				fail("invalid negative queue size accepted");
+			} catch (IllegalArgumentException iae) {
+				// ok
+			}
+
+			try {
+				channel.addValueMonitor((value) -> {}, 3, Monitor.VALUE_MASK);
+				fail("non-pow2 queue size accepted");
+			} catch (IllegalArgumentException iae) {
+				// ok
+			}
+
+			try {
+				channel.addValueMonitor((value) -> {}, 2, 0);
+				fail("empty mask accepted");
+			} catch (IllegalArgumentException iae) {
+				// ok
+			}
+
+			// note: we accept currently non-valid masks to allow future/unstandard extensions
+			
+			
+			try (Monitor<Integer> m = channel.addValueMonitor((value) -> {}, 2, Monitor.VALUE_MASK)) {
+				assertNotNull(m);
+			}
+
+			AtomicInteger monitorCount = new AtomicInteger();
+			Monitor<Integer> m = channel.addValueMonitor((value) -> monitorCount.incrementAndGet(), 2, Monitor.VALUE_MASK);
+			assertNotNull(m);
+			Thread.sleep(TIMEOUT_SEC * 1000);
+			m.close();
+			m.close();
+			int monitors = monitorCount.get();
+			assertTrue(monitors > 0);
+			Thread.sleep(TIMEOUT_SEC * 1000);
+			assertEquals(monitors, monitorCount.get());
+			
+		}
+		
 	}
 }
