@@ -501,10 +501,27 @@ public class ChannelTest extends TestCase {
 			m.close();
 			m.close();
 			int monitors = monitorCount.get();
-			assertTrue(monitors > 0);
+			assertTrue(monitors >= TIMEOUT_SEC); // 1 + TIMEOUT_SEC (where one can be missed)
 			Thread.sleep(TIMEOUT_SEC * 1000);
 			assertEquals(monitors, monitorCount.get());
 			
+		}
+		
+	}
+	
+	public void testGenericChannel() throws Throwable {
+		
+		try (Channel<Object> channel = context.createChannel("adc01", Object.class))
+		{
+			assertNotNull(channel);
+			
+			channel.connect().get();
+
+			internalTestValuePutAndGet(false);
+			internalTestValuePutAndGet(true);
+
+			internalTestMetaPutAndGet(false);
+			internalTestMetaPutAndGet(true);
 		}
 		
 	}

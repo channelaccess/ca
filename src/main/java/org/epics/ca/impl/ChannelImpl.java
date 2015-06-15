@@ -73,6 +73,47 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	private final AtomicInteger connectionLossId = new AtomicInteger();
 	
 	@SuppressWarnings("unchecked")
+	private class DynamicTypeSupport implements TypeSupports.TypeSupport<T>
+	{
+		@SuppressWarnings("rawtypes")
+		private AtomicReference<TypeSupport> delegate = new AtomicReference<>();
+
+		public void setDelegate(@SuppressWarnings("rawtypes") TypeSupport typeSupport) {
+			delegate.set(typeSupport);
+		}
+		
+		@Override
+		public T newInstance() {
+			return (T)delegate.get().newInstance();
+		}
+
+		@Override
+		public int getDataType() {
+			return delegate.get().getDataType();
+		}
+
+		@Override
+		public T deserialize(ByteBuffer buffer, T object, int count) {
+			return (T)delegate.get().deserialize(buffer, object, count);
+		}
+		
+		@Override
+		public int getForcedElementCount() {
+			return delegate.get().getForcedElementCount();
+		}
+
+		@Override
+		public void serialize(ByteBuffer buffer, T object, int count) {
+			delegate.get().serialize(buffer, object, count);
+		}
+
+		@Override
+		public int serializeSize(T object, int count) {
+			return delegate.get().serializeSize(object, count);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
 	public ChannelImpl(ContextImpl context, String name, Class<T> channelType, int priority)
 	{
 		this.context = context;
@@ -80,11 +121,11 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		this.channelType = channelType;
 		this.priority = priority;
 		
-		this.cid = context.generateCID();
-
-		typeSupport = (TypeSupport<T>)TypeSupports.getTypeSupport(channelType);
-		if (typeSupport == null)
+		this.typeSupport = channelType.equals(Object.class) ? new DynamicTypeSupport() : (TypeSupport<T>)TypeSupports.getTypeSupport(channelType);
+		if (this.typeSupport == null)
 			throw new RuntimeException("unsupported channel data type " + channelType);
+
+		this.cid = context.generateCID();
 		
 		// register before issuing search request
 		context.registerChannel(this);
@@ -640,6 +681,22 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			properties.put("nativeElementCount", elementCount);
 		}
 
+		// dynamic (generic channel) support
+		if (typeSupport instanceof ChannelImpl.DynamicTypeSupport)
+		{
+			TypeSupport<?> nativeTypeSupport = TypeSupports.getTypeSupport(typeCode, elementCount);
+			if (nativeTypeSupport == null)
+			{
+				logger.severe(() -> "type support for typeCode=" + typeCode + ", elementCount=" + elementCount + " is not supported, switching to String/String[]");
+				if (elementCount > 1)
+					nativeTypeSupport = TypeSupports.getTypeSupport(String[].class);
+				else
+					nativeTypeSupport = TypeSupports.getTypeSupport(String.class);
+			}
+
+			((DynamicTypeSupport) typeSupport).setDelegate(nativeTypeSupport);
+		}
+		
 		// user might create monitors in listeners, so this has to be done before this can happen
 		// however, it would not be nice if events would come before connection event is fired
 		// but this cannot happen since transport (TCP) is serving in this thread 

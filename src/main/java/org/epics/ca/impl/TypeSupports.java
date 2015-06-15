@@ -949,6 +949,39 @@ public class TypeSupports {
 		Map<Class<?>, TypeSupport<?>> m = typeSupportMap.get(metaTypeClass);
 		return (m != null) ? m.get(typeClass) : null;
 	}
+	
+	static final boolean matches(TypeSupport<?> typeSupport, short typeCode, int elementCount)
+	{
+		if (typeSupport.getDataType() == typeCode)
+		{
+			if (elementCount > 1)
+				return (typeSupport.getForcedElementCount() == 0);
+			else // if (elementCount == 1)
+				return (typeSupport.getForcedElementCount() == 1);
+		}
+		else
+			return false;
+	}
+	
+	static final TypeSupport<?> getTypeSupport(short typeCode, int elementCount)
+	{
+		if (matches(GraphicEnumTypeSupport.INSTANCE, typeCode, elementCount))
+			return GraphicEnumTypeSupport.INSTANCE;
+		else if (matches(GraphicEnumArrayTypeSupport.INSTANCE, typeCode, elementCount))
+			return GraphicEnumArrayTypeSupport.INSTANCE;
+		else
+		{
+			Map<Class<?>, TypeSupport<?>> m = typeSupportMap.get(Void.class);
+			if (m == null)
+				return null;
+
+			for (TypeSupport<?> typeSupport : m.values())
+				if (matches(typeSupport, typeCode, elementCount))
+						return typeSupport;
+			
+			return null;
+		}
+	}
 
 	static final boolean isNativeType(Class<?> clazz)
 	{
