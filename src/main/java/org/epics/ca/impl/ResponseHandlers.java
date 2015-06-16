@@ -10,8 +10,6 @@ import org.epics.ca.Constants;
 import org.epics.ca.Status;
 import org.epics.ca.util.net.InetAddressUtil;
 
-import com.cosylab.epics.caj.impl.CAConstants;
-
 public class ResponseHandlers {
 
 	// Get Logger
@@ -211,16 +209,16 @@ public class ResponseHandlers {
 		int payloadStart = payloadBuffer.position();
 			
 		// zero termination string expected, i.e. at least CAConstants.CA_MESSAGE_HEADER_SIZE + 1 bytes
-		if (header.payloadSize > CAConstants.CA_MESSAGE_HEADER_SIZE)
+		if (header.payloadSize > Constants.CA_MESSAGE_HEADER_SIZE)
 		{
 			int originalHeaderPayloadSize = payloadBuffer.getShort(payloadStart + 2) & 0xFFFF;
 					
 			// extended message header check
 			int originalHeaderSize;
 			if (originalHeaderPayloadSize == 0xFFFF)
-				originalHeaderSize = CAConstants.CA_EXTENDED_MESSAGE_HEADER_SIZE;
+				originalHeaderSize = Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE;
 			else
-				originalHeaderSize = CAConstants.CA_MESSAGE_HEADER_SIZE;
+				originalHeaderSize = Constants.CA_MESSAGE_HEADER_SIZE;
 			
 			originalHeaderBuffer = payloadBuffer.slice();
             originalHeaderBuffer.limit(originalHeaderSize);
