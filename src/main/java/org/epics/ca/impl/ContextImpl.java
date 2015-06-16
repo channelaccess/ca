@@ -464,7 +464,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 	public void close() {
 		
 		if (closed.getAndSet(true))
-			throw new RuntimeException("context already closed");
+			return;
 		
 		channelSearchManager.cancel();
 		broadcastTransport.get().close();

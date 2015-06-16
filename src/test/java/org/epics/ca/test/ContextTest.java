@@ -118,13 +118,9 @@ public class ContextTest extends TestCase {
 		
 		Context context = new Context();
 		context.close();
-		
-		try {
-			context.close();
-			fail("duplicate close call must fail");
-		} catch (RuntimeException rt) {
-			// expected
-		}
+
+		// duplicate close() is OK
+		context.close();
 		
 		try {
 			context.createChannel(TEST_CHANNEL_NAME, Double.class);

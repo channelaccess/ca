@@ -18,7 +18,8 @@ public interface Channel<T> extends AutoCloseable {
 	public ConnectionState getConnectionState();
 	public AccessRights getAccessRights();
 	
-	public CompletableFuture<Channel<T>> connect();
+	public Channel<T> connect();
+	public CompletableFuture<Channel<T>> connectAsync();
 	
 	
 	//
@@ -91,6 +92,9 @@ public interface Channel<T> extends AutoCloseable {
 	//
 	// misc
 	//
+	
+	
+	// TODO remove host name property
 	
     // get channel properties, e.g. native type, host, etc.
 	Map<String, Object> getProperties();

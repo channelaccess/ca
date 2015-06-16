@@ -62,7 +62,7 @@ public class ChannelTest extends TestCase {
 			
 			assertEquals(ConnectionState.NEVER_CONNECTED, channel.getConnectionState());
 			try {
-				channel.connect().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+				channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
 				fail("connected on non-existent channel, timeout expected");
 			} catch (TimeoutException tc) {
 				// OK
@@ -77,7 +77,7 @@ public class ChannelTest extends TestCase {
 			assertEquals("adc01", channel.getName());
 			
 			assertEquals(ConnectionState.NEVER_CONNECTED, channel.getConnectionState());
-			channel.connect().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+			channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
 			assertEquals(ConnectionState.CONNECTED, channel.getConnectionState());
 			assertEquals("adc01", channel.getName());
 		};
@@ -88,7 +88,7 @@ public class ChannelTest extends TestCase {
 			assertNotNull(channel);
 			
 			assertEquals(ConnectionState.NEVER_CONNECTED, channel.getConnectionState());
-			channel.connect().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+			channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
 			assertEquals(ConnectionState.CONNECTED, channel.getConnectionState());
 		};
 		
@@ -123,7 +123,7 @@ public class ChannelTest extends TestCase {
 			assertEquals(0, unregsiteredEventCount.get());
 			cl2.close();
 
-			channel.connect().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+			channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
 			assertEquals(ConnectionState.CONNECTED, channel.getConnectionState());
 			
 			// we need to sleep here to catch any possible multiple/invalid events
@@ -139,7 +139,7 @@ public class ChannelTest extends TestCase {
 			// we need to sleep here to catch any possible multiple/invalid events
 			Thread.sleep(TIMEOUT_SEC * 1000);
 			
-			// TODO close does not notify disconnect, or should it?
+			// NOTE: close does not notify disconnect
 			assertEquals(1, connectedCount.get());
 			assertEquals(0, disconnectedCount.get());
 			
@@ -170,7 +170,7 @@ public class ChannelTest extends TestCase {
 			assertEquals(0, unregsiteredEventCount.get());
 			cl2.close();
 
-			channel.connect().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+			channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
 			assertEquals(AccessRights.READ_WRITE, channel.getAccessRights());
 			
 			// we need to sleep here to catch any possible multiple/invalid events
@@ -195,7 +195,7 @@ public class ChannelTest extends TestCase {
 		
 		try (Channel<Double> channel = context.createChannel("adc01", Double.class))
 		{
-			channel.connect().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+			channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
 			
 			Map<String, Object> props = channel.getProperties();
 			// TODO constants?
@@ -221,7 +221,7 @@ public class ChannelTest extends TestCase {
 	{
 		try (Channel<T> channel = context.createChannel(channelName, clazz))
 		{
-			channel.connect().get();
+			channel.connect();
 
 			if (async)
 			{
@@ -279,7 +279,7 @@ public class ChannelTest extends TestCase {
 	{
 		try (Channel<T> channel = context.createChannel(channelName, clazz))
 		{
-			channel.connect().get();
+			channel.connect();
 
 			if (async)
 			{
@@ -403,7 +403,7 @@ public class ChannelTest extends TestCase {
 		// put
 		try (Channel<T> channel = context.createChannel(channelName, clazz))
 		{
-			channel.connect().get();
+			channel.connect();
 
 			if (async)
 			{
@@ -461,7 +461,7 @@ public class ChannelTest extends TestCase {
 		
 		try (Channel<Integer> channel = context.createChannel("counter", Integer.class))
 		{
-			channel.connect().get();
+			channel.connect();
 			
 			try {
 				channel.addValueMonitor(null);
@@ -526,7 +526,7 @@ public class ChannelTest extends TestCase {
 		{
 			assertNotNull(channel);
 			
-			channel.connect().get();
+			channel.connect();
 
 			internalTestValuePutAndGet(false);
 			internalTestValuePutAndGet(true);

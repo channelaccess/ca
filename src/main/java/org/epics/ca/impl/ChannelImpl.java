@@ -189,7 +189,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	}
 
 	@Override
-	public CompletableFuture<Channel<T>> connect() {
+	public CompletableFuture<Channel<T>> connectAsync() {
 		if (!connectIssueed.getAndSet(true))
 		{
 			// this has to be submitted immediately
@@ -203,6 +203,14 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			throw new IllegalStateException("Connect already issued on this channel instance.");
 	}
 	
+	@Override
+	public Channel<T> connect() {
+		try {
+			return connectAsync().get();
+		} catch (Throwable th) {
+			throw new RuntimeException("Failed to connect.", th);
+		}
+	}
 	
 	protected final Map<ConnectionListener, BiConsumer<Channel<T>, Boolean>> connectionListeners =
 			new HashMap<>();

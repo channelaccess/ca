@@ -33,7 +33,7 @@ public class Example {
 			Listener cl2 = adc.addAccessRightListener((channel, rights) -> System.out.println(channel.getName() + " is rights? " + rights));
 
 			// wait until connected
-			adc.connect().get();
+			adc.connectAsync().get();
 			
 			adc.put(3.11);
 			
@@ -61,7 +61,7 @@ public class Example {
 
 			
 			/*
-			Channel<double[]> adca = context.createChannel("msekoranjaHost:compressExample", double[].class).connect().get();
+			Channel<double[]> adca = context.createChannel("msekoranjaHost:compressExample", double[].class).connectAsync().get();
 
 			CompletableFuture<double[]> ffda = adca.getAsync();
 			System.out.println(Arrays.toString(ffda.get()));
@@ -71,7 +71,7 @@ public class Example {
 			System.out.println(Arrays.toString(dga.getValue()) + " " + dga.getAlarmStatus() + " " + dga.getAlarmSeverity());
 			*/
 			
-			Channel<Short> ec = context.createChannel("enum", Short.class).connect().get();
+			Channel<Short> ec = context.createChannel("enum", Short.class).connectAsync().get();
 
 			CompletableFuture<Short> fec = ec.getAsync();
 			System.out.println(fec.get());
@@ -104,17 +104,17 @@ public class Example {
 				return;
 
 			// sync create channel and connect
-			Channel<Double> adc4 = context.createChannel("adc02", Double.class).connect().get();
+			Channel<Double> adc4 = context.createChannel("adc02", Double.class).connectAsync().get();
 			
 			// async wait
 			// NOTE: thenAccept vs thenAcceptAsync
-			adc.connect().thenAccept((channel) -> System.out.println(channel.getName() + " connected"));
+			adc.connectAsync().thenAccept((channel) -> System.out.println(channel.getName() + " connected"));
 			
 			Channel<Integer> adc2 = context.createChannel("adc02", Integer.class);
 			Channel<String> adc3 = context.createChannel("adc03", String.class);
 			
 			// wait for all channels to connect
-			CompletableFuture.allOf(adc2.connect(), adc3.connect()).
+			CompletableFuture.allOf(adc2.connectAsync(), adc3.connectAsync()).
 				thenAccept((v) -> System.out.println("all connected"));
 			
 			// sync get
