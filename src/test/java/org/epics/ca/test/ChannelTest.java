@@ -81,6 +81,17 @@ public class ChannelTest extends TestCase {
 			assertEquals(ConnectionState.CONNECTED, channel.getConnectionState());
 			assertEquals("adc01", channel.getName());
 		};
+		
+		// connect to the previously closed channel
+		try (Channel<Double> channel = context.createChannel("adc01", Double.class))
+		{
+			assertNotNull(channel);
+			
+			assertEquals(ConnectionState.NEVER_CONNECTED, channel.getConnectionState());
+			channel.connect().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+			assertEquals(ConnectionState.CONNECTED, channel.getConnectionState());
+		};
+		
 	}
 
 	

@@ -45,7 +45,7 @@ public class ResponseHandlers {
 			ResponseHandlers::badResponse,	/* 9 */
 			ResponseHandlers::badResponse,	/* 10 */
 			ResponseHandlers::exceptionResponse,	/* 11 */
-			ResponseHandlers::badResponse,	/* 12 */
+			ResponseHandlers::noopResponse,	/* 12 - clear channel */
 			ResponseHandlers::beaconResponse,	/* 13 */
 			ResponseHandlers::badResponse,	/* 14 */
 			ResponseHandlers::notifyResponse,	/* 15 - read */

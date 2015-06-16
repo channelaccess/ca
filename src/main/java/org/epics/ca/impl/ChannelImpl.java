@@ -147,7 +147,13 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
         // release transport
         if (transport != null)
         {
-            // TODO send clear channel message
+        	try
+        	{
+            	Messages.clearChannelMessage(transport, cid, sid);
+        		transport.flush();		// TODO auto-flush
+        	} catch (Throwable th) {
+        		// noop
+        	}
 
         	transport.release(this);
             transport = null;

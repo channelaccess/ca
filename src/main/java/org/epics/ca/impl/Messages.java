@@ -422,6 +422,34 @@ public final class Messages {
 	}
 
 	/**
+	 * Clear channel message.
+	 * @param transport
+	 * @param cid
+	 * @param sid
+	 */
+	public static void clearChannelMessage(
+			Transport transport, int cid, int sid)
+	{
+		boolean ignore = true;
+		try
+		{
+			startCAMessage(transport,
+					(short)12,
+					0,
+					(short)0,
+					0,
+					sid,
+					cid);
+			
+			ignore = false;
+		}
+		finally
+		{
+			transport.releaseSendBuffer(ignore, false);
+		}
+	}
+
+	/**
 	 * Update subscription message.
 	 * @param transport
 	 * @param dataType
