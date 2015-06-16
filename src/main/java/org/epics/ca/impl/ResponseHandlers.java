@@ -3,11 +3,14 @@ package org.epics.ca.impl;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.logging.Logger;
 
 import org.epics.ca.Constants;
 import org.epics.ca.Status;
 import org.epics.ca.util.net.InetAddressUtil;
+
+import com.cosylab.epics.caj.impl.CAConstants;
 
 public class ResponseHandlers {
 
@@ -30,8 +33,6 @@ public class ResponseHandlers {
 
 	}
 
-	// TODO beacon monitoring
-	
 	private static final ResponseHandler[] handlers = 
 		{
 			ResponseHandlers::noopResponse,	/* 0 */
@@ -45,7 +46,7 @@ public class ResponseHandlers {
 			ResponseHandlers::badResponse,	/* 8 */
 			ResponseHandlers::badResponse,	/* 9 */
 			ResponseHandlers::badResponse,	/* 10 */
-			ResponseHandlers::badResponse,	/* 11 */	// TODO
+			ResponseHandlers::exceptionResponse,	/* 11 */
 			ResponseHandlers::badResponse,	/* 12 */
 			ResponseHandlers::beaconResponse,	/* 13 */
 			ResponseHandlers::badResponse,	/* 14 */
@@ -200,5 +201,68 @@ public class ResponseHandlers {
 	public static void repeaterConfirmResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
 	{
 		transport.getContext().repeaterConfirm(responseFrom);
+	}
+	
+	public static void exceptionResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
+	{
+		ByteBuffer originalHeaderBuffer = null;
+		String errorMessage = null;
+
+		int payloadStart = payloadBuffer.position();
+			
+		// zero termination string expected, i.e. at least CAConstants.CA_MESSAGE_HEADER_SIZE + 1 bytes
+		if (header.payloadSize > CAConstants.CA_MESSAGE_HEADER_SIZE)
+		{
+			int originalHeaderPayloadSize = payloadBuffer.getShort(payloadStart + 2) & 0xFFFF;
+					
+			// extended message header check
+			int originalHeaderSize;
+			if (originalHeaderPayloadSize == 0xFFFF)
+				originalHeaderSize = CAConstants.CA_EXTENDED_MESSAGE_HEADER_SIZE;
+			else
+				originalHeaderSize = CAConstants.CA_MESSAGE_HEADER_SIZE;
+			
+			originalHeaderBuffer = payloadBuffer.slice();
+            originalHeaderBuffer.limit(originalHeaderSize);
+
+			// find zero-termination (from end is efficient, but not error-proof)
+			int errorMessageStart = payloadStart + originalHeaderSize;
+			int errorMessageEnd = errorMessageStart;
+			while (payloadBuffer.get(errorMessageEnd) != 0)
+				errorMessageEnd++;
+            payloadBuffer.position(errorMessageStart);
+            ByteBuffer errorMessageBuffer = payloadBuffer.slice();
+            errorMessageBuffer.limit(errorMessageEnd - errorMessageStart);
+            errorMessage = Charset.defaultCharset().decode(errorMessageBuffer).toString();
+		}
+		
+		// "consume" rest of the payload
+		payloadBuffer.position(payloadStart + header.payloadSize);
+		
+		//
+		// delegate
+		//
+		
+		// peek for command ID from original header
+		short commandID = (originalHeaderBuffer != null ? originalHeaderBuffer.getShort(0) : -1);
+		if (commandID < 0 || commandID >= 27)
+		{
+			logger.warning(() -> "Invalid (or unsupported) exception message command: " + commandID + ".");
+			return;
+		}
+		
+		if (commandID == 1 || commandID == 15 || commandID == 19)
+		{
+			int ioid = originalHeaderBuffer.getInt(12);
+			ResponseRequest rr = (ResponseRequest)transport.getContext().getResponseRequest(ioid);
+			if (rr != null)
+				rr.exception(header.parameter2, errorMessage);
+		}
+		else
+		{
+			logger.warning("Exception message reported, code: " + Status.forStatusCode(header.parameter2) + ", message: '" + errorMessage + "'.");
+		}
+		
+		
 	}
 }
