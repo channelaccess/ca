@@ -47,7 +47,7 @@ public class ResponseHandlers {
 			ResponseHandlers::badResponse,	/* 10 */
 			ResponseHandlers::badResponse,	/* 11 */	// TODO
 			ResponseHandlers::badResponse,	/* 12 */
-			ResponseHandlers::noopResponse,	/* 13 */ // TODO
+			ResponseHandlers::beaconResponse,	/* 13 */
 			ResponseHandlers::badResponse,	/* 14 */
 			ResponseHandlers::notifyResponse,	/* 15 - read */
 			ResponseHandlers::badResponse,	/* 16 */
@@ -79,6 +79,7 @@ public class ResponseHandlers {
 
 	public static void noopResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
 	{
+		// noop
 	}
 
 	public static void badResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
@@ -86,6 +87,33 @@ public class ResponseHandlers {
 		logger.warning(() -> "Unexpected response message (command = " + header.command + ") received from: " + responseFrom);
 	}
 
+	public static void beaconResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
+	{
+		// NOTE: sequental IDs are implemented from v4.10+
+		
+		long timestamp = System.currentTimeMillis();
+		
+		// old version servers do not supply port,
+		// set default one
+		int port = header.dataCount;
+		if (port == 0)
+			port = (short)transport.getContext().getServerPort();
+		
+		InetAddress addr = InetAddressUtil.intToIPv4Address(header.parameter2);
+		responseFrom = new InetSocketAddress(addr, port);
+
+		BeaconHandler beaconHandler = transport.getContext().getBeaconHandler(responseFrom);
+		if (beaconHandler == null)
+			return;
+
+		// convert unsigned int to signed long
+		long sequentalID =  header.parameter1 & 0x00000000FFFFFFFFL;
+
+		// dataType contains minor protocol revision
+		// notify beacon handler
+		beaconHandler.beaconNotify(header.dataType, timestamp, sequentalID);
+	}
+	
 	public static void searchResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer)
 	{
 		short minorVersion = Constants.CA_UNKNOWN_MINOR_PROTOCOL_REVISION;

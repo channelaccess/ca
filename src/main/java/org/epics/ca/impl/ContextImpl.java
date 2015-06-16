@@ -7,6 +7,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -181,6 +183,11 @@ public class ContextImpl implements AutoCloseable, Constants {
 	 * Closed flag.
 	 */
 	private final AtomicBoolean closed = new AtomicBoolean();
+
+	/**
+	 * Beacon handler map.
+	 */
+	protected final Map<InetSocketAddress, BeaconHandler> beaconHandlers = new HashMap<>();
 
 	public ContextImpl()
 	{
@@ -838,4 +845,28 @@ public class ContextImpl implements AutoCloseable, Constants {
 			return false;
 	}
 	
+	public void beaconAnomalyNotify()
+	{
+		if (channelSearchManager != null)
+			channelSearchManager.beaconAnomalyNotify();
+	}
+	
+	/**
+	 * Get (and if necessary create) beacon handler.
+	 * @param responseFrom remote source address of received beacon.	
+	 * @return beacon handler for particular server.
+	 */
+	public BeaconHandler getBeaconHandler(InetSocketAddress responseFrom)
+	{
+		synchronized (beaconHandlers) {
+			BeaconHandler handler = beaconHandlers.get(responseFrom);
+			if (handler == null)
+			{
+				handler = new BeaconHandler(this, responseFrom);
+				beaconHandlers.put(responseFrom, handler);
+			}
+			return handler;
+		}
+	}
+
 }
