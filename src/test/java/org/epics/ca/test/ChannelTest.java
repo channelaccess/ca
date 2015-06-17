@@ -14,6 +14,7 @@ import junit.framework.TestCase;
 import org.epics.ca.AccessRights;
 import org.epics.ca.Channel;
 import org.epics.ca.ConnectionState;
+import org.epics.ca.Constants;
 import org.epics.ca.Context;
 import org.epics.ca.Listener;
 import org.epics.ca.Monitor;
@@ -198,12 +199,11 @@ public class ChannelTest extends TestCase {
 			channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
 			
 			Map<String, Object> props = channel.getProperties();
-			// TODO constants?
-			Object nativeType = props.get("nativeType");
+			Object nativeType = props.get(Constants.ChannelProperties.nativeType.name());
 			assertNotNull(nativeType);
 			assertEquals(Short.valueOf((short)6), (Short)nativeType);
 			
-			Object nativeElementCount = props.get("nativeElementCount");
+			Object nativeElementCount = props.get(Constants.ChannelProperties.nativeElementCount.name());
 			assertNotNull(nativeElementCount);
 			assertEquals(Integer.valueOf(2), (Integer)nativeElementCount);
 		};

@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 import org.epics.ca.AccessRights;
 import org.epics.ca.Channel;
 import org.epics.ca.ConnectionState;
+import org.epics.ca.Constants;
 import org.epics.ca.Listener;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
@@ -527,11 +528,11 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			{
 				this.sid = sid;
 				this.nativeElementCount = elementCount;
-				properties.put("nativeType", typeCode);
-				properties.put("nativeElementCount", elementCount);
+				properties.put(Constants.ChannelProperties.nativeType.name(), typeCode);
+				properties.put(Constants.ChannelProperties.nativeElementCount.name(), elementCount);
 			}
 
-			properties.put("remoteAddress", transport.getRemoteAddress());
+			properties.put(Constants.ChannelProperties.remoteAddress.name(), transport.getRemoteAddress());
 			
 			// do not submit CreateChannelRequest here, connection loss while submitting and lock
 			// on this channel instance may cause deadlock
@@ -691,8 +692,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		{
 			this.sid = sid;
 			this.nativeElementCount = elementCount;
-			properties.put("nativeType", typeCode);
-			properties.put("nativeElementCount", elementCount);
+			properties.put(Constants.ChannelProperties.nativeType.name(), typeCode);
+			properties.put(Constants.ChannelProperties.nativeElementCount.name(), elementCount);
 		}
 
 		// dynamic (generic channel) support
