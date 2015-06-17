@@ -407,7 +407,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	 * Process output (write) IO event.
 	 */
 	protected void processWrite() {
-		// TODO            
+		// TODO processWrite         
 	}
 
 	/**
@@ -416,7 +416,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	 */
 	public void updateUserName()
 	{
-		// TODO
+		// TODO updateUserName
 	}
 
 	/**
@@ -424,7 +424,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	 */
 	protected void disableFlowControl()
 	{
-		// TODO
+		// TODO disableFlowControl
 		flowControlActive = false;
 	}
 	
@@ -433,7 +433,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	 */
 	protected void enableFlowControl()
 	{
-		// TODO
+		// TODO enableFlowControl
 		flowControlActive = true;
 	}
 	

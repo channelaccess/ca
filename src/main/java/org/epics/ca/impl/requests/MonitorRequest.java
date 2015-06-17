@@ -59,6 +59,9 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 	 * Closed flag.
 	 */
 	protected final AtomicBoolean closed = new AtomicBoolean();
+	
+	protected T overrunValue;
+	protected Holder<T> lastValue;
 
 	/**
 	 */
@@ -69,7 +72,6 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 		this.typeSupport = typeSupport;
 		this.mask = mask;
 		this.disruptor = disruptor;
-
 
 		context = transport.getContext();
 		ioid = context.registerResponseRequest(this);
@@ -99,8 +101,8 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 			{
 	        	long next = ringBuffer.next();
 	        	try {
-	            	Holder<T> holder = ringBuffer.get(next);
-	    			holder.value = typeSupport.deserialize(dataPayloadBuffer, holder.value, dataCount);
+	        		lastValue = ringBuffer.get(next);
+	        		lastValue.value = typeSupport.deserialize(dataPayloadBuffer, lastValue.value, dataCount);
 	        	}
 	        	finally {
 	            	ringBuffer.publish(next);
@@ -108,9 +110,13 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 			}
 			else
 			{
-				// TODO
-        		System.out.println("monitor queue full, monitor lost");
-        	}
+        		overrunValue = typeSupport.deserialize(dataPayloadBuffer, overrunValue, dataCount);
+      System.out.println("overriding " + lastValue.value + " with " + overrunValue);  		
+        		// nasty trick, swap the reference of the last value with overrunValue
+            	T tmp = lastValue.value;
+            	lastValue.value = overrunValue;
+    			overrunValue = tmp;
+			}
 		}
 		else
 		{
