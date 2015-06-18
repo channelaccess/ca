@@ -1,10 +1,12 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin: 'maven'
+//apply plugin: 'signing'
 
 group = 'org.epics'
 archivesBaseName = 'ca'
 sourceCompatibility = 1.8
-version = '0.1-SNAPSHOT'
+version = '0.2-SNAPSHOT'
 jar {
     manifest {
         attributes 'Implementation-Title': 'Java EPICS CA',
@@ -21,4 +23,50 @@ dependencies {
     testCompile 'junit:junit:3.8.1'
     testCompile 'org.epics:caj:1.1.15'
     testCompile 'org.epics:jca:2.3.6'
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+//    archives javadocJar, sourcesJar
+    archives sourcesJar
+}
+
+uploadArchives {
+  repositories {
+    mavenDeployer {
+      //beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+      repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      pom.project {
+        name 'Example Application'
+        packaging 'jar'
+        // optionally artifactId can be defined here 
+        description 'Java CA client implementation using a new API (not using JCA).'
+        url 'https://github.com/channelaccess/ca'
+
+        scm {
+          connection 'scm:git:https://github.com/channelaccess/ca.git'
+          developerConnection 'scm:git:https://github.com/channelaccess/ca.git'
+          url 'https://github.com/channelaccess/ca'
+        }
+
+      }
+    }
+  }
 }
