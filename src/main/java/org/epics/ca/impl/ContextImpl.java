@@ -109,6 +109,11 @@ public class ContextImpl implements AutoCloseable, Constants {
 	protected final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
 	/**
+	 * Monitor dispatcher executor service.
+	 */
+	protected final ExecutorService monitorExecutor = Executors.newCachedThreadPool();
+
+	/**
 	 * Repeater registration future.
 	 */
 	protected volatile ScheduledFuture<?> repeaterRegistrationFuture;
@@ -476,6 +481,14 @@ public class ContextImpl implements AutoCloseable, Constants {
 	    leaderFollowersThreadPool.shutdown();
 		timer.shutdown();
 		
+		monitorExecutor.shutdown();
+		try {
+			monitorExecutor.awaitTermination(3, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			// noop
+		}
+		monitorExecutor.shutdownNow();
+
 		executorService.shutdown();
 		try {
 			executorService.awaitTermination(3, TimeUnit.SECONDS);
@@ -867,6 +880,11 @@ public class ContextImpl implements AutoCloseable, Constants {
 			}
 			return handler;
 		}
+	}
+	
+	public ExecutorService getMonitorExecutor()
+	{
+		return monitorExecutor;
 	}
 
 }

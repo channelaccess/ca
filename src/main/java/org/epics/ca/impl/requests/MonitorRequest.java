@@ -111,7 +111,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 			else
 			{
         		overrunValue = typeSupport.deserialize(dataPayloadBuffer, overrunValue, dataCount);
-      System.out.println("overriding " + lastValue.value + " with " + overrunValue);  		
+  		
         		// nasty trick, swap the reference of the last value with overrunValue
             	T tmp = lastValue.value;
             	lastValue.value = overrunValue;
@@ -132,7 +132,6 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 		
 		// NOTE: this does not wait until all events in the ring buffer are processed
 		// but we do not want to block by calling shutdown()
-		// TODO disruptor bug: processor thread is still not halted !!!!
 		disruptor.halt();
 	}
 	

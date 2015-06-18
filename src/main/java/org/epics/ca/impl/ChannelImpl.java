@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -388,7 +387,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			throw new IllegalArgumentException("null handler");
 		
 		// Executor that will be used to construct new threads for consumers
-        Executor executor = Executors.newCachedThreadPool();
+        Executor executor = context.getMonitorExecutor();
 
         // NOTE: queueSize specifies the size of the ring buffer, must be power of 2.
 		EventFactory<Holder<MT>> eventFactory = new HolderEventFactory<MT>(typeSupport);
