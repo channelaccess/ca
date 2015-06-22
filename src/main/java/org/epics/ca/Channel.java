@@ -94,8 +94,6 @@ public interface Channel<T> extends AutoCloseable {
 	//
 	
 	
-	// TODO remove host name property
-	
     // get channel properties, e.g. native type, host, etc.
 	Map<String, Object> getProperties();
 

@@ -8,6 +8,7 @@ import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -67,10 +68,15 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	private final static int FLOW_CONTROL_BUFFER_FULL_COUNT_LIMIT = 4;
 
 	/**
-	 * Flow control status.
+	 * Current flow control state.
 	 */
-	private boolean flowControlActive = false;
+	private final AtomicBoolean flowControlState = new AtomicBoolean();
 	
+	/**
+	 * Flow control change request (null - no change, TRUE - enable, FALSE - disable).
+	 */
+	private final AtomicReference<Boolean> flowControlChangeRequest = new AtomicReference<>();
+
 	/**
 	 * Remote side transport revision.
 	 */
@@ -284,8 +290,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 				{
 					// no more data, disable flow control
 					bufferFullCount = 0;
-					if (flowControlActive)
-						disableFlowControl();
+					disableFlowControl();
 					break;
 				}
 				
@@ -296,8 +301,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 				{
 					// buffer not full, disable flow control
 					bufferFullCount = 0;
-					if (flowControlActive)
-						disableFlowControl();
+					disableFlowControl();
 				}
 				else
 				{
@@ -305,8 +309,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 					if (bufferFullCount >= FLOW_CONTROL_BUFFER_FULL_COUNT_LIMIT)
 					{
 						// enable flow control
-						if (!flowControlActive)
-							enableFlowControl();
+						enableFlowControl();
 					}
 					else
 						bufferFullCount++;
@@ -424,8 +427,12 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	 */
 	protected void disableFlowControl()
 	{
-		// TODO disableFlowControl
-		flowControlActive = false;
+		if (flowControlState.getAndSet(false))
+		{
+			flowControlChangeRequest.set(Boolean.FALSE);
+			// send MUST not be done in this (read) thread
+			flush();
+		}
 	}
 	
 	/**
@@ -433,8 +440,12 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	 */
 	protected void enableFlowControl()
 	{
-		// TODO enableFlowControl
-		flowControlActive = true;
+		if (!flowControlState.getAndSet(true))
+		{
+			flowControlChangeRequest.set(Boolean.TRUE);
+			// send MUST not be done in this (read) thread
+			flush();
+		}
 	}
 	
 	/**
@@ -578,6 +589,13 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	private final ResettableLatch sendCompletedLatch = new ResettableLatch(1);
 	
 
+	private final void clearSendBuffer()
+	{
+		sendBuffer.clear();
+		// reserve space for events on/off message
+		sendBuffer.position(Constants.CA_MESSAGE_HEADER_SIZE);	
+	}
+	
 	protected void flush(boolean wait)
 	{
 		// do no reset if flush is in progress !!!
@@ -589,8 +607,20 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		// TODO do not send in this thread, use LF pool
 		sendBufferLock.lock();
 		try {
+			
+			Boolean insertFlowControlMessage = flowControlChangeRequest.getAndSet(null);
+			if (insertFlowControlMessage != null)
+			{
+				long offOn = insertFlowControlMessage.booleanValue() ?
+						0x0008000000000000L :			// eventsOff
+						0x0009000000000000L;			// eventsOn
+				sendBuffer.putLong(0, offOn);
+				sendBuffer.putLong(1, 0);
+				sendBuffer.position(0);
+			}
+			
 			noSyncSend(sendBuffer);
-			sendBuffer.clear();
+			clearSendBuffer();
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -616,6 +646,7 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		return priority;
 	}
 
+	// TODO echo
 	/* ********************* [ Beacons ] ************************ */
 	
 	/*
