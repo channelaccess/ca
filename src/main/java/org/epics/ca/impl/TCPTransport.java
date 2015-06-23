@@ -7,6 +7,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -22,7 +24,7 @@ import org.epics.ca.util.ResettableLatch;
 /**
  * CA transport implementation.
  */
-public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRunnable */ {
+public class TCPTransport implements Transport, ReactorHandler, Runnable {
 
 	// Get Logger
 	private static final Logger logger = Logger.getLogger(TCPTransport.class.getName());
@@ -106,6 +108,8 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 	private ByteBuffer sendBuffer;
 	private int lastSendBufferPosition = 0;
 	
+	private final ScheduledFuture<?> echoTimer;
+	
 	/**
 	 * @param context
 	 * @param responseHandler
@@ -134,10 +138,18 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		// TODO INITIAL_TX_BUFFER_SIZE
 		sendBuffer = ByteBuffer.allocateDirect(context.getMaxArrayBytes());
 		
-		// TODO beacons
-		// read beacon timeout and start timer (watchdog)
-		//connectionTimeout = (long)(context.getConnectionTimeout() * 1000);
-		//taskID = context.getTimer().executeAfterDelay(connectionTimeout, this);
+		// read echo period and start timer (watchdog)
+		long echoPeriod = (long)(context.getConnectionTimeout() * 1000);
+		if (echoPeriod >= 0)
+		{
+			echoTimer = context.getScheduledExecutor().scheduleWithFixedDelay(
+					this,
+					0,
+					echoPeriod,
+					TimeUnit.MILLISECONDS);
+		}
+		else
+			echoTimer = null;
 		
 		// add to registry
 		context.getTransportRegistry().put(socketAddress, this);
@@ -153,7 +165,9 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		if (closed.getAndSet(true))
 			return;
 		
-		//Timer.cancel(taskID);
+		// cancel echo timer
+		if (echoTimer != null)
+			echoTimer.cancel(false);
 		
 		// remove from registry
 		context.getTransportRegistry().remove(socketAddress, priority);
@@ -560,6 +574,32 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		return acquireSendBuffer(requiredSize);
 	}
 
+	private ByteBuffer acquireSendBufferNoBlocking(int requiredSize, long time, TimeUnit timeUnit) {
+		
+		if (closed.get())
+			throw new RuntimeException("transport closed");
+		
+		try {
+			if (!sendBufferLock.tryLock(time, timeUnit))
+				return null;
+		} catch (InterruptedException e) {
+			return null;
+		}
+		
+		lastSendBufferPosition = sendBuffer.position();
+		
+		// enough of space
+		if (sendBuffer.remaining() >= requiredSize)
+			return sendBuffer;
+		
+		// sanity check
+		if (sendBuffer.capacity() < requiredSize)
+			throw new RuntimeException("sendBuffer.capacity() < requiredSize");
+		
+		// we do not wait for free buffer 
+		return null;
+	}
+
 	@Override
 	public void releaseSendBuffer(boolean ignore, boolean flush) {
         try
@@ -646,135 +686,20 @@ public class TCPTransport implements Transport, ReactorHandler /*, Timer.TimerRu
 		return priority;
 	}
 
-	// TODO echo
-	/* ********************* [ Beacons ] ************************ */
-	
-	/*
-	 * Probe response (state-of-health message) sent and waiting for response.
-	 *
-	private boolean probeResponsePending = false;
-	
 	/**
-	 * Probe response (state-of-health message) did not respond - timeout.
-	 *
-	private boolean probeTimeoutDetected = false;
-			
-	/**
-	 * Probe lock.
-	 *
-	private Object probeLock = new Object();
-
-	/**
-	 * Beacon anomaly flag.
-	 *
-	private long connectionTimeout;
-
-	/**
-	 * Unresponsive transport flag.
-	 *
-	private boolean unresponsiveTransport = false;
-
-	/**
-	 * Timer task node.
-	 *
-	private Object taskID;
-
-	/**
-	 * Beacon arrival.
-	 *
-	public void beaconArrivalNotify()
+	 * Echo timer.
+	 */
+	public void run()
 	{
-		if (!probeResponsePending)
-			rescheduleTimer(connectionTimeout);
-	}
-*/
-	/*
-	 * Message arrival (every message send to transport). 
-	 *//* this is called to oftnen (e.g. first this and then immediately beaconArrivalNotify)
-	private void messageArrivalNotify()
-	{
-		synchronized(probeLock)
+		ByteBuffer buffer = acquireSendBufferNoBlocking(
+				Constants.CA_MESSAGE_HEADER_SIZE,
+				1, TimeUnit.SECONDS);
+		if (buffer != null)
 		{
-			if (!probeResponsePending) 
-				rescheduleTimer(connectionTimeout);
-		}
-	}*/
-
-	/*
-	 * Rechedule timer for timeout ms.
-	 * @param timeout	timeout in ms.
-	 *
-	private void rescheduleTimer(long timeout)
-	{
-		Timer.cancel(taskID);
-		if (!closed.get())
-			taskID = context.getTimer().executeAfterDelay(timeout, this);
-	}
-	
-	/**
-	 * Beacon timer.
-	 * @see com.cosylab.epics.caj.util.Timer.TimerRunnable#timeout(long)
-	 *
-	public void timeout(long timeToRun)
-	{
-		synchronized(probeLock)
-		{
-			if (probeResponsePending)
-			{
-				probeTimeoutDetected = true;
-				//unresponsiveTransport();
-			}
-			else
-			{
-				sendEcho();
-			}
+			Messages.generateEchoMessage(this, buffer);
+			// should be non-blocking
+			releaseSendBuffer(false, true);
 		}
 	}
 
-	/**
-	 * Called when echo request (state-of-health message) was responed.
-	 *
-	public void echoNotify()
-	{
-		synchronized(probeLock)
-		{
-			if (probeResponsePending)
-			{
-				if (probeTimeoutDetected)
-				{
-					// try again
-					sendEcho();
-				}
-				else
-				{
-					// transport is responsive
-					probeTimeoutDetected = false;
-					probeResponsePending = false;
-					//responsiveTransport();
-					rescheduleTimer(connectionTimeout);
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Sends echo (state-of-health message)
-	 *
-	private void sendEcho() {
-		synchronized(probeLock)
-		{
-			probeTimeoutDetected = false;
-			probeResponsePending = remoteTransportRevision >= 3;
-			try
-			{
-				new EchoRequest(this).submit();
-			}
-			catch (IOException ex)
-			{
-				probeResponsePending = false;
-			}
-			rescheduleTimer(Constants.CA_ECHO_TIMEOUT);
-		}
-	}
-*/
 }

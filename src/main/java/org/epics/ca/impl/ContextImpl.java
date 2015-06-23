@@ -886,5 +886,10 @@ public class ContextImpl implements AutoCloseable, Constants {
 	{
 		return monitorExecutor;
 	}
+	
+	public ScheduledExecutorService getScheduledExecutor()
+	{
+		return timer;
+	}
 
 }

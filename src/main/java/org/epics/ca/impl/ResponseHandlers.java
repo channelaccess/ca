@@ -56,7 +56,7 @@ public class ResponseHandlers {
 			ResponseHandlers::badResponse,	/* 20 */
 			ResponseHandlers::badResponse,	/* 21 */
 			ResponseHandlers::accessRightsResponse,	/* 22 */
-			ResponseHandlers::badResponse,	/* 23 */
+			ResponseHandlers::noopResponse,	/* 23 */
 			ResponseHandlers::badResponse,	/* 24 */
 			ResponseHandlers::badResponse,	/* 25 */
 			ResponseHandlers::badResponse,	/* 26 */

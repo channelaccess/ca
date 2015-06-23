@@ -154,6 +154,36 @@ public final class Messages {
 	}
 	
 	/**
+	 * Generate echo message.
+	 */
+	public static final void generateEchoMessage(Transport transport, ByteBuffer buffer)
+	{
+		if (transport.getMinorRevision() >= 3)
+		{
+			buffer.putShort((short)23);
+			// conversion int -> unsigned short is done right
+			buffer.putShort((short)0);
+			buffer.putShort((short)0);
+			// conversion int -> unsigned short is done right
+			buffer.putShort((short)0);
+			buffer.putInt(0);
+			buffer.putInt(0);
+		}
+		else
+		{
+			// use CA version message as echo message
+			buffer.putShort((short)0);
+			// conversion int -> unsigned short is done right
+			buffer.putShort((short)0);
+			buffer.putShort((short)0);
+			// conversion int -> unsigned short is done right
+			buffer.putShort((short)transport.getMinorRevision());
+			buffer.putInt(0);
+			buffer.putInt(0);
+		}
+	}
+
+	/**
 	 * Version message.
 	 * @param transport
 	 * @param priority
