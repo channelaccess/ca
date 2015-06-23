@@ -72,8 +72,7 @@ public class LeaderFollowersHandler implements ReactorHandler, Runnable {
      */
     public void run()
     {
-        if (!reactor.process())
-            threadPool.shutdown();
+    	reactor.process();
     }
     
 }

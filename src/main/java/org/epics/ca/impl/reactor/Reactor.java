@@ -389,8 +389,12 @@ public class Reactor {
 			// NOTE: this has to be done before processing (to support concurrent processing)
 			selectedKeys.remove();
 			
-			// process request
-			handler.handleEvent(selectedKey);
+			try {
+				// process request
+				handler.handleEvent(selectedKey);
+			} catch (CancelledKeyException cke) {
+				// noop
+			}
 			
 		}
 		catch (Throwable th)

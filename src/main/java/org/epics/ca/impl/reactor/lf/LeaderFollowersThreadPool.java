@@ -89,6 +89,7 @@ public class LeaderFollowersThreadPool {
 
     	executor.shutdown();
         try {
+        	// NOTE: if thead pool is shutdown from one of its threads, this will always block for 1s
             if (!executor.awaitTermination(1, TimeUnit.SECONDS))
             	executor.shutdownNow();
         } catch (InterruptedException ie) { /* noop */ } 
