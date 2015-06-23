@@ -369,7 +369,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	        	if (header.payloadSize > (buffer.capacity() - Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE))
 	        	{
 					// for now we drop connection
-					// TODO implement skip message logic
+					// TODO eventually we could implement skip message logic
 					logger.log(Level.SEVERE,
 							"Received payload size (" + header.payloadSize + 
 							") is larger than configured maximum array size (" +
@@ -564,7 +564,6 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 			throw new RuntimeException("sendBuffer.capacity() < requiredSize");
 		
 		// flush and wait until buffer is actually sent
-		// TODO wait w/ timeout?
 		flush(true);
 		
 		// failed to flush check

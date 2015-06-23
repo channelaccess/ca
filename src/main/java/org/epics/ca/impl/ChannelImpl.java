@@ -133,7 +133,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	
 	@Override
 	public void close() {
-		// TODO temp. impl.
 		
 		if (connectionState.getAndSet(ConnectionState.CLOSED) == ConnectionState.CLOSED)
 			return;
@@ -474,7 +473,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		return timerIdRef.get();
 	}
 	
-	// TODO
+	// TODO sync?
 	boolean allowCreation = false;
 	
 	/**
@@ -482,7 +481,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	 */
 	public synchronized void initiateSearch()
 	{
-		// TODO synced?!!
+		// TODO sync?!!
 		allowCreation = true;
 		context.getChannelSearchManager().registerChannel(this);
 	}

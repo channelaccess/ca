@@ -257,8 +257,6 @@ public class ChannelSearchManager {
 	public void searchResponse(ChannelImpl<?> channel)
 	{
 		unregisterChannel(channel);
-		
-		// TODO we could destroy timer thread when there is no channel to search
 	}
 
 }

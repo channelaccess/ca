@@ -82,7 +82,7 @@ public class IntHashMap<T> {
     }
     
     /**
-     * <p>Object pool implemenation for Entry class.</p>
+     * <p>Object pool implementation for Entry class.</p>
      */
     // TODO timed clean-up
     private static class EntryObjectPool {

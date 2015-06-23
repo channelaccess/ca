@@ -418,13 +418,11 @@ public class ChannelTest extends TestCase {
 			Class<? extends Metadata> gec = clazz.isArray() ? GraphicEnumArray.class : GraphicEnum.class;
 			if (async)
 			{
-				// TODO explicit cast needed
 				value = (Alarm<T>)channel.getAsync(gec).get(TIMEOUT_SEC, TimeUnit.SECONDS);
 				assertNotNull(value);
 			}
 			else
 			{
-				// TODO explicit cast needed
 				value = (Alarm<T>)channel.get(gec);
 			}
 	
