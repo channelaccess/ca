@@ -534,4 +534,33 @@ public class ChannelTest extends TestCase {
 		}
 		
 	}
+	
+	public void testLargeArray() throws Throwable {
+		
+		tearDown();
+		
+		final String propName = com.cosylab.epics.caj.cas.CAJServerContext.class.getName() + ".max_array_bytes";
+		String oldValue = System.getProperty(propName);
+		System.setProperty(propName, String.valueOf(4*1024*1024+1024+32));
+		try 
+		{
+			setUp();
+			
+			try (Channel<int[]> channel = context.createChannel("large", int[].class))
+			{
+				channel.connect();
+
+				int[] value = channel.getAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+				assertNotNull(value);
+			} 
+		}
+		finally
+		{
+			// restore value
+			if (oldValue == null)
+				System.clearProperty(propName);
+			else	
+				System.setProperty(propName, oldValue);
+		}
+	}
 }

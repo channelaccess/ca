@@ -88,6 +88,9 @@ public class CAJTestServer {
 		// counter PV
 		CounterProcessVariable counter = new CounterProcessVariable("counter", null, -10, 10, 1, 1000, -7, 7, -9, 9);
 		server.registerProcessVaribale(counter);
+
+		// simple in-memory 1MB array
+		server.createMemoryProcessVariable("large", DBR_Int.TYPE, new int[1024*1024]);
 	}
 
     /**

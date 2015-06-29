@@ -62,7 +62,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	/**
 	 * Receive buffer.
 	 */
-	private final ByteBuffer receiveBuffer;
+	private ByteBuffer receiveBuffer;
 
 	/**
 	 * Flow control "buffer full" count limit.
@@ -92,7 +92,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	/**
 	 * Initial receive buffer size.
 	 */
-	//private static final int INITIAL_RX_BUFFER_SIZE = 1024;
+	private static final int INITIAL_RX_BUFFER_SIZE = 1024;
 
 	/**
 	 * Initial send buffer size.
@@ -129,8 +129,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 		socketAddress = (InetSocketAddress)channel.socket().getRemoteSocketAddress();
 		
 		// initialize buffers
-		// TODO INITIAL_RX_BUFFER_SIZE
-		receiveBuffer = ByteBuffer.allocateDirect(context.getMaxArrayBytes());
+		receiveBuffer = ByteBuffer.allocateDirect(INITIAL_RX_BUFFER_SIZE);
 
 		// acquire transport
 		acquire(client);
@@ -333,7 +332,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 				receiveBuffer.flip();
 				
 				// read from buffer
-				processRead(receiveBuffer);
+				processReadBuffer();
 			}
 			
 		} catch (IOException ioex) {
@@ -345,38 +344,54 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	/**
 	 * Process input.
 	 */
-	protected void processRead(ByteBuffer buffer)
+	protected void processReadBuffer()
 	{
 	    int lastMessagePosition = 0;
 	    int lastMessageBytesAvailable = 0;
 		while (!closed.get())
 		{
 	        // mark new start
-			lastMessagePosition = buffer.position();
-			lastMessageBytesAvailable = buffer.remaining();
-	        
+			lastMessagePosition = receiveBuffer.position();
+			lastMessageBytesAvailable = receiveBuffer.remaining();
+			
 	        // not full header, break
 	        if (lastMessageBytesAvailable < Constants.CA_MESSAGE_HEADER_SIZE)
 	            break;
 
 	        // read header
-	        if (!header.read(buffer))
+	        if (!header.read(receiveBuffer))
 	            break;
 	        
 	        // we need whole payload
-	        if (buffer.remaining() < header.payloadSize)
+	        if (receiveBuffer.remaining() < header.payloadSize)
 	        {
-	        	if (header.payloadSize > (buffer.capacity() - Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE))
+	        	final int maxBufferSize = Integer.MAX_VALUE; // new config property context.getMaxBufferSize();
+	        	if (header.payloadSize > (receiveBuffer.capacity() - Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE))
 	        	{
-					// for now we drop connection
-					// TODO eventually we could implement skip message logic
-					logger.log(Level.SEVERE,
-							"Received payload size (" + header.payloadSize + 
-							") is larger than configured maximum array size (" +
-							context.getMaxArrayBytes() + "), disconnecting from " + socketAddress + ".");
-					close(true);
+	        		// we need to resize
+					final int PAGE_SIZE = 4096;
+					int newSize = ((header.payloadSize + Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE) & ~(PAGE_SIZE-1)) + PAGE_SIZE;
+
+					if (newSize > maxBufferSize)
+		        	{
+						// we drop connection
+						logger.log(Level.SEVERE,
+								"Received payload size (" + header.payloadSize + 
+								") is larger than configured maximum array size (" +
+								maxBufferSize + "), disconnecting from " + socketAddress + ".");
+						close(true);
+						return;
+		        	}
+	        		
+					ByteBuffer newBuffer = ByteBuffer.allocateDirect(newSize);
+					
+					// copy remaining
+					receiveBuffer.position(lastMessagePosition);
+					newBuffer.put(receiveBuffer);
+					receiveBuffer = newBuffer;
 					return;
 	        	}
+	        	
 	            break;
 	        }
 	        
@@ -394,7 +409,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	        
 		}
 	    
-		int unprocessedBytes = lastMessagePosition + lastMessageBytesAvailable - buffer.position();
+		int unprocessedBytes = lastMessagePosition + lastMessageBytesAvailable - receiveBuffer.position();
 		if (unprocessedBytes > 0)
 		{
 			// copy remaining buffer, lastMessageBytesAvailable bytes from lastMessagePosition,
