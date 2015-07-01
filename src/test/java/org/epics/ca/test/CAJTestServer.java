@@ -90,7 +90,10 @@ public class CAJTestServer {
 		server.registerProcessVaribale(counter);
 
 		// simple in-memory 1MB array
-		server.createMemoryProcessVariable("large", DBR_Int.TYPE, new int[1024*1024]);
+		final int[] arrayValue = new int[1024*1024];
+		for (int i = 0; i < arrayValue.length; i++)
+			arrayValue[i] = i;
+		server.createMemoryProcessVariable("large", DBR_Int.TYPE, arrayValue);
 	}
 
     /**

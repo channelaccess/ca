@@ -266,6 +266,7 @@ public class TypeSupports {
 			else
 			{
 				buffer.asDoubleBuffer().put(array, 0, count);
+				buffer.position(buffer.position() + serializeSize(array, count));
 			}
 		}
 		@Override
@@ -337,6 +338,7 @@ public class TypeSupports {
 			else
 			{
 				buffer.asFloatBuffer().put(array, 0, count);
+				buffer.position(buffer.position() + serializeSize(array, count));
 			}
 		}
 		@Override
@@ -479,6 +481,7 @@ public class TypeSupports {
 			else
 			{
 				buffer.asShortBuffer().put(array, 0, count);
+				buffer.position(buffer.position() + serializeSize(array, count));
 			}
 		}
 		@Override
@@ -640,6 +643,7 @@ public class TypeSupports {
 			else
 			{
 				buffer.asIntBuffer().put(array, 0, count);
+				buffer.position(buffer.position() + serializeSize(array, count));
 			}
 		}
 		@Override

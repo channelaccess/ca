@@ -97,7 +97,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	/**
 	 * Initial send buffer size.
 	 */
-	//private static final int INITIAL_TX_BUFFER_SIZE = 1024;
+	private static final int INITIAL_TX_BUFFER_SIZE = 1024;
 
 	/**
 	 * CA header structure.
@@ -130,12 +130,10 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 		
 		// initialize buffers
 		receiveBuffer = ByteBuffer.allocateDirect(INITIAL_RX_BUFFER_SIZE);
+		sendBuffer = ByteBuffer.allocateDirect(INITIAL_TX_BUFFER_SIZE);
 
 		// acquire transport
 		acquire(client);
-
-		// TODO INITIAL_TX_BUFFER_SIZE
-		sendBuffer = ByteBuffer.allocateDirect(context.getMaxArrayBytes());
 		
 		// read echo period and start timer (watchdog)
 		long echoPeriod = (long)(context.getConnectionTimeout() * 1000);
@@ -574,18 +572,34 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 		if (sendBuffer.remaining() >= requiredSize)
 			return sendBuffer;
 		
-		// sanity check
-		if (sendBuffer.capacity() < requiredSize)
-			throw new RuntimeException("sendBuffer.capacity() < requiredSize");
-		
 		// flush and wait until buffer is actually sent
-		flush(true);
+		try {
+			flush(true);
+		} catch (Throwable th) {
+			sendBufferLock.unlock();
+			throw th;
+		}
 		
-		// failed to flush check
-		if (sendBuffer.remaining() <= requiredSize)
-			throw new RuntimeException("Failed to acquire buffer - flush failed.");
+		if (sendBuffer.capacity() < requiredSize)
+		{
+    		// we need to resize
+			final int PAGE_SIZE = 4096;
+			int newSize = ((requiredSize + Constants.CA_MESSAGE_HEADER_SIZE) & ~(PAGE_SIZE-1)) + PAGE_SIZE;
+
+			//if (newSize > maxBufferSize)
+			//	throw new RuntimeException("requiredSize > maxBufferSize");
+
+			try {
+				sendBuffer = ByteBuffer.allocate(newSize);
+				clearSendBuffer();
+			} catch (Throwable th) {
+				sendBufferLock.unlock();
+				throw th;
+			}
+		}
 		
-		return acquireSendBuffer(requiredSize);
+		lastSendBufferPosition = sendBuffer.position();
+		return sendBuffer;
 	}
 
 	private ByteBuffer acquireSendBufferNoBlocking(int requiredSize, long time, TimeUnit timeUnit) {

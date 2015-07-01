@@ -41,7 +41,7 @@ public final class Messages {
 								Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE :
 								Constants.CA_MESSAGE_HEADER_SIZE;
 			
-		ByteBuffer buffer = transport.acquireSendBuffer(requiredSize);
+		ByteBuffer buffer = transport.acquireSendBuffer(requiredSize + payloadSize);
 			
 		// standard header
 		if (!useExtendedHeader)
