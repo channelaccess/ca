@@ -333,7 +333,7 @@ public class Reactor {
 			    selectorPending.incrementAndGet();
 			    try
 			    {
-			    	// TODO do the low-latency trick (busy-wait for a moment, and then sleep)
+			    	// possible improvement: do the low-latency trick (busy-wait for a moment, and then sleep)
 			    	
 		            // wait for selection, but only if necessary
 	                /* int */numSelectedKeys = selector.selectedKeys().size();

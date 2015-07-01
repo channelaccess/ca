@@ -393,8 +393,6 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	            break;
 	        }
 	        
-	        // TODO what is message is not valid (command, ...)
-	        
 			int endOfMessage = receiveBuffer.position() + header.payloadSize;
 
 			try {
@@ -437,16 +435,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	 * Process output (write) IO event.
 	 */
 	protected void processWrite() {
-		// TODO processWrite         
-	}
-
-	/**
-	 * Sends client username message to the server.
-	 * User name is taken from System property "user.name".
-	 */
-	public void updateUserName()
-	{
-		// TODO updateUserName
+		// noop since sending is done from the same thread (hmmm?, can block)         
 	}
 
 	/**
@@ -670,9 +659,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 		
 //		sendCompletedLatch.reset(1);
 		
-		// TODO do the flush
-		
-		// TODO do not send in this thread, use LF pool
+		// TODO do not send in this thread (e.g. use LF pool)
 		sendBufferLock.lock();
 		try {
 			
@@ -690,7 +677,6 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 			noSyncSend(sendBuffer);
 			clearSendBuffer();
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		} finally {
 			sendBufferLock.unlock();

@@ -358,8 +358,6 @@ public final class Messages {
 	public static void readNotifyMessage(
 			Transport transport, int dataType, int dataCount, int sid, int ioid)
 	{
-		// TODO optionally check response message size
-	    
 		boolean ignore = true;
 		try
 		{
@@ -391,8 +389,6 @@ public final class Messages {
 	public static void createSubscriptionMessage(
 			Transport transport, int dataType, int dataCount, int sid, int ioid, int mask)
 	{
-		// TODO optionally check response message size
-	    
 		boolean ignore = true;
 		try
 		{

@@ -20,8 +20,6 @@ public class ContextTest extends TestCase {
 		{
 			assertNotNull(context);
 		};
-		
-		// TODO test configuration
 	}
 
 	public void testContextProperties() {
@@ -38,9 +36,6 @@ public class ContextTest extends TestCase {
 		{
 			assertNotNull(context);
 		};
-
-		
-		// TODO test configuration
 	}
 	
 	public void testCreateChannel() {

@@ -50,7 +50,7 @@ public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements 
 		channel.registerResponseRequest(this);
 
 		Messages.writeNotifyMessage(transport, sid, ioid, typeSupport, value, count);
-		transport.flush();		// TODO auto-flush
+		transport.flush();
 	}
 
 	@Override

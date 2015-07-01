@@ -67,6 +67,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 	protected final AtomicBoolean connectIssueed = new AtomicBoolean(false);
 	protected final AtomicReference<CompletableFuture<Channel<T>>> connectFuture = new AtomicReference<>();
 	
+	protected boolean allowCreation = false;
+
 	protected volatile int nativeElementCount = 0;
 	
 	// on every connection loss the value gets incremented
@@ -149,7 +151,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
         	try
         	{
             	Messages.clearChannelMessage(transport, cid, sid);
-        		transport.flush();		// TODO auto-flush
+        		transport.flush();
         	} catch (Throwable th) {
         		// noop
         	}
@@ -286,7 +288,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			count = Array.getLength(value);
 		
 		Messages.writeMessage(t, sid, cid, typeSupport, value, count);
-		transport.flush();		// TODO auto-flush
+		transport.flush();
 	}
 
 	@Override
@@ -473,15 +475,11 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		return timerIdRef.get();
 	}
 	
-	// TODO sync?
-	boolean allowCreation = false;
-	
 	/**
 	 * Initiate search (connect) procedure.
 	 */
 	public synchronized void initiateSearch()
 	{
-		// TODO sync?!!
 		allowCreation = true;
 		context.getChannelSearchManager().registerChannel(this);
 	}
@@ -733,7 +731,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		return Messages.generateSearchRequestMessage(transport, buffer, name, cid);
 	}
 
-	// TODO consider different sync maybe
 	public synchronized TCPTransport getTransport() {
 		return transport;
 	}
