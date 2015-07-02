@@ -89,6 +89,10 @@ public class CAJTestServer {
 		CounterProcessVariable counter = new CounterProcessVariable("counter", null, -10, 10, 1, 1000, -7, 7, -9, 9);
 		server.registerProcessVaribale(counter);
 
+		// fast counter PV
+		//CounterProcessVariable fastCounter = new CounterProcessVariable("fastCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
+		//server.registerProcessVaribale(fastCounter);
+
 		// simple in-memory 1MB array
 		final int[] arrayValue = new int[1024*1024];
 		for (int i = 0; i < arrayValue.length; i++)

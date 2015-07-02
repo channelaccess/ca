@@ -91,8 +91,9 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	
 	/**
 	 * Initial receive buffer size.
+	 * It must be 64k to allow efficient operation w/ several event subscriptions.
 	 */
-	private static final int INITIAL_RX_BUFFER_SIZE = 1024;
+	private static final int INITIAL_RX_BUFFER_SIZE = 64000;
 
 	/**
 	 * Initial send buffer size.
@@ -304,7 +305,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 					disableFlowControl();
 					break;
 				}
-				
+
 				//logger.finest(() -> "Received " + bytesRead + " bytes from " + socketAddress + ".");
 				
 				// flow control check
@@ -405,11 +406,11 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	        
 		}
 	    
-		int unprocessedBytes = lastMessagePosition + lastMessageBytesAvailable - receiveBuffer.position();
-		if (unprocessedBytes > 0)
+		if (receiveBuffer.hasRemaining())
 		{
 			// copy remaining buffer, lastMessageBytesAvailable bytes from lastMessagePosition,
 			// to the start of receiveBuffer
+			int unprocessedBytes = receiveBuffer.limit() - lastMessagePosition;
 			if (unprocessedBytes < 1024)
 			{
 				for (int i = 0; i < unprocessedBytes; i++)
@@ -474,9 +475,6 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	{
 		try
 		{
-			// prepare buffer
-			buffer.flip();
-
 			final int SEND_BUFFER_LIMIT = 64000;
 			int bufferLimit = buffer.limit();
 
@@ -646,11 +644,13 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	private final ResettableLatch sendCompletedLatch = new ResettableLatch(1);
 	
 
+	private int startPosition;
 	private final void clearSendBuffer()
 	{
 		sendBuffer.clear();
 		// reserve space for events on/off message
-		sendBuffer.position(Constants.CA_MESSAGE_HEADER_SIZE);	
+		sendBuffer.position(Constants.CA_MESSAGE_HEADER_SIZE);
+		startPosition = sendBuffer.position();
 	}
 	
 	protected void flush(boolean wait)
@@ -670,9 +670,13 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 						0x0008000000000000L :			// eventsOff
 						0x0009000000000000L;			// eventsOn
 				sendBuffer.putLong(0, offOn);
-				sendBuffer.putLong(1, 0);
-				sendBuffer.position(0);
+				sendBuffer.putLong(8, 0);
+				startPosition = 0;
 			}
+
+			// flip
+			sendBuffer.limit(sendBuffer.position());
+			sendBuffer.position(startPosition);
 			
 			noSyncSend(sendBuffer);
 			clearSendBuffer();
