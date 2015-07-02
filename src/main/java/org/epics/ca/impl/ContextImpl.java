@@ -88,9 +88,9 @@ public class ContextImpl implements AutoCloseable, Constants {
 	protected int serverPort = CA_SERVER_PORT;
 	
 	/**
-	 * Length in bytes of the maximum array size that may pass through CA.
+	 * Length in bytes of the maximum array size that may pass through CA, defaults to 0 (<=0 means unlimited).
 	 */
-	protected int maxArrayBytes = 16384;
+	protected int maxArrayBytes = 0; //16384;
 
 	
 	
@@ -303,9 +303,11 @@ public class ContextImpl implements AutoCloseable, Constants {
 		logger.config(() -> AUTO_ADDR_LIST_KEY + ": " + autoAddressList);
 
 		connectionTimeout = readFloatProperty(properties, CONN_TMO_KEY, connectionTimeout);
+		connectionTimeout = Math.max(0.1f, connectionTimeout);
 		logger.config(() -> CONN_TMO_KEY + ": " + connectionTimeout);
 
 		beaconPeriod = readFloatProperty(properties, BEACON_PERIOD_KEY, beaconPeriod);
+		beaconPeriod = Math.max(0.1f, beaconPeriod);
 		logger.config(() -> BEACON_PERIOD_KEY + ": " + beaconPeriod);
 
 		repeaterPort = readIntegerProperty(properties, REPEATER_PORT_KEY, repeaterPort);
@@ -315,7 +317,9 @@ public class ContextImpl implements AutoCloseable, Constants {
 		logger.config(() -> SERVER_PORT_KEY + ": " + serverPort);
 
 		maxArrayBytes = readIntegerProperty(properties, MAX_ARRAY_BYTES_KEY, maxArrayBytes);
-		logger.config(() -> MAX_ARRAY_BYTES_KEY + ": " + maxArrayBytes);
+		if (maxArrayBytes > 0) 
+			maxArrayBytes = Math.max(1024,  maxArrayBytes);
+		logger.config(() -> MAX_ARRAY_BYTES_KEY + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
 	}
 	
 	/**

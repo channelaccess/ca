@@ -364,14 +364,14 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	        // we need whole payload
 	        if (receiveBuffer.remaining() < header.payloadSize)
 	        {
-	        	final int maxBufferSize = Integer.MAX_VALUE; // new config property context.getMaxBufferSize();
 	        	if (header.payloadSize > (receiveBuffer.capacity() - Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE))
 	        	{
 	        		// we need to resize
 					final int PAGE_SIZE = 4096;
 					int newSize = ((header.payloadSize + Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE) & ~(PAGE_SIZE-1)) + PAGE_SIZE;
 
-					if (newSize > maxBufferSize)
+		        	final int maxBufferSize = context.getMaxArrayBytes();
+					if (maxBufferSize > 0 && newSize > maxBufferSize)
 		        	{
 						// we drop connection
 						logger.log(Level.SEVERE,
@@ -573,8 +573,9 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 			final int PAGE_SIZE = 4096;
 			int newSize = ((requiredSize + Constants.CA_MESSAGE_HEADER_SIZE) & ~(PAGE_SIZE-1)) + PAGE_SIZE;
 
-			//if (newSize > maxBufferSize)
-			//	throw new RuntimeException("requiredSize > maxBufferSize");
+        	final int maxBufferSize = context.getMaxArrayBytes();
+			if (maxBufferSize > 0 && newSize > maxBufferSize)
+				throw new RuntimeException("requiredSize > maxArrayBytes");
 
 			try {
 				sendBuffer = ByteBuffer.allocate(newSize);
