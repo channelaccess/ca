@@ -63,14 +63,16 @@ new Context(properties);
 ```
 
 The available properties are:
-* Constants.ADDR_LIST_KEY
-* Constants.AUTO_ADDR_LIST_KEY
-* Constants.BEACON_PERIOD_KEY
-* Constants.SERVER_PORT_KEY
-
-* Constants.MAX_ARRAY_BYTES_KEY
-* Constants.REPEATER_PORT_KEY
-* Constants.CONN_TMO_KEY
+| Property | Desciption |
+|----|----|
+|Constants.ADDR_LIST_KEY||
+|Constants.AUTO_ADDR_LIST_KEY||
+|Constants.BEACON_PERIOD_KEY||
+|Constants.SERVER_PORT_KEY||
+|----|----|
+|Constants.MAX_ARRAY_BYTES_KEY||
+|Constants.REPEATER_PORT_KEY||
+|Constants.CONN_TMO_KEY||
 
 _Note:_ In contrast to other Channel Access libraries MAX_ARRAY_BYTES_KEY is set to unlimited by default. Therefore usually there is no reason to set this property.
 
