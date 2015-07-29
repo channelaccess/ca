@@ -60,7 +60,7 @@ To create a channel use:
 Channel<Double> channel = context.createChannel("MY_CHANNEL", Double.class);
 ```
 
-After creating the channel object the channel explicitly needs to be connected. There is a synchronous and asynchronous way to do so. The synchronous/blocking way is to call `connect()`. The asynchronous way is to call `connectAsync()`. The synchronous way to connect will block until the channel can be connected. If you want to specify a timeout for a connect use the asynchrnous connect as follows:
+After creating the channel object the channel explicitly needs to be connected. There is a synchronous and asynchronous way to do so. The synchronous/blocking way is to call `connect()`. The asynchronous way is to call `connectAsync()`. `connectAsync()` will return a CompletableFuture, to check whether the connect was successful call `.get()` on it. The synchronous way to connect will block until the channel can be connected. If you want to specify a timeout for a connect use the asynchronous connect as follows:
 
 ```
 channel.connectAsync().get(1, java.util.concurrent.TimeUnit.SECONDS);
@@ -76,7 +76,7 @@ Channel<String> channel2 = context.createChannel("adc03", String.class);
 CompletableFuture.allOf(channel1.connectAsync(), channel2.connectAsync()).get();
 ```
 
-A timeout is realized the same way as with the single `connectAsync()`.
+A timeout for the multiple connect is realized the same way as with the single `connectAsync()`.
 
 
 ### Examples
