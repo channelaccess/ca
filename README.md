@@ -54,11 +54,34 @@ To be able to create channels a Context need to be created. The context is a con
 Context context = new Context()
 ```
 
+The context accepts several properties. Properties can be set as follows at Context creation time:
+
+```java
+Properties properties = new Properties();
+properties.setProperty(Constants.ADDR_LIST_KEY, "10.10.10.255");
+new Context(properties);
+```
+
+The available properties are:
+* Constants.ADDR_LIST_KEY
+* Constants.AUTO_ADDR_LIST_KEY
+* Constants.BEACON_PERIOD_KEY
+* Constants.SERVER_PORT_KEY
+
+* Constants.MAX_ARRAY_BYTES_KEY
+* Constants.REPEATER_PORT_KEY
+* Constants.CONN_TMO_KEY
+
+_Note:_ In contrast to other Channel Access libraries MAX_ARRAY_BYTES_KEY is set to unlimited by default. Therefore usually there is no reason to set this property.
+
+
 To create a channel use:
 
 ```java
 Channel<Double> channel = context.createChannel("MY_CHANNEL", Double.class);
 ```
+
+At creation time of the channel you need to specify what type you like for the channel.
 
 After creating the channel object the channel explicitly needs to be connected. There is a synchronous and asynchronous way to do so. The synchronous/blocking way is to call `connect()`. The asynchronous way is to call `connectAsync()`. `connectAsync()` will return a CompletableFuture, to check whether the connect was successful call `.get()` on it. The synchronous way to connect will block until the channel can be connected. If you want to specify a timeout for a connect use the asynchronous connect as follows:
 
