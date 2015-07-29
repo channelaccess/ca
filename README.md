@@ -76,6 +76,13 @@ The available properties are:
 
 _Note:_ In contrast to other Channel Access libraries MAX_ARRAY_BYTES_KEY is set to unlimited by default. Therefore usually there is no reason to set this property.
 
+The context need to be closed at the end of the application via:
+
+```java
+context.close();
+```
+
+_Note:_ As Context implements AutoCloseable you can also use `try(Context context = new Context){ /*do stuff*/}``
 
 To create a channel use:
 
