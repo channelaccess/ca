@@ -48,6 +48,39 @@ repositories {
 
 ## Usage
 
+To be able to create channels a Context need to be created. The context is a container for all channels created with it. If the context is closed also all channels created with the context will be closed.
+
+```java
+Context context = new Context()
+```
+
+To create a channel use:
+
+```java
+Channel<Double> channel = context.createChannel("MY_CHANNEL", Double.class);
+```
+
+After creating the channel object the channel explicitly needs to be connected. There is a synchronous and asynchronous way to do so. The synchronous/blocking way is to call `connect()`. The asynchronous way is to call `connectAsync()`. The synchronous way to connect will block until the channel can be connected. If you want to specify a timeout for a connect use the asynchrnous connect as follows:
+
+```
+channel.connectAsync().get(1, java.util.concurrent.TimeUnit.SECONDS);
+```
+
+For connecting multiple channels in parallel use:
+
+```java
+Channel<Integer> channel1 = context.createChannel("adc02", Integer.class);
+Channel<String> channel2 = context.createChannel("adc03", String.class);
+
+// Wait for all channels to be connected
+CompletableFuture.allOf(channel1.connectAsync(), channel2.connectAsync()).get();
+```
+
+A timeout is realized the same way as with the single `connectAsync()`.
+
+
+### Examples
+
 Create simple channel:
 
 ```java
