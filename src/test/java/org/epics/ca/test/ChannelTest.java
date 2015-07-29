@@ -199,13 +199,17 @@ public class ChannelTest extends TestCase {
 			channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
 			
 			Map<String, Object> props = channel.getProperties();
-			Object nativeType = props.get(Constants.ChannelProperties.nativeType.name());
-			assertNotNull(nativeType);
-			assertEquals(Short.valueOf((short)6), (Short)nativeType);
+			Object nativeTypeCode = props.get(Constants.ChannelProperties.nativeTypeCode.name());
+			assertNotNull(nativeTypeCode);
+			assertEquals(Short.valueOf((short)6), (Short)nativeTypeCode);
 			
 			Object nativeElementCount = props.get(Constants.ChannelProperties.nativeElementCount.name());
 			assertNotNull(nativeElementCount);
 			assertEquals(Integer.valueOf(2), (Integer)nativeElementCount);
+
+			Object nativeType = props.get(Constants.ChannelProperties.nativeType.name());
+			assertNotNull(nativeType);
+			assertEquals(Double.class, (Class<?>)nativeType);
 		};
 	}
 	

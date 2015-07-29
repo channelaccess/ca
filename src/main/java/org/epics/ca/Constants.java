@@ -15,7 +15,7 @@ public interface Constants {
 		EPICS_CA_BEACON_PERIOD, EPICS_CA_REPEATER_PORT, EPICS_CA_SERVER_PORT,
 		EPICS_CA_MAX_ARRAY_BYTES };
 		
-	public static enum ChannelProperties { nativeType, remoteAddress, nativeElementCount };
+	public static enum ChannelProperties { nativeType, nativeTypeCode, remoteAddress, nativeElementCount };
 	
     /**
      * String value of the JVM property key to turn on debugging. 

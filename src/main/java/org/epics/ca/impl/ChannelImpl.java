@@ -133,6 +133,25 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		context.registerChannel(this);
 	}
 	
+	private TypeSupport<?> getTypeSupport(Class<?> metaTypeClass, Class<?> typeClass)
+	{
+		TypeSupport<?> metaTypeSupport = (TypeSupport<?>)TypeSupports.getTypeSupport(metaTypeClass, typeClass);
+		if (metaTypeSupport == null)
+		{
+			// dynamic (generic channel) support
+			if (typeSupport instanceof ChannelImpl.DynamicTypeSupport)
+			{
+				Class<?> nativeType = (Class<?>)properties.get(Constants.ChannelProperties.nativeType.name());
+				metaTypeSupport = (TypeSupport<?>)TypeSupports.getTypeSupport(metaTypeClass, nativeType);
+			}
+
+			if (metaTypeSupport == null)
+				throw new RuntimeException("unsupported channel metadata type " + metaTypeClass + "<" + typeClass + ">");
+		}
+		
+		return metaTypeSupport;
+	}
+
 	@Override
 	public void close() {
 		
@@ -333,17 +352,14 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		}
 	}
 
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(
 			Class<? extends Metadata> clazz) {
 		
 		TCPTransport t = connectionRequiredCheck();
 
-		@SuppressWarnings("unchecked")
-		TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>)TypeSupports.getTypeSupport(clazz, channelType);
-		if (metaTypeSupport == null)
-			throw new RuntimeException("unsupported channel metadata type " + clazz + "<" + channelType + ">");
+		TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>)getTypeSupport(clazz, channelType);
 		
 		// check read access
 		AccessRights currentRights = getAccessRights();
@@ -419,10 +435,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		TCPTransport t = connectionRequiredCheck();
 
 		@SuppressWarnings("unchecked")
-		TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>)TypeSupports.getTypeSupport(clazz, channelType);
-		if (metaTypeSupport == null)
-			throw new RuntimeException("unsupported channel metadata type " + clazz + "<" + channelType + ">");
-    
+		TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>)getTypeSupport(clazz, channelType);
+		
 		Disruptor<Holder<MT>> disruptor = createMonitorDisruptor(metaTypeSupport, handler, queueSize);
 
 		return new MonitorRequest<MT>(this, t, metaTypeSupport, mask, disruptor);
@@ -449,9 +463,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		TCPTransport t = connectionRequiredCheck();
 		
 		@SuppressWarnings("unchecked")
-		TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>)TypeSupports.getTypeSupport(clazz, channelType);
-		if (metaTypeSupport == null)
-			throw new RuntimeException("unsupported channel metadata type " + clazz + "<" + channelType + ">");
+		TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>)getTypeSupport(clazz, channelType);
     
 		return new MonitorRequest<MT>(this, t, metaTypeSupport, mask, disruptor);
 	}
@@ -524,7 +536,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			{
 				this.sid = sid;
 				this.nativeElementCount = elementCount;
-				properties.put(Constants.ChannelProperties.nativeType.name(), typeCode);
+				properties.put(Constants.ChannelProperties.nativeTypeCode.name(), typeCode);
 				properties.put(Constants.ChannelProperties.nativeElementCount.name(), elementCount);
 			}
 
@@ -688,7 +700,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 		{
 			this.sid = sid;
 			this.nativeElementCount = elementCount;
-			properties.put(Constants.ChannelProperties.nativeType.name(), typeCode);
+			properties.put(Constants.ChannelProperties.nativeTypeCode.name(), typeCode);
 			properties.put(Constants.ChannelProperties.nativeElementCount.name(), elementCount);
 		}
 
@@ -708,6 +720,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 			((DynamicTypeSupport) typeSupport).setDelegate(nativeTypeSupport);
 		}
 		
+		properties.put(Constants.ChannelProperties.nativeType.name(), typeSupport.newInstance().getClass());
+
 		// user might create monitors in listeners, so this has to be done before this can happen
 		// however, it would not be nice if events would come before connection event is fired
 		// but this cannot happen since transport (TCP) is serving in this thread 
