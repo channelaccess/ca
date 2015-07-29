@@ -63,13 +63,13 @@ new Context(properties);
 ```
 
 The available properties are:
+
 | Property | Desciption |
 |----|----|
 |Constants.ADDR_LIST_KEY||
 |Constants.AUTO_ADDR_LIST_KEY||
 |Constants.BEACON_PERIOD_KEY||
 |Constants.SERVER_PORT_KEY||
-|----|----|
 |Constants.MAX_ARRAY_BYTES_KEY||
 |Constants.REPEATER_PORT_KEY||
 |Constants.CONN_TMO_KEY||
