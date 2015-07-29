@@ -552,6 +552,22 @@ public class ChannelTest extends TestCase {
 
 				int[] value = channel.getAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
 				assertNotNull(value);
+				
+				final int LARGE_PRIME = 15485863;
+				for (int i = 0; i < value.length; i++)
+				{
+					assertEquals(i, value[i]);
+					value[i]+= LARGE_PRIME;
+				}
+				
+				Status putStatus = channel.putAsync(value).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+				assertEquals(Status.NORMAL, putStatus);
+				
+				value = channel.getAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+				assertNotNull(value);
+				
+				for (int i = 0; i < value.length; i++)
+					assertEquals(i+LARGE_PRIME, value[i]);
 			} 
 		}
 		finally

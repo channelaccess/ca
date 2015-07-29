@@ -69,7 +69,6 @@ public class TransportRegistry {
 			IntHashMap<Transport> priorities = transports.get(address);
 			if (priorities != null)
 			{
-				// TODO optimize
 				Transport[] ts = new Transport[priorities.size()];
 				priorities.toArray(ts);
 				return ts;

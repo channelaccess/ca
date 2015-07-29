@@ -91,13 +91,14 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	
 	/**
 	 * Initial receive buffer size.
+	 * It must be 64k to allow efficient operation w/ several event subscriptions.
 	 */
-	private static final int INITIAL_RX_BUFFER_SIZE = 1024;
+	private static final int INITIAL_RX_BUFFER_SIZE = 64000;
 
 	/**
 	 * Initial send buffer size.
 	 */
-	//private static final int INITIAL_TX_BUFFER_SIZE = 1024;
+	private static final int INITIAL_TX_BUFFER_SIZE = 1024;
 
 	/**
 	 * CA header structure.
@@ -130,12 +131,10 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 		
 		// initialize buffers
 		receiveBuffer = ByteBuffer.allocateDirect(INITIAL_RX_BUFFER_SIZE);
+		sendBuffer = ByteBuffer.allocateDirect(INITIAL_TX_BUFFER_SIZE);
 
 		// acquire transport
 		acquire(client);
-
-		// TODO INITIAL_TX_BUFFER_SIZE
-		sendBuffer = ByteBuffer.allocateDirect(context.getMaxArrayBytes());
 		
 		// read echo period and start timer (watchdog)
 		long echoPeriod = (long)(context.getConnectionTimeout() * 1000);
@@ -306,7 +305,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 					disableFlowControl();
 					break;
 				}
-				
+
 				//logger.finest(() -> "Received " + bytesRead + " bytes from " + socketAddress + ".");
 				
 				// flow control check
@@ -365,14 +364,14 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	        // we need whole payload
 	        if (receiveBuffer.remaining() < header.payloadSize)
 	        {
-	        	final int maxBufferSize = Integer.MAX_VALUE; // new config property context.getMaxBufferSize();
 	        	if (header.payloadSize > (receiveBuffer.capacity() - Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE))
 	        	{
 	        		// we need to resize
 					final int PAGE_SIZE = 4096;
 					int newSize = ((header.payloadSize + Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE) & ~(PAGE_SIZE-1)) + PAGE_SIZE;
 
-					if (newSize > maxBufferSize)
+		        	final int maxBufferSize = context.getMaxArrayBytes();
+					if (maxBufferSize > 0 && newSize > maxBufferSize)
 		        	{
 						// we drop connection
 						logger.log(Level.SEVERE,
@@ -395,8 +394,6 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	            break;
 	        }
 	        
-	        // TODO what is message is not valid (command, ...)
-	        
 			int endOfMessage = receiveBuffer.position() + header.payloadSize;
 
 			try {
@@ -409,11 +406,11 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	        
 		}
 	    
-		int unprocessedBytes = lastMessagePosition + lastMessageBytesAvailable - receiveBuffer.position();
-		if (unprocessedBytes > 0)
+		if (receiveBuffer.hasRemaining())
 		{
 			// copy remaining buffer, lastMessageBytesAvailable bytes from lastMessagePosition,
 			// to the start of receiveBuffer
+			int unprocessedBytes = receiveBuffer.limit() - lastMessagePosition;
 			if (unprocessedBytes < 1024)
 			{
 				for (int i = 0; i < unprocessedBytes; i++)
@@ -439,16 +436,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	 * Process output (write) IO event.
 	 */
 	protected void processWrite() {
-		// TODO processWrite         
-	}
-
-	/**
-	 * Sends client username message to the server.
-	 * User name is taken from System property "user.name".
-	 */
-	public void updateUserName()
-	{
-		// TODO updateUserName
+		// noop since sending is done from the same thread (hmmm?, can block)         
 	}
 
 	/**
@@ -487,9 +475,6 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	{
 		try
 		{
-			// prepare buffer
-			buffer.flip();
-
 			final int SEND_BUFFER_LIMIT = 64000;
 			int bufferLimit = buffer.limit();
 
@@ -574,18 +559,35 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 		if (sendBuffer.remaining() >= requiredSize)
 			return sendBuffer;
 		
-		// sanity check
-		if (sendBuffer.capacity() < requiredSize)
-			throw new RuntimeException("sendBuffer.capacity() < requiredSize");
-		
 		// flush and wait until buffer is actually sent
-		flush(true);
+		try {
+			flush(true);
+		} catch (Throwable th) {
+			sendBufferLock.unlock();
+			throw th;
+		}
 		
-		// failed to flush check
-		if (sendBuffer.remaining() <= requiredSize)
-			throw new RuntimeException("Failed to acquire buffer - flush failed.");
+		if (sendBuffer.capacity() < requiredSize)
+		{
+    		// we need to resize
+			final int PAGE_SIZE = 4096;
+			int newSize = ((requiredSize + Constants.CA_MESSAGE_HEADER_SIZE) & ~(PAGE_SIZE-1)) + PAGE_SIZE;
+
+        	final int maxBufferSize = context.getMaxArrayBytes();
+			if (maxBufferSize > 0 && newSize > maxBufferSize)
+				throw new RuntimeException("requiredSize > maxArrayBytes");
+
+			try {
+				sendBuffer = ByteBuffer.allocate(newSize);
+				clearSendBuffer();
+			} catch (Throwable th) {
+				sendBufferLock.unlock();
+				throw th;
+			}
+		}
 		
-		return acquireSendBuffer(requiredSize);
+		lastSendBufferPosition = sendBuffer.position();
+		return sendBuffer;
 	}
 
 	private ByteBuffer acquireSendBufferNoBlocking(int requiredSize, long time, TimeUnit timeUnit) {
@@ -643,11 +645,13 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	private final ResettableLatch sendCompletedLatch = new ResettableLatch(1);
 	
 
+	private int startPosition;
 	private final void clearSendBuffer()
 	{
 		sendBuffer.clear();
 		// reserve space for events on/off message
-		sendBuffer.position(Constants.CA_MESSAGE_HEADER_SIZE);	
+		sendBuffer.position(Constants.CA_MESSAGE_HEADER_SIZE);
+		startPosition = sendBuffer.position();
 	}
 	
 	protected void flush(boolean wait)
@@ -656,9 +660,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 		
 //		sendCompletedLatch.reset(1);
 		
-		// TODO do the flush
-		
-		// TODO do not send in this thread, use LF pool
+		// TODO do not send in this thread (e.g. use LF pool)
 		sendBufferLock.lock();
 		try {
 			
@@ -669,14 +671,17 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 						0x0008000000000000L :			// eventsOff
 						0x0009000000000000L;			// eventsOn
 				sendBuffer.putLong(0, offOn);
-				sendBuffer.putLong(1, 0);
-				sendBuffer.position(0);
+				sendBuffer.putLong(8, 0);
+				startPosition = 0;
 			}
+
+			// flip
+			sendBuffer.limit(sendBuffer.position());
+			sendBuffer.position(startPosition);
 			
 			noSyncSend(sendBuffer);
 			clearSendBuffer();
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		} finally {
 			sendBufferLock.unlock();

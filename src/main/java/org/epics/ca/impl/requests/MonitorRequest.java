@@ -2,6 +2,7 @@ package org.epics.ca.impl.requests;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.epics.ca.Monitor;
@@ -145,7 +146,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 		Messages.createSubscriptionMessage(
 				transport, typeSupport.getDataType(),
 				dataCount, channel.getSID(), ioid, mask);
-		transport.flush();		// TODO auto-flush
+		transport.flush();
 	}
 	
 	@Override
@@ -208,11 +209,14 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest {
 		if (dataCount == 0 && channel.getTransport().getMinorRevision() < 13)
 			dataCount = channel.getNativeElementCount();
 
-		Messages.cancelSubscriptionMessage(
-				transport, typeSupport.getDataType(), dataCount,
-				channel.getSID(), ioid);
-		transport.flush();	// TODO auto flush
-		// TODO should this be exception guarded
+		try {
+			Messages.cancelSubscriptionMessage(
+					transport, typeSupport.getDataType(), dataCount,
+					channel.getSID(), ioid);
+			transport.flush();
+		} catch (Throwable th) {
+			logger.log(Level.FINER, "Failed to send 'cancel subscription' message.", th);
+		}
 	}
 	
 	

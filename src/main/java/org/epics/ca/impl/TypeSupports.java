@@ -266,6 +266,7 @@ public class TypeSupports {
 			else
 			{
 				buffer.asDoubleBuffer().put(array, 0, count);
+				buffer.position(buffer.position() + serializeSize(array, count));
 			}
 		}
 		@Override
@@ -279,7 +280,6 @@ public class TypeSupports {
 			else
 			{
 				data = (double[])object;
-				// TODO think of "data.length < count"
 				if (data.length != count)
 					data = new double[count];
 			}
@@ -337,6 +337,7 @@ public class TypeSupports {
 			else
 			{
 				buffer.asFloatBuffer().put(array, 0, count);
+				buffer.position(buffer.position() + serializeSize(array, count));
 			}
 		}
 		@Override
@@ -350,7 +351,6 @@ public class TypeSupports {
 			else
 			{
 				data = (float[])object;
-				// TODO think of "data.length < count"
 				if (data.length != count)
 					data = new float[count];
 			}
@@ -421,7 +421,6 @@ public class TypeSupports {
 			else
 			{
 				data = (byte[])object;
-				// TODO think of "data.length < count"
 				if (data.length != count)
 					data = new byte[count];
 			}
@@ -479,6 +478,7 @@ public class TypeSupports {
 			else
 			{
 				buffer.asShortBuffer().put(array, 0, count);
+				buffer.position(buffer.position() + serializeSize(array, count));
 			}
 		}
 		@Override
@@ -492,7 +492,6 @@ public class TypeSupports {
 			else
 			{
 				data = (short[])object;
-				// TODO think of "data.length < count"
 				if (data.length != count)
 					data = new short[count];
 			}
@@ -640,6 +639,7 @@ public class TypeSupports {
 			else
 			{
 				buffer.asIntBuffer().put(array, 0, count);
+				buffer.position(buffer.position() + serializeSize(array, count));
 			}
 		}
 		@Override
@@ -653,7 +653,6 @@ public class TypeSupports {
 			else
 			{
 				data = (int[])object;
-				// TODO think of "data.length < count"
 				if (data.length != count)
 					data = new int[count];
 			}
@@ -770,7 +769,6 @@ public class TypeSupports {
 			else
 			{
 				data = (String[])object;
-				// TODO think of "data.length < count"
 				if (data.length != count)
 					data = new String[count];
 			}

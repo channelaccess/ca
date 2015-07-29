@@ -41,7 +41,7 @@ public final class Messages {
 								Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE :
 								Constants.CA_MESSAGE_HEADER_SIZE;
 			
-		ByteBuffer buffer = transport.acquireSendBuffer(requiredSize);
+		ByteBuffer buffer = transport.acquireSendBuffer(requiredSize + payloadSize);
 			
 		// standard header
 		if (!useExtendedHeader)
@@ -358,8 +358,6 @@ public final class Messages {
 	public static void readNotifyMessage(
 			Transport transport, int dataType, int dataCount, int sid, int ioid)
 	{
-		// TODO optionally check response message size
-	    
 		boolean ignore = true;
 		try
 		{
@@ -391,8 +389,6 @@ public final class Messages {
 	public static void createSubscriptionMessage(
 			Transport transport, int dataType, int dataCount, int sid, int ioid, int mask)
 	{
-		// TODO optionally check response message size
-	    
 		boolean ignore = true;
 		try
 		{

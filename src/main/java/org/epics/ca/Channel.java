@@ -34,7 +34,7 @@ public interface Channel<T> extends AutoCloseable {
 	// sync methods, exception is thrown on failure
 	// 
 	
-	// TODO reusable get methods
+	// NOTE: reusable get methods
 	//	public T get(T reuse);
 	// public CompletableFuture<T> getAsync(T reuse);
 	// public <MT extends Metadata<T>> MT get(Class<? extends Metadata> clazz, T reuse);

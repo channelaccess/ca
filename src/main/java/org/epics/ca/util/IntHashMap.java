@@ -84,13 +84,11 @@ public class IntHashMap<T> {
     /**
      * <p>Object pool implementation for Entry class.</p>
      */
-    // TODO timed clean-up
     private static class EntryObjectPool {
     	
     	/**
     	 * Pool of reusable objects.
     	 */
-    	// TODO get rid of class casts
     	private ArrayList<Entry> pool;
     	private int lastPos = -1;
     	

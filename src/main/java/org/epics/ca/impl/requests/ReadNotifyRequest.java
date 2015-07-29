@@ -60,7 +60,7 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 		channel.registerResponseRequest(this);
 
 		Messages.readNotifyMessage(transport, typeSupport.getDataType(), dataCount, sid, ioid);
-		transport.flush();		// TODO auto-flush
+		transport.flush();
 	}
 
 	@Override
@@ -81,7 +81,7 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
 			Status caStatus = Status.forStatusCode(status);
 			if (caStatus == Status.NORMAL)
 			{
-				T value = null;	// TODO reuse option
+				T value = null;	// NOTE: reserved for "reuse" option
 				value = typeSupport.deserialize(dataPayloadBuffer, value, dataCount);
 
 				complete(value);

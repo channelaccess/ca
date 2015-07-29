@@ -45,7 +45,7 @@ public class LeaderFollowersThreadPool {
         	catch (NumberFormatException nfe) { /* noop */ }
         }
 
-        // TODO consider using LIFO ordering of threads (to maximize CPU cache affinity)
+        // NOTE: consider using LIFO ordering of threads (to maximize CPU cache affinity)
         // unbounded queue is OK, since its naturally limited (threadPoolSize + # of transports (used for flushing))
         executor = new ThreadPoolExecutor(threadPoolSize, threadPoolSize,
         								  Long.MAX_VALUE, TimeUnit.NANOSECONDS,
