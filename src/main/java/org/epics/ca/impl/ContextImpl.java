@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 
 import org.epics.ca.Channel;
 import org.epics.ca.Constants;
+import org.epics.ca.Context;
 import org.epics.ca.Version;
 import org.epics.ca.impl.reactor.Reactor;
 import org.epics.ca.impl.reactor.ReactorHandler;
@@ -296,30 +297,30 @@ public class ContextImpl implements AutoCloseable, Constants {
 		// dump version
 		logger.config(() -> "Java CA v" + Version.getVersionString());
 		
-		addressList = readStringProperty(properties, ADDR_LIST_KEY, addressList);
-		logger.config(() -> ADDR_LIST_KEY + ": " + addressList);
+		addressList = readStringProperty(properties, Context.Configuration.EPICS_CA_ADDR_LIST.toString(), addressList);
+		logger.config(() -> Context.Configuration.EPICS_CA_ADDR_LIST.toString() + ": " + addressList);
 		
-		autoAddressList = readBooleanProperty(properties, AUTO_ADDR_LIST_KEY, autoAddressList);
-		logger.config(() -> AUTO_ADDR_LIST_KEY + ": " + autoAddressList);
+		autoAddressList = readBooleanProperty(properties, Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString(), autoAddressList);
+		logger.config(() -> Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString() + ": " + autoAddressList);
 
-		connectionTimeout = readFloatProperty(properties, CONN_TMO_KEY, connectionTimeout);
+		connectionTimeout = readFloatProperty(properties, Context.Configuration.EPICS_CA_CONN_TMO.toString(), connectionTimeout);
 		connectionTimeout = Math.max(0.1f, connectionTimeout);
-		logger.config(() -> CONN_TMO_KEY + ": " + connectionTimeout);
+		logger.config(() -> Context.Configuration.EPICS_CA_CONN_TMO.toString() + ": " + connectionTimeout);
 
-		beaconPeriod = readFloatProperty(properties, BEACON_PERIOD_KEY, beaconPeriod);
+		beaconPeriod = readFloatProperty(properties, Context.Configuration.EPICS_CA_BEACON_PERIOD.toString(), beaconPeriod);
 		beaconPeriod = Math.max(0.1f, beaconPeriod);
-		logger.config(() -> BEACON_PERIOD_KEY + ": " + beaconPeriod);
+		logger.config(() -> Context.Configuration.EPICS_CA_BEACON_PERIOD.toString() + ": " + beaconPeriod);
 
-		repeaterPort = readIntegerProperty(properties, REPEATER_PORT_KEY, repeaterPort);
-		logger.config(() -> REPEATER_PORT_KEY + ": " + repeaterPort);
+		repeaterPort = readIntegerProperty(properties, Context.Configuration.EPICS_CA_REPEATER_PORT.toString(), repeaterPort);
+		logger.config(() -> Context.Configuration.EPICS_CA_REPEATER_PORT.toString() + ": " + repeaterPort);
 
-		serverPort = readIntegerProperty(properties, SERVER_PORT_KEY, serverPort);
-		logger.config(() -> SERVER_PORT_KEY + ": " + serverPort);
+		serverPort = readIntegerProperty(properties, Context.Configuration.EPICS_CA_SERVER_PORT.toString(), serverPort);
+		logger.config(() -> Context.Configuration.EPICS_CA_SERVER_PORT.toString() + ": " + serverPort);
 
-		maxArrayBytes = readIntegerProperty(properties, MAX_ARRAY_BYTES_KEY, maxArrayBytes);
+		maxArrayBytes = readIntegerProperty(properties, Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString(), maxArrayBytes);
 		if (maxArrayBytes > 0) 
 			maxArrayBytes = Math.max(1024,  maxArrayBytes);
-		logger.config(() -> MAX_ARRAY_BYTES_KEY + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
+		logger.config(() -> Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString() + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
 	}
 	
 	/**
@@ -722,9 +723,8 @@ public class ContextImpl implements AutoCloseable, Constants {
 		
 	}
 	
-	/**
+	/**g
 	 * Get, or create if necessary, transport of given server address.
-	 * @param serverAddress	required transport address
 	 * @param priority process priority.
 	 * @return transport for given address
 	 */

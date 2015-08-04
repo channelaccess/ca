@@ -5,7 +5,11 @@ import java.util.Properties;
 import org.epics.ca.impl.ContextImpl;
 
 public class Context implements AutoCloseable {
-	
+
+	public enum Configuration { EPICS_CA_ADDR_LIST, EPICS_CA_AUTO_ADDR_LIST, EPICS_CA_CONN_TMO,
+		EPICS_CA_BEACON_PERIOD, EPICS_CA_REPEATER_PORT, EPICS_CA_SERVER_PORT,
+		EPICS_CA_MAX_ARRAY_BYTES };
+
 	private final ContextImpl delegate;
 	
 	public Context()

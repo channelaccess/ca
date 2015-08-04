@@ -1,19 +1,6 @@
 package org.epics.ca;
 
 public interface Constants {
-
-	/* -------- EPICS CA configuration keys -------- */
-	public static final String ADDR_LIST_KEY = "EPICS_CA_ADDR_LIST";
-	public static final String AUTO_ADDR_LIST_KEY = "EPICS_CA_AUTO_ADDR_LIST";
-	public static final String CONN_TMO_KEY = "EPICS_CA_CONN_TMO";
-	public static final String BEACON_PERIOD_KEY = "EPICS_CA_BEACON_PERIOD";
-	public static final String REPEATER_PORT_KEY = "EPICS_CA_REPEATER_PORT";
-	public static final String SERVER_PORT_KEY = "EPICS_CA_SERVER_PORT";
-	public static final String MAX_ARRAY_BYTES_KEY = "EPICS_CA_MAX_ARRAY_BYTES";
-	
-	public static enum Configuration { EPICS_CA_ADDR_LIST, EPICS_CA_AUTO_ADDR_LIST, EPICS_CA_CONN_TMO,
-		EPICS_CA_BEACON_PERIOD, EPICS_CA_REPEATER_PORT, EPICS_CA_SERVER_PORT,
-		EPICS_CA_MAX_ARRAY_BYTES };
 		
 	public static enum ChannelProperties { nativeType, nativeTypeCode, remoteAddress, nativeElementCount };
 	
