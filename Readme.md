@@ -16,9 +16,9 @@ __ca__ is a pure Java Channel Access client implementation. __ca__ is the easies
 
 # Usage
 
-## Prerequisites
+## Dependencies
 
-__ca__ is available on Maven Central. It can be retrieved easily by Maven or Gradle as follows:
+__ca__ is available on Maven Central. It can be easily retrieved by Maven or Gradle as follows:
 
 Maven:
 
@@ -46,7 +46,7 @@ repositories {
 }
 ```
 
-## Usage
+## Context
 
 To be able to create channels a Context need to be created. The context is a container for all channels created with it. If the context is closed also all channels created with the context will be closed.
 
@@ -62,17 +62,17 @@ properties.setProperty(Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "10.
 new Context(properties);
 ```
 
-All available properties are available in the Configuration enumeration inside the Context class. The available properties are:
+All available properties are available in the `Context.Configuration` enumeration inside the Context class. The available properties are:
 
 | Property | Desciption |
 |----|----|
-|EPICS_CA_ADDR_LIST||
-|EPICS_CA_AUTO_ADDR_LIST||
+|EPICS_CA_ADDR_LIST|Address list to search the channel|
+|EPICS_CA_AUTO_ADDR_LIST|Automatically build up search address list|
 |EPICS_CA_CONN_TMO||
 |EPICS_CA_BEACON_PERIOD||
 |EPICS_CA_REPEATER_PORT||
-|EPICS_CA_SERVER_PORT||
-|EPICS_CA_MAX_ARRAY_BYTES||
+|EPICS_CA_SERVER_PORT|Channel access server port|
+|EPICS_CA_MAX_ARRAY_BYTES|Maximum size in bytes of an array/waveform - see note below!|
 
 _Note:_ In contrast to other Channel Access libraries EPICS_CA_MAX_ARRAY_BYTES is set to unlimited by default. Therefore usually there is no reason to set this property.
 
@@ -82,8 +82,15 @@ The context need to be closed at the end of the application via:
 context.close();
 ```
 
-_Note:_ As Context implements AutoCloseable you can also use `try(Context context = new Context){ /*do stuff*/}``
+_Note:_ As Context implements AutoCloseable you can also use
 
+```java
+try(Context context = new Context){
+  // Code
+}
+```
+
+## Channel
 To create a channel use:
 
 ```java
@@ -116,6 +123,53 @@ CompletableFuture.allOf(channel1.connectAsync(), channel2.connectAsync()).get();
 
 A timeout for the multiple connect is realized the same way as with the single `connectAsync()`.
 
+
+After creating a channel you are able to get and put values via the `get()` and `put(value)` methods.
+
+To put a value in a fire and forget style use `putNoWait(value)`. This method will put the value change request on the network but does not wait for any kind of acknowledgement.
+
+```java
+// Get value
+double value = channel.get();
+// Set value
+channel.put(10.0);
+// Set value (best effort style)
+channel.putNoWait(10.0);
+```
+
+Beside the synchronous (i.e. blocking until the operation is done) versions of `get()` and `put(value)` there are also asynchronous calls. They are named `getAsync()` and `putAsync(value)`. Both functions immediately return with a CompletableFuture for the operation. The Future can be used to wait at any location in the application and to wait for the completion of the operation and to retrieve the final value of the channel.
+
+Example asynchronous get:
+
+```java
+CompletableFuture<Double> future = channel.getAsync();
+CompletableFuture<Double> future2 = channel2.getAsync();
+
+// do something different ...
+doSomething();
+// ... or simply sleep ...
+Thread.sleep(1000);
+// ... or simply do nothing ...
+
+double value = future.get();
+double value2 = future2.get();
+```
+
+Example asynchronous put:
+
+```java
+CompletableFuture<Status> future = channel.putAsync(1.0); // this could, for example start some move of a motor ...
+CompletableFuture<Status> future2 = channel2.putAsync(5.0);
+
+/ do something different ...
+doSomething();
+// ... or simply sleep ...
+Thread.sleep(1000);
+// ... or simply do nothing ...
+
+future.get(); // this will return a status object that can be queried if put was successful
+future2.get(); // this will return a status object that can be queried if put was successful
+```
 
 ### Examples
 
