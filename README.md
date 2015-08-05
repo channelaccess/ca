@@ -58,23 +58,23 @@ The context accepts several properties. Properties can be set as follows at Cont
 
 ```java
 Properties properties = new Properties();
-properties.setProperty(Constants.ADDR_LIST_KEY, "10.10.10.255");
+properties.setProperty(Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "10.10.10.255");
 new Context(properties);
 ```
 
-The available properties are:
+All available properties are available in the Configuration enumeration inside the Context class. The available properties are:
 
 | Property | Desciption |
 |----|----|
-|Constants.ADDR_LIST_KEY||
-|Constants.AUTO_ADDR_LIST_KEY||
-|Constants.BEACON_PERIOD_KEY||
-|Constants.SERVER_PORT_KEY||
-|Constants.MAX_ARRAY_BYTES_KEY||
-|Constants.REPEATER_PORT_KEY||
-|Constants.CONN_TMO_KEY||
+|EPICS_CA_ADDR_LIST||
+|EPICS_CA_AUTO_ADDR_LIST||
+|EPICS_CA_CONN_TMO||
+|EPICS_CA_BEACON_PERIOD||
+|EPICS_CA_REPEATER_PORT||
+|EPICS_CA_SERVER_PORT||
+|EPICS_CA_MAX_ARRAY_BYTES||
 
-_Note:_ In contrast to other Channel Access libraries MAX_ARRAY_BYTES_KEY is set to unlimited by default. Therefore usually there is no reason to set this property.
+_Note:_ In contrast to other Channel Access libraries EPICS_CA_MAX_ARRAY_BYTES is set to unlimited by default. Therefore usually there is no reason to set this property.
 
 The context need to be closed at the end of the application via:
 
