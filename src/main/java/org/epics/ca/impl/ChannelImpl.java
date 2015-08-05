@@ -293,6 +293,19 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
 	@Override
 	public void put(T value) {
+		try {
+			CompletableFuture<Status> call = putAsync(value);
+			Status status = call.get();
+			if(! status.isSuccessful()){
+				throw new RuntimeException(status.getMessage());
+			}
+		} catch (Throwable th) {
+			throw new RuntimeException("Failed to do put.", th);
+		}
+	}
+
+	@Override
+	public void putNoWait(T value) {
 		
 		TCPTransport t = connectionRequiredCheck();
 		
