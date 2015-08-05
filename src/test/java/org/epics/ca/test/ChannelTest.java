@@ -233,7 +233,7 @@ public class ChannelTest extends TestCase {
 				assertTrue(status.isSuccessful());
 			}
 			else
-				channel.put(expectedValue);
+				channel.putNoWait(expectedValue);
 			
 			T value;
 			if (async)
@@ -291,7 +291,7 @@ public class ChannelTest extends TestCase {
 				assertTrue(status.isSuccessful());
 			}
 			else
-				channel.put(expectedValue);
+				channel.putNoWait(expectedValue);
 			
 			MT value;
 			if (async)
@@ -415,7 +415,7 @@ public class ChannelTest extends TestCase {
 				assertTrue(status.isSuccessful());
 			}
 			else
-				channel.put(expectedValue);
+				channel.putNoWait(expectedValue);
 		
 			Alarm<T> value;
 			@SuppressWarnings("rawtypes")

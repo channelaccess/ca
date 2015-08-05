@@ -41,7 +41,8 @@ public interface Channel<T> extends AutoCloseable {
 	// public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(Class<? extends MT> clazz, T reuse);
 	
 	public T get();
-	public void put(T value); // best-effort put
+	public void put(T value);
+	public void putNoWait(T value); // best-effort put
 	
 	//
 	// async methods, exception is reported via CompletableFuture

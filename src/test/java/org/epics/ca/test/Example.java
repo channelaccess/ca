@@ -35,7 +35,7 @@ public class Example {
 			// wait until connected
 			adc.connectAsync().get();
 			
-			adc.put(3.11);
+			adc.putNoWait(3.11);
 			
 			CompletableFuture<Status> fp = adc.putAsync(12.8);
 			System.out.println(fp.get());
@@ -86,7 +86,7 @@ public class Example {
 			GraphicEnum ss = ec.get(GraphicEnum.class);
 			System.out.println(Arrays.toString(ss.getLabels()));
 			
-			ec.put((short)(s + 1));
+			ec.putNoWait((short) (s + 1));
 			
 			Monitor<Double> mon = adc.addValueMonitor(value -> System.out.println(value));
 			//Thread.sleep(10000);
@@ -126,7 +126,7 @@ public class Example {
 			long millis = ts.getMillis();
 			
 			// best-effort put
-			adc.put(12.3);
+			adc.putNoWait(12.3);
 			
 			// async get
 			CompletableFuture<Double> fd = adc.getAsync();
