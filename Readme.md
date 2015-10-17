@@ -82,7 +82,7 @@ The context need to be closed at the end of the application via:
 context.close();
 ```
 
-_Note:_ As Context implements AutoCloseable you can also use
+_Note:_ As Context implements `AutoCloseable` you can also use
 
 ```java
 try(Context context = new Context){
@@ -97,13 +97,13 @@ To create a channel use:
 Channel<Double> channel = context.createChannel("MY_CHANNEL", Double.class);
 ```
 
-At creation time of the channel you need to specify what type you like for the channel. If you want to use the generic type of the channel (e.g. you don't know what type the channel has/you want) use:
+At creation time of the channel its type need to be defined. If you want to use the generic type of the channel (e.g. you don't know what type the channel has/you want) use:
 
 ```java
 Channel<Object> channel = context.createChannel("ARIDI-PCT:CURRENT", Object.class);
 ```
 
-When getting a value from the channel you will get the correct/corresponding Java type.
+When getting a value from the channel you will get the correct/corresponding Java type that mapps to the type set on the server.
 
 After creating the channel object the channel explicitly needs to be connected. There is a synchronous and asynchronous way to do so. The synchronous/blocking way is to call `connect()`. The asynchronous way is to call `connectAsync()`. `connectAsync()` will return a CompletableFuture, to check whether the connect was successful call `.get()` on it. The synchronous way to connect will block until the channel can be connected. If you want to specify a timeout for a connect use the asynchronous connect as follows:
 
@@ -151,6 +151,7 @@ doSomething();
 Thread.sleep(1000);
 // ... or simply do nothing ...
 
+
 double value = future.get();
 double value2 = future2.get();
 ```
@@ -167,8 +168,9 @@ doSomething();
 Thread.sleep(1000);
 // ... or simply do nothing ...
 
+
 future.get(); // this will return a status object that can be queried if put was successful
-future2.get(); // this will return a status object that can be queried if put was successful
+future2.get(); // this will return a status object that can be queried if put was successful                                                                                                                                                                                                                                                            
 ```
 
 ### Examples
