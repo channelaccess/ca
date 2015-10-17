@@ -48,13 +48,15 @@ repositories {
 
 ## Context
 
-To be able to create channels a Context need to be created. The context is a container for all channels created with it. If the context is closed also all channels created with the context will be closed.
+To be able to create channels a Context need to be created. The context is a container for channels. If the context is closed also all channels created with the context will be closed.
+
+This is how to create a context:
 
 ```java
 Context context = new Context()
 ```
 
-The context accepts several properties. Properties can be set as follows at Context creation time:
+A context accepts several properties. Properties can be set at Context creation time as follows:
 
 ```java
 Properties properties = new Properties();
@@ -62,7 +64,7 @@ properties.setProperty(Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "10.
 new Context(properties);
 ```
 
-All available properties are available in the `Context.Configuration` enumeration inside the Context class. The available properties are:
+All possible properties are available in the `Configuration` enumeration inside the Context class. The available properties are:
 
 | Property | Desciption |
 |----|----|
@@ -74,7 +76,7 @@ All available properties are available in the `Context.Configuration` enumeratio
 |EPICS_CA_SERVER_PORT|Channel access server port|
 |EPICS_CA_MAX_ARRAY_BYTES|Maximum size in bytes of an array/waveform - see note below!|
 
-_Note:_ In contrast to other Channel Access libraries EPICS_CA_MAX_ARRAY_BYTES is set to unlimited by default. Therefore usually there is no reason to set this property.
+_Note:_ In contrast to other Channel Access libraries EPICS_CA_MAX_ARRAY_BYTES is set to unlimited by default. Usually there is no reason to set this property. Memory is dynamically acquired as needed.
 
 The context need to be closed at the end of the application via:
 
@@ -97,15 +99,15 @@ To create a channel use:
 Channel<Double> channel = context.createChannel("MY_CHANNEL", Double.class);
 ```
 
-At creation time of the channel its type need to be defined. If you want to use the generic type of the channel (e.g. you don't know what type the channel has/you want) use:
+At creation time of the channel its type need to be defined. If you want to have a generic type of the channel (i.e. you want to use the type set on the server) use:
 
 ```java
 Channel<Object> channel = context.createChannel("ARIDI-PCT:CURRENT", Object.class);
 ```
 
-When getting a value from the channel you will get the correct/corresponding Java type that mapps to the type set on the server.
+When getting a value from the channel you will get the correct/corresponding Java type that maps to the type set on the server.
 
-After creating the channel object the channel explicitly needs to be connected. There is a synchronous and asynchronous way to do so. The synchronous/blocking way is to call `connect()`. The asynchronous way is to call `connectAsync()`. `connectAsync()` will return a CompletableFuture, to check whether the connect was successful call `.get()` on it. The synchronous way to connect will block until the channel can be connected. If you want to specify a timeout for a connect use the asynchronous connect as follows:
+After creating the channel object the channel needs to be connected. There is a synchronous and asynchronous way to do so. The synchronous/blocking way is to call `connect()`. The asynchronous way is to call `connectAsync()`. `connectAsync()` will return a CompletableFuture. To check whether the connect was successful call `.get()` on it. The synchronous way to connect will block until the channel can be connected. If you want to specify a timeout for a connect use the asynchronous connect as follows:
 
 ```
 channel.connectAsync().get(1, java.util.concurrent.TimeUnit.SECONDS);
@@ -123,7 +125,7 @@ CompletableFuture.allOf(channel1.connectAsync(), channel2.connectAsync()).get();
 
 A timeout for the multiple connect is realized the same way as with the single `connectAsync()`.
 
-
+### Get / Put
 After creating a channel you are able to get and put values via the `get()` and `put(value)` methods.
 
 To put a value in a fire and forget style use `putNoWait(value)`. This method will put the value change request on the network but does not wait for any kind of acknowledgement.
@@ -172,6 +174,64 @@ Thread.sleep(1000);
 future.get(); // this will return a status object that can be queried if put was successful
 future2.get(); // this will return a status object that can be queried if put was successful                                                                                                                                                                                                                                                            
 ```
+
+### Metadata
+If you want to retrieve more metadata besides the value from the channel you can request this by specifying the type of metadata with the get call. For example if you also want to get the value modification/update time besides the value from the cannel use:
+
+```java
+channel.get(Timestamped.class)
+```
+
+Ca supports all metadata types Channel Access provides, namely `Timestamped`, `Alarm`, `Graphic` and `Control`.
+
+|Metadata Type| Metadata|
+|----|----|
+|Timestamped| seconds, nanos|
+|Alarm| alarmStatus, alarmSeverity|
+|Graphic| alarmStatus, alarmSeverity, units, precision, upperDisplay, lowerDisplay, upperAlarm, lowerAlarm, upperWarning, lowerWarning|
+|Control| alarmStatus, alarmSeverity, units, precision, upperDisplay, lowerDisplay, upperAlarm, lowerAlarm, upperWarning, lowerWarning, upperControl, lowerControl|
+
+### Monitor
+If you want to monitor a channel you can attach a monitor to it like this:
+
+```java
+Monitor<Double> monitor = channel.addValueMonitor(value -> System.out.println(value));
+```
+
+To close a monitor use:
+
+```java
+monitor.close()
+```
+
+Again if you like more metadata from the monitor you can specify the type of metadata you are interested in.
+
+```java
+Monitor<Timestamped<Double>> monitor =
+    channel.addMonitor(
+        Timestamped.class,
+            value -> { if (value != null) System.out.println(new Date(value.getMillis()) + " / " + value.getValue()); }
+            );
+```
+
+### Listeners
+A channel can have Access Right and Connection listeners. These two types of listeners are attached as follows.
+
+
+
+```java
+Listener connectionListener = channel.addConnectionListener((channel, state) -> System.out.println(channel.getName() + " is connected? " + state));
+
+
+Listener accessRightListener = channel.addAccessRightListener((channel, rights) -> System.out.println(channel.getName() + " is rights? " + rights));
+```
+To remove the listener(s), or use `try-catch-resources` (i.e. Listeners implement `AutoCloseable`) or 
+
+```java
+listener.close()
+```
+
+_Note:_ These listeners can be attached to the channel before connecting.
 
 ### Examples
 
