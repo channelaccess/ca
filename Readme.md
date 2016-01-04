@@ -225,7 +225,7 @@ Listener connectionListener = channel.addConnectionListener((channel, state) -> 
 
 Listener accessRightListener = channel.addAccessRightListener((channel, rights) -> System.out.println(channel.getName() + " is rights? " + rights));
 ```
-To remove the listener(s), or use `try-catch-resources` (i.e. Listeners implement `AutoCloseable`) or 
+To remove the listener(s), or use `try-catch-resources` (i.e. Listeners implement `AutoCloseable`) or
 
 ```java
 listener.close()
@@ -258,3 +258,12 @@ The project can be build via *gradle* by executing the provided wrapper scripts 
 There is no need to have *gradle* installed on your machine, the only prerequisite for building is a Java >= 8 installed.
 
 __Note:__ The first time you execute this command the required jars for the build system will be automatically downloaded and the build will start afterwards. The next time you execute the command the build should be faster.
+
+## Maven Central
+To push the latest version to Maven Central use
+
+```bash
+./gradlew uploadArchives
+```
+
+To be able to do so you need to have your ~/.gradle/gradle.properties file in place with your Sonatype username/password as well you need to be part of the group *org.epics*
