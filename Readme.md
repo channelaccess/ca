@@ -246,6 +246,13 @@ listener.close()
 _Note:_ These listeners can be attached to the channel before connecting.
 
 
+### ConnectionState
+The channels connection state can be checked as follows:
+
+```java
+channel.getConnectionState()
+```
+
 ## Channels
 The utility class `Channels` provides various convenience functions to create, close and operate on channels.
 

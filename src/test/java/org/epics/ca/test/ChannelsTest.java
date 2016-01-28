@@ -12,6 +12,7 @@ import junit.framework.TestCase;
 import org.epics.ca.Channel;
 import org.epics.ca.ChannelDescriptor;
 import org.epics.ca.Channels;
+import org.epics.ca.ConnectionState;
 import org.epics.ca.Context;
 import org.epics.ca.annotation.CaChannel;
 
@@ -90,9 +91,13 @@ public class ChannelsTest extends TestCase {
 		Channels.create(context, object, macros);
 		
 		object.getDoubleChannel().get();
-		
+		assertEquals(ConnectionState.CONNECTED, object.getDoubleChannel().getConnectionState());
+
 		// Close annotated channels
+		Channel<Double> channel = object.getDoubleChannel(); // we have to buffer the channel object as the close will null the objects attribute
 		Channels.close(object);
+		
+		assertEquals(ConnectionState.CLOSED, channel.getConnectionState());
 	}
 	
 	class AnnotatedClass {
