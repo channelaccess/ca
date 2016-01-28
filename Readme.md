@@ -261,8 +261,8 @@ Channel<String> channel2 = Channels.create(context, new ChannelDescriptor<String
 
 // Create and connect multiple channels at once
 List<ChannelDescriptor<?>> descriptors = new ArrayList<>();
-descriptors.add(ChannelDescriptor<String>("name", String.class));
-descriptors.add(ChannelDescriptor<Double>("name_double", Double.class));
+descriptors.add(new ChannelDescriptor<String>("name", String.class));
+descriptors.add(new ChannelDescriptor<Double>("name_double", Double.class));
 List<Channel<?>> channels = Channels.create(context,  descriptors);
 ```
 
@@ -292,6 +292,57 @@ CompletableFuture<String> future1 = waitForValue(channel, "value", comparator)
 // ... do something
 future1.get()
 ```
+
+## Annotations
+Ca provides the annotation, __@CaChannel__,  to annotate channel declarations within a class. While using the `Channels` utility class these annotations can be used to easily and efficiently create these channels.
+
+All that needs to done is, to annotate the channel declarations as follows:
+```java
+class AnnotatedClass {
+		@CaChannel(name="adc01", type=Double.class)
+		private Channel<Double> doubleChannel;
+
+		@CaChannel(name="adc01", type=String.class)
+		private Channel<String> stringChannel;
+
+		@CaChannel(name={"adc01", "simple"}, type=String.class)
+		private List<Channel<String>> stringChannels;
+
+		public Channel<Double> getDoubleChannel() {
+			return doubleChannel;
+		}
+		public Channel<String> getStringChannel() {
+			return stringChannel;
+		}
+		public List<Channel<String>> getStringChannels() {
+			return stringChannels;
+		}
+	}
+```
+
+Afterwards the channels can be created via `Channels` as follows:
+
+```java
+AnnotatedClass object = new AnnotatedClass();
+Channels.create(context, object);
+```
+
+To close all annotated channels use:
+
+```java
+Channels.close(object);
+```
+
+As channel names should not be hardcoded within an annotation, the name of a channel may contain multiple macros (e.g. `@CaChannel(name="adc${MACRO1}", type=String.class)`). While creating the channels a map of macros need to be passed to the `Channels.create` function.
+
+```java
+Map<String,String> macros = new HashMap<>();
+macros.put("MACRO1","01");
+AnnotatedClass object = new AnnotatedClass();
+Channels.create(context, object, macros);
+```
+
+Macro names are __case sensitive__!
 
 ## Examples
 
