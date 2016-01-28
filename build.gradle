@@ -6,7 +6,7 @@ apply plugin: 'maven'
 group = 'org.epics'
 archivesBaseName = 'ca'
 sourceCompatibility = 1.8
-version = '0.2-SNAPSHOT'
+version = '0.1.0'
 jar {
     manifest {
         attributes 'Implementation-Title': 'Java EPICS CA',
@@ -74,7 +74,7 @@ uploadArchives {
       pom.project {
         name 'Example Application'
         packaging 'jar'
-        // optionally artifactId can be defined here 
+        // optionally artifactId can be defined here
         description 'Java CA client implementation using a new API (not using JCA).'
         url 'https://github.com/channelaccess/ca'
 
