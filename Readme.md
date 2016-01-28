@@ -13,10 +13,7 @@ __ca__ is a pure Java Channel Access client implementation. __ca__ is the easies
 * Support of all listeners ChannelAccess supports: ConnectionListener, AccessRightListener, Value Listener (Monitor)
 
 
-
-# Usage
-
-## Dependencies
+# Installation
 
 __ca__ is available on Maven Central. It can be easily retrieved by Maven or Gradle as follows:
 
@@ -45,6 +42,8 @@ repositories {
   }
 }
 ```
+
+# Usage
 
 ## Context
 
@@ -107,7 +106,19 @@ Channel<Object> channel = context.createChannel("ARIDI-PCT:CURRENT", Object.clas
 
 When getting a value from the channel you will get the correct/corresponding Java type that maps to the type set on the server.
 
-After creating the channel object the channel needs to be connected. There is a synchronous and asynchronous way to do so. The synchronous/blocking way is to call `connect()`. The asynchronous way is to call `connectAsync()`. `connectAsync()` will return a CompletableFuture. To check whether the connect was successful call `.get()` on it. The synchronous way to connect will block until the channel can be connected. If you want to specify a timeout for a connect use the asynchronous connect as follows:
+After creating the channel object the channel needs to be connected. There is a synchronous and asynchronous way to do so. The synchronous/blocking way is to call:
+
+```java
+channel.connect()
+```
+
+The asynchronous way is to call:
+
+```java
+`connectAsync()`
+```
+
+`connectAsync()` will return a CompletableFuture. To check whether the connect was successful call `.get()` on it. The synchronous way to connect will block until the channel can be connected. If you want to specify a timeout for a connect use the asynchronous connect as follows:
 
 ```
 channel.connectAsync().get(1, java.util.concurrent.TimeUnit.SECONDS);
@@ -124,6 +135,7 @@ CompletableFuture.allOf(channel1.connectAsync(), channel2.connectAsync()).get();
 ```
 
 A timeout for the multiple connect is realized the same way as with the single `connectAsync()`.
+
 
 ### Get / Put
 After creating a channel you are able to get and put values via the `get()` and `put(value)` methods.
@@ -233,17 +245,21 @@ listener.close()
 
 _Note:_ These listeners can be attached to the channel before connecting.
 
-### Examples
+
+## Channels
+The utility class `Channels` provides convenience functions to create single channels as well as for Bulk creation of channels.
+
+
+## Examples
 
 Create simple channel:
 
 ```java
 try (Context context = new Context())
 {
-  Channel<Double> channel = context.createChannel("MY_CHANNEL", Double.class);
-  channel.connect();
-  System.out.println(channel.get());
-  channel.close();
+  try(Channel<Double> channel = Channels.create(context, "MY_CHANNEL", Double.class)){
+    System.out.println(channel.get());
+  }
 }
 ```
 
