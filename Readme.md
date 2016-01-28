@@ -23,14 +23,14 @@ Maven:
 <dependency>
   <groupId>org.epics</groupId>
   <artifactId>ca</artifactId>
-  <version>0.1.0</version>
+  <version>0.2-SNAPSHOT</version>
 </dependency
 ```
 
 Gradle:
 
 ```gradle
-compile 'org.epics:ca:0.1.0'
+compile 'org.epics:ca:0.2-SNAPSHOT'
 ```
 
 __Note:__ To be able to retrieve the current snapshot version you have to configure the following repository:
