@@ -247,8 +247,51 @@ _Note:_ These listeners can be attached to the channel before connecting.
 
 
 ## Channels
-The utility class `Channels` provides convenience functions to create single channels as well as for Bulk creation of channels.
+The utility class `Channels` provides various convenience functions to create, close and operate on channels.
 
+### Create
+To create channels `Channels` provides these functions:
+
+```java
+// Create and connect channel
+Channel<String> channel1 = Channels.create(context, "name", String.class);
+
+// Create and connect channel
+Channel<String> channel2 = Channels.create(context, new ChannelDescriptor<String>("name", String.class));
+
+// Create and connect multiple channels at once
+List<ChannelDescriptor<?>> descriptors = new ArrayList<>();
+descriptors.add(ChannelDescriptor<String>("name", String.class));
+descriptors.add(ChannelDescriptor<Double>("name_double", Double.class));
+List<Channel<?>> channels = Channels.create(context,  descriptors);
+```
+
+All of these function will __create__ and __connect__ the specified channels. a
+
+### WaitForValue
+For waiting until a channel reaches a specified value `Channels` provide following functions:
+
+```java
+waitForValue(channel, "value")
+
+// Use custom comparator for checking what is equal ...
+Comparator<String> comparator = ...
+waitForValue(channel, "value", comparator)
+```
+
+Both functions are also available in an __async__ version. Instead of blocking they return a CompletableFuture.
+
+```java
+CompletableFuture<String> future = waitForValue(channel, "value")
+// ... do something\
+future.get();
+
+// Use custom comparator for checking what is equal ...
+Comparator<String> comparator = ...
+CompletableFuture<String> future1 = waitForValue(channel, "value", comparator)
+// ... do something
+future1.get()
+```
 
 ## Examples
 
