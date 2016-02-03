@@ -89,7 +89,7 @@ public class ContextImpl implements AutoCloseable, Constants {
 	protected int serverPort = CA_SERVER_PORT;
 	
 	/**
-	 * Length in bytes of the maximum array size that may pass through CA, defaults to 0 (<=0 means unlimited).
+	 * Length in bytes of the maximum array size that may pass through CA, defaults to 0 (&lt;=0 means unlimited).
 	 */
 	protected int maxArrayBytes = 0; //16384;
 

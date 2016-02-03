@@ -69,7 +69,7 @@ public class SearchTimer extends Thread {
 		 * Method invoked by timer at requested time.
 		 * 
 		 * @return delay (in ms) after which to reschedule,
-		 * 		   not rescheduled if <= 0.
+		 * 		   not rescheduled if &lt;= 0.
 		 */
 		public abstract long timeout();
 	}
@@ -79,8 +79,8 @@ public class SearchTimer extends Thread {
 	 * 
 	 * @param millisecondsToDelay
 	 *            -- the number of milliseconds from now to run the command.
-	 * @param command
-	 *            -- the command to run after the delay.
+	 * @param task
+	 *            -- timer task
 	 **/
 	public synchronized void executeAfterDelay(
 			long millisecondsToDelay,
@@ -170,6 +170,8 @@ public class SearchTimer extends Thread {
 
 	/**
 	 * Return the next task to execute, or null if thread is interrupted.
+	 * @param blockAndExtract block and extract
+	 * @param dt dt
 	 **/
 	protected synchronized TimerTask nextTask(boolean blockAndExtract, long dt) {
 
@@ -214,8 +216,8 @@ public class SearchTimer extends Thread {
 
 	/**
 	 * Check whether there is a task scheduled in next "dT" ms.
-	 * @param dT
-	 * @return
+	 * @param dT dT
+	 * @return boolean
 	 */
 	public boolean hasNext(long dT)
 	{
@@ -308,6 +310,8 @@ public class SearchTimer extends Thread {
 
 		/**
 		 * Get parent index.
+		 * @param k k
+		 * @return number
 		 */
 		protected final int parent(int k) {
 			return (k - 1) / 2;
@@ -315,6 +319,8 @@ public class SearchTimer extends Thread {
 
 		/**
 		 * Get left child.
+		 * @param k k
+		 * @return number
 		 */
 		protected final int left(int k) {
 			return 2 * k + 1;
@@ -322,6 +328,8 @@ public class SearchTimer extends Thread {
 
 		/**
 		 * Get right child.
+		 * @param k k
+		 * @return number
 		 */
 		protected final int right(int k) {
 			return 2 * (k + 1);

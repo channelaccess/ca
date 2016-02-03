@@ -20,7 +20,7 @@ public class Header {
 
 	/**
 	 * Data count field of the header.
-	 * NOTE: extended (unsigned short -> int)
+	 * NOTE: extended (unsigned short -&gt; int)
 	 */
 	public int dataCount;
 
@@ -37,7 +37,7 @@ public class Header {
 	
 	/**
 	 * Parse CA response header.
-	 * @param headerBuffer	response header to be parsed, condition: headerBuffer.remaining() >= CA_MESSAGE_HEADER_SIZE
+	 * @param headerBuffer	response header to be parsed, condition: headerBuffer.remaining() &gt;= CA_MESSAGE_HEADER_SIZE
 	 */
 	public boolean read(ByteBuffer headerBuffer)
 	{

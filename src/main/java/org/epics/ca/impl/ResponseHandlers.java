@@ -25,7 +25,7 @@ public class ResponseHandlers {
 		 * @param responseFrom	remove address of the responder, <code>null</code> if unknown. 
 		 * @param transport		response source transport.
 		 * @param header		CA message header.
-		 * @param response		payload buffer.
+		 * @param payloadBuffer		payload buffer.
 		 */
 		public void handleResponse(InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer);
 

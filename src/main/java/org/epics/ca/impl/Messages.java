@@ -135,7 +135,6 @@ public final class Messages {
 	 * @param priority
 	 * @param sequenceNumber
 	 * @param isSequenceNumberValid
-	 * @return generated version message buffer.
 	 */
 	public static final void generateVersionRequestMessage(
 			Transport transport, ByteBuffer buffer, short priority, 
@@ -418,12 +417,11 @@ public final class Messages {
 
 	/**
 	 * Cancel subscription (aka event add) message.
-	 * @param transport
-	 * @param dataType
-	 * @param dataCount
-	 * @param sid
-	 * @param ioid
-	 * @param mask
+	 * @param transport	transport
+	 * @param dataType	data type
+	 * @param dataCount	data count
+	 * @param sid	sid
+	 * @param ioid	ioid
 	 */
 	public static void cancelSubscriptionMessage(
 			Transport transport, int dataType, int dataCount, int sid, int ioid)
@@ -507,13 +505,11 @@ public final class Messages {
 
 	/**
 	 * Write (best-effort) message.
-	 * @param transport
-	 * @param dataType
-	 * @param dataCount
-	 * @param sid
-	 * @param cid
-	 * @param typeSupport
-	 * @param value
+	 * @param transport transport
+	 * @param sid	sid
+	 * @param cid	cid
+	 * @param typeSupport type support
+	 * @param value	value
 	 */
 	public static <T> void writeMessage(
 			Transport transport, int sid, int cid, TypeSupport<T> typeSupport, T value, int count)
@@ -548,13 +544,11 @@ public final class Messages {
 	
 	/**
 	 * Write notify message.
-	 * @param transport
-	 * @param dataType
-	 * @param dataCount
-	 * @param sid
-	 * @param ioid
-	 * @param typeSupport
-	 * @param value
+	 * @param transport transport
+	 * @param sid	sid
+	 * @param ioid	ioid
+	 * @param typeSupport	type support
+	 * @param value	value
 	 */
 	public static <T> void writeNotifyMessage(
 			Transport transport, int sid, int ioid, TypeSupport<T> typeSupport, T value, int count)

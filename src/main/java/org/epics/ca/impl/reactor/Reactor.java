@@ -220,7 +220,7 @@ public class Reactor {
 
 	/**
 	 * Creates a new instance of reactor.
-	 * @throws IOException
+	 * @throws IOException IO Exception
 	 */  
 	public Reactor() throws IOException {
 		initialize();
@@ -228,7 +228,7 @@ public class Reactor {
 
 	/**
 	 * Initialize reactor.
-	 * @throws IOException
+	 * @throws IOException IO Exception
 	 */
 	private void initialize() throws IOException
 	{
@@ -425,7 +425,7 @@ public class Reactor {
 	 * @param interestOps	operations supported by channel (i.e. operations of interest).
 	 * @param handler		handle to process requests.
 	 * @return selector selection key.
-	 * @throws ClosedChannelException
+	 * @throws ClosedChannelException	Channel closed
 	 */
 	public SelectionKey register(SelectableChannel selectableChannel, int interestOps, ReactorHandler handler)
 		throws ClosedChannelException
@@ -475,8 +475,8 @@ public class Reactor {
 	
 	/**
 	 * Change <code>SelectionKey</code> operations of interest.
-	 * @param selectionKey 
-	 * @param interestOps
+	 * @param selectionKey 	selection key
+	 * @param interestOps	interest ops
 	 */
 	private void setInterestOpsInternal(SelectionKey selectionKey, int interestOps)
 	{
@@ -528,8 +528,8 @@ public class Reactor {
 
 	/**
 	 * Change <code>SelectionKey</code> operations of interest.
-	 * @param channel 
-	 * @param interestOps
+	 * @param channel 	channel
+	 * @param interestOps	interest ops
 	 */
 	public void setInterestOps(AbstractSelectableChannel channel, int interestOps)
 	{

@@ -121,7 +121,7 @@ public enum Status
 	/**
 	 * Get status instance from EPICS status code.
 	 * 
-	 * @param value
+	 * @param code
 	 *            EPICS status code.
 	 * @return status instance from EPICS status code.
 	 */

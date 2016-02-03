@@ -1,7 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
-//apply plugin: 'signing'
+apply plugin: 'signing'
 
 group = 'org.epics'
 archivesBaseName = 'ca'
@@ -55,13 +55,17 @@ task sourcesJar(type: Jar) {
 
 artifacts {
 //    archives javadocJar, sourcesJar
-    archives sourcesJar
+    archives jar, sourcesJar, javadocJar
+}
+
+signing {
+    sign configurations.archives
 }
 
 uploadArchives {
   repositories {
     mavenDeployer {
-      //beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+      beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
       repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
         authentication(userName: ossrhUsername, password: ossrhPassword)
@@ -77,6 +81,21 @@ uploadArchives {
         // optionally artifactId can be defined here
         description 'Java CA client implementation using a new API (not using JCA).'
         url 'https://github.com/channelaccess/ca'
+        licenses {
+          license {
+            name 'GNU General Public License 3.0'
+            url 'http://www.gnu.org/licenses/gpl.txt'
+            distribution 'repo'
+          }
+        }
+
+        developers {
+          developer {
+            name 'Simon Ebner'
+            email 'daq@psi.ch'
+            organization 'Paul Scherrer Institute'
+          }
+        }
 
         scm {
           connection 'scm:git:https://github.com/channelaccess/ca.git'

@@ -99,7 +99,7 @@ public class ChannelSearchManager {
 	
 	/**
 	 * Unregister channel.
-	 * @param channel
+	 * @param channel channel to unregister
 	 */
 	public void unregisterChannel(ChannelImpl<?> channel)
 	{
@@ -183,7 +183,7 @@ public class ChannelSearchManager {
 	
     /**
 	 * Constructor.
-	 * @param context
+	 * @param broadcastTransport transport
 	 */
 	public ChannelSearchManager(BroadcastTransport broadcastTransport)
 	{
@@ -231,7 +231,7 @@ public class ChannelSearchManager {
 
 	/**
 	 * Generate (put on send buffer) search request 
-	 * @param channel 
+	 * @param channel  channel
 	 * @param allowNewFrame flag indicating if new search request message is allowed to be put in new frame.
 	 * @return <code>true</code> if new frame was sent.
 	 */
