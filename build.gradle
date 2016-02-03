@@ -7,6 +7,9 @@ group = 'org.epics'
 archivesBaseName = 'ca'
 sourceCompatibility = 1.8
 version = '1.0.0'
+
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+
 jar {
     manifest {
         attributes 'Implementation-Title': 'Java EPICS CA',
@@ -59,6 +62,7 @@ artifacts {
 }
 
 signing {
+    required { isReleaseVersion && gradle.taskGraph.hasTask("uploadArchives") }
     sign configurations.archives
 }
 
