@@ -6,14 +6,14 @@ apply plugin: 'signing'
 group = 'org.epics'
 archivesBaseName = 'ca'
 sourceCompatibility = 1.8
-version = '1.0.0'
+version = '1.0.1'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
 jar {
     manifest {
         attributes 'Implementation-Title': 'Java EPICS CA',
-                   'Implementation-Version': version
+                'Implementation-Version': version
     }
 }
 
@@ -67,47 +67,53 @@ signing {
 }
 
 uploadArchives {
-  repositories {
-    mavenDeployer {
-      beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-      repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-        authentication(userName: ossrhUsername, password: ossrhPassword)
-      }
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
 
-      snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-        authentication(userName: ossrhUsername, password: ossrhPassword)
-      }
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
 
-      pom.project {
-        name 'Example Application'
-        packaging 'jar'
-        // optionally artifactId can be defined here
-        description 'Java CA client implementation using a new API (not using JCA).'
-        url 'https://github.com/channelaccess/ca'
-        licenses {
-          license {
-            name 'GNU General Public License 3.0'
-            url 'http://www.gnu.org/licenses/gpl.txt'
-            distribution 'repo'
-          }
+            pom.project {
+                name 'Example Application'
+                packaging 'jar'
+                // optionally artifactId can be defined here
+                description 'Java CA client implementation using a new API (not using JCA).'
+                url 'https://github.com/channelaccess/ca'
+                licenses {
+                    license {
+                        name 'GNU General Public License 3.0'
+                        url 'http://www.gnu.org/licenses/gpl.txt'
+                        distribution 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        name 'Simon Ebner'
+                        email 'daq@psi.ch'
+                        organization 'Paul Scherrer Institute'
+                    }
+                }
+
+                scm {
+                    connection 'scm:git:https://github.com/channelaccess/ca.git'
+                    developerConnection 'scm:git:https://github.com/channelaccess/ca.git'
+                    url 'https://github.com/channelaccess/ca'
+                }
+
+            }
         }
-
-        developers {
-          developer {
-            name 'Simon Ebner'
-            email 'daq@psi.ch'
-            organization 'Paul Scherrer Institute'
-          }
-        }
-
-        scm {
-          connection 'scm:git:https://github.com/channelaccess/ca.git'
-          developerConnection 'scm:git:https://github.com/channelaccess/ca.git'
-          url 'https://github.com/channelaccess/ca'
-        }
-
-      }
     }
-  }
+}
+
+task fatJar(type: Jar) {
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
 }
