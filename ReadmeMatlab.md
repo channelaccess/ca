@@ -1,7 +1,7 @@
 
 # Overview
 
-**ca** can also be easily used for Channel Access from within Matlab. 
+**ca** can also be easily used for Channel Access from within Matlab.
 
 
 # Usage
@@ -24,7 +24,7 @@ channel = Channels.create(context, 'S10CB01-RBOC-DCP10:FOR-AMPLT-MAX');
 channel.get()
 
 
-
+% Get metadata for channels as described in https://github.com/channelaccess/ca#metadata
 value = channel.get(org.epics.ca.data.Graphic().getClass())
 value.getUnits()
 
