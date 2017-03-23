@@ -11,6 +11,8 @@ As **ca** requires Java 8 or later please make sure that the you point your Matl
 export MATLAB_JAVA=/opt/gfa/java/latest/jre
 ```
 
+After this download and copy the latest released version of the `ca-all-x.x.x.jar` library jar, available in the [releases](https://github.com/channelaccess/ca/releases) scection into your Matlab workspace.
+
 Afterwards the library can be used as follows:
 
 
