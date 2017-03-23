@@ -58,6 +58,10 @@ public class Channels {
 		return future.whenComplete((v,exception)->monitor.close());
 //		return future;
 	}
+
+	public static Channel<?> create(Context context, String name){
+		return create(context, name, Object.class);
+	}
 	
 	public static <T> Channel<T> create(Context context, String name, Class<T> type){
 		Channel<T> channel = context.createChannel(name, type);
