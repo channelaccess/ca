@@ -11,7 +11,13 @@ __ca__ is a pure Java Channel Access client implementation. __ca__ is the easies
 * Chaining of actions/operations, e.g. set this, then set that, ...
 * Easily get additional metadata to value: Timestamp, Alarms, Graphic, Control
 * Support of all listeners ChannelAccess supports: ConnectionListener, AccessRightListener, Value Listener (Monitor)
+ 
 
+## Compatibility
+
+Implements CA protocol specified in version 4.13 of the Channel Access Protocol Specification. The CA protocol
+specification is distributed in the documents associated with each EPICS base release. For developer convenience a 
+PDF of the current version is available in the [documents](docs) area of this project. 
 
 # Installation
 
