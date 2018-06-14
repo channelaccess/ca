@@ -28,6 +28,9 @@ import org.epics.ca.data.GraphicEnum;
 import org.epics.ca.data.GraphicEnumArray;
 import org.epics.ca.data.Metadata;
 import org.epics.ca.data.Timestamped;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author msekoranja
@@ -42,6 +45,7 @@ public class ChannelTest extends TestCase {
 	private static final int TIMEOUT_SEC = 5;
 	
 	@Override
+	@Before
 	protected void setUp() throws Exception {
 		server = new CAJTestServer();
 		server.runInSeparateThread();
@@ -49,11 +53,13 @@ public class ChannelTest extends TestCase {
 	}
 
 	@Override
+	@After
 	protected void tearDown() throws Exception {
 		context.close();
 		server.destroy();
 	}
 
+	@Test
 	public void testConnect() throws Throwable {
 		
 		try (Channel<Double> channel = context.createChannel("no_such_channel_test", Double.class))
@@ -95,7 +101,7 @@ public class ChannelTest extends TestCase {
 		
 	}
 
-	
+	@Test
 	public void testConnectionListener() throws Throwable {
 		
 		try (Channel<Double> channel = context.createChannel("adc01", Double.class))
@@ -147,7 +153,8 @@ public class ChannelTest extends TestCase {
 			assertEquals(0, unregsiteredEventCount.get());
 		};
 	}
-	
+
+	@Test
 	public void testAccessRightsListener() throws Throwable {
 		
 		try (Channel<Double> channel = context.createChannel("adc01", Double.class))
@@ -192,6 +199,7 @@ public class ChannelTest extends TestCase {
 		};
 	}
 
+	@Test
 	public void testProperties() throws Throwable {
 		
 		try (Channel<Double> channel = context.createChannel("adc01", Double.class))
@@ -212,7 +220,8 @@ public class ChannelTest extends TestCase {
 			assertEquals(Double.class, (Class<?>)nativeType);
 		};
 	}
-	
+
+	@Test
 	public static <T> boolean arrayEquals(T arr1, T arr2) throws Exception {
 	    Class<?> c = arr1.getClass();
 	    if (!c.getComponentType().isPrimitive()) 
@@ -220,7 +229,8 @@ public class ChannelTest extends TestCase {
 	    
 	    return (Boolean) Arrays.class.getMethod("equals", c, c).invoke(null, arr1, arr2);
 	}
-	
+
+	@Test
 	private <T> void internalTestPutAndGet(String channelName, Class<T> clazz, T expectedValue, boolean async) throws Throwable
 	{
 		try (Channel<T> channel = context.createChannel(channelName, clazz))
@@ -250,7 +260,8 @@ public class ChannelTest extends TestCase {
 				assertEquals(expectedValue, value);
 		}
 	}
-	
+
+	@Test
 	private void internalTestValuePutAndGet(boolean async) throws Throwable
 	{
 		internalTestPutAndGet("adc01", String.class, "12.346", async);	// precision == 3
@@ -267,12 +278,14 @@ public class ChannelTest extends TestCase {
 		internalTestPutAndGet("adc01", int[].class, new int[] { 123456, 654321 }, async);
 		internalTestPutAndGet("adc01", double[].class, new double[] { 12.82, 3.112 }, async);
 	}
-	
+
+	@Test
 	public void testValuePutAndGetSync() throws Throwable
 	{
 		internalTestValuePutAndGet(false);
 	}
-	
+
+	@Test
 	public void testValuePutAndGetAsync() throws Throwable
 	{
 		internalTestValuePutAndGet(true);
@@ -391,17 +404,20 @@ public class ChannelTest extends TestCase {
 		internalTestMetaPutAndGet("adc01", int[].class, Integer.class, new int[] { 123456, 654321 }, alarm, meta, async);
 		internalTestMetaPutAndGet("adc01", double[].class, Double.class, new double[] { 12.82, 3.112 }, alarm, meta, async);
 	}
-	
+
+	@Test
 	public void testMetaPutAndGetSync() throws Throwable
 	{
 		internalTestMetaPutAndGet(false);
 	}
-	
+
+	@Test
 	public void testMetaPutAndGetAsync() throws Throwable
 	{
 		internalTestMetaPutAndGet(true);
 	}
-	
+
+
 	private <T> void internalTestGraphicEnum(String channelName, Class<T> clazz, T expectedValue, Alarm<?> expectedAlarm, String[] expectedLabels, boolean async) throws Throwable
 	{
 		// put
@@ -442,7 +458,8 @@ public class ChannelTest extends TestCase {
 			assertTrue(Arrays.equals(expectedLabels, labels));
 		}
 	}
-	
+
+	@Test
 	public void testGraphicEnum() throws Throwable
 	{
 		Alarm<Double> alarm = new Alarm<Double>();
@@ -458,7 +475,8 @@ public class ChannelTest extends TestCase {
 		internalTestGraphicEnum("enum", short[].class, new short[] { 1, 2 }, alarm, labels, false);
 		internalTestGraphicEnum("enum", short[].class, new short[] { 3, 4 }, alarm, labels, true);
 	}
-	
+
+	@Test
 	public void testMonitors() throws Throwable {
 		
 		try (Channel<Integer> channel = context.createChannel("counter", Integer.class))
@@ -521,7 +539,8 @@ public class ChannelTest extends TestCase {
 		}
 		
 	}
-	
+
+	@Test
 	public void testGenericChannel() throws Throwable {
 		
 		try (Channel<Object> channel = context.createChannel("adc01", Object.class))
@@ -538,7 +557,8 @@ public class ChannelTest extends TestCase {
 		}
 		
 	}
-	
+
+	@Test
 	public void testLargeArray() throws Throwable {
 		
 		tearDown();
@@ -583,4 +603,7 @@ public class ChannelTest extends TestCase {
 				System.setProperty(propName, oldValue);
 		}
 	}
+
+
+
 }

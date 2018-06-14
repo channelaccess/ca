@@ -10,11 +10,13 @@ import junit.framework.TestCase;
 import org.epics.ca.Channel;
 import org.epics.ca.Constants;
 import org.epics.ca.Context;
+import org.junit.Test;
 
 public class ContextTest extends TestCase {
 
 	private final String TEST_CHANNEL_NAME = "test01";
 
+	@Test
 	public void testContext() {
 		try (Context context = new Context())
 		{
@@ -22,6 +24,7 @@ public class ContextTest extends TestCase {
 		};
 	}
 
+	@Test
 	public void testContextProperties() {
 		
 		try (Context context = new Context(null))
@@ -37,7 +40,8 @@ public class ContextTest extends TestCase {
 			assertNotNull(context);
 		};
 	}
-	
+
+	@Test
 	public void testCreateChannel() {
 		
 		try (Context context = new Context())
@@ -109,6 +113,7 @@ public class ContextTest extends TestCase {
 		};
 	}
 
+	@Test
 	public void testClose() {
 		
 		Context context = new Context();

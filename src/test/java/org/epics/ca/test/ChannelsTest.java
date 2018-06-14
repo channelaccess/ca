@@ -15,6 +15,9 @@ import org.epics.ca.Channels;
 import org.epics.ca.ConnectionState;
 import org.epics.ca.Context;
 import org.epics.ca.annotation.CaChannel;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ChannelsTest extends TestCase {
 
@@ -24,6 +27,7 @@ public class ChannelsTest extends TestCase {
 	private CAJTestServer server;
 	
 	@Override
+	@Before
 	protected void setUp() throws Exception {
 		server = new CAJTestServer();
 		server.runInSeparateThread();
@@ -31,11 +35,13 @@ public class ChannelsTest extends TestCase {
 	}
 
 	@Override
+	@After
 	protected void tearDown() throws Exception {
 		context.close();
 		server.destroy();
 	}
-	
+
+	@Test
 	public void testWait()
 	{
 		try (Channel<Integer> channel1 = context.createChannel("simple", Integer.class))
@@ -58,7 +64,8 @@ public class ChannelsTest extends TestCase {
 			}
 		}
 	}
-	
+
+	@Test
 	public void testCreateChannels(){
 		List<ChannelDescriptor<?>> descriptors = new ArrayList<>();
 		descriptors.add(new ChannelDescriptor<String>("simple", String.class));
@@ -66,7 +73,8 @@ public class ChannelsTest extends TestCase {
 		List<Channel<?>> channels = Channels.create(context, descriptors);
 		assertTrue(channels.size()==2);
 	}
-	
+
+	@Test
 	public void testAnnotations(){
 		AnnotatedClass test = new AnnotatedClass();
 		
@@ -83,7 +91,8 @@ public class ChannelsTest extends TestCase {
 		// Close annotated channels
 		Channels.close(test);
 	}
-	
+
+	@Test
 	public void testAnnotationsMacro(){
 		Map<String,String> macros = new HashMap<>();
 		macros.put("MACRO1","01");
@@ -99,7 +108,7 @@ public class ChannelsTest extends TestCase {
 		
 		assertEquals(ConnectionState.CLOSED, channel.getConnectionState());
 	}
-	
+
 	class AnnotatedClass {
 		@CaChannel(name="adc01", type=Double.class)
 		private Channel<Double> doubleChannel;
