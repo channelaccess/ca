@@ -5,7 +5,7 @@ apply plugin: 'signing'
 
 group = 'org.epics'
 archivesBaseName = 'ca'
-sourceCompatibility = 9
+sourceCompatibility = 10
 version = '1.0.2-SNAPSHOT'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
