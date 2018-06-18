@@ -3,57 +3,40 @@
  */
 package org.epics.ca.test;
 
+import org.epics.ca.*;
+import org.epics.ca.data.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.TestCase;
-
-import org.epics.ca.AccessRights;
-import org.epics.ca.Channel;
-import org.epics.ca.ConnectionState;
-import org.epics.ca.Constants;
-import org.epics.ca.Context;
-import org.epics.ca.Listener;
-import org.epics.ca.Monitor;
-import org.epics.ca.Status;
-import org.epics.ca.data.Alarm;
-import org.epics.ca.data.AlarmSeverity;
-import org.epics.ca.data.AlarmStatus;
-import org.epics.ca.data.Control;
-import org.epics.ca.data.Graphic;
-import org.epics.ca.data.GraphicEnum;
-import org.epics.ca.data.GraphicEnumArray;
-import org.epics.ca.data.Metadata;
-import org.epics.ca.data.Timestamped;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author msekoranja
  *
  */
-public class ChannelTest extends TestCase {
-
+public class ChannelTest
+{
 	static final double DELTA = 1e-10; 
 
 	private Context context;
 	private CAJTestServer server;
 	private static final int TIMEOUT_SEC = 5;
-	
-	@Override
-	@Before
+
+	@BeforeEach
 	protected void setUp() throws Exception {
 		server = new CAJTestServer();
 		server.runInSeparateThread();
 		context = new Context();
 	}
 
-	@Override
-	@After
+	@AfterEach
 	protected void tearDown() throws Exception {
 		context.close();
 		server.destroy();

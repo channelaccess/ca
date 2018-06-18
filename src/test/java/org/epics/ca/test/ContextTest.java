@@ -1,18 +1,18 @@
 package org.epics.ca.test;
 
 import static java.util.stream.Collectors.joining;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Properties;
 import java.util.stream.Stream;
 
-import junit.framework.TestCase;
 
 import org.epics.ca.Channel;
 import org.epics.ca.Constants;
 import org.epics.ca.Context;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class ContextTest extends TestCase {
+public class ContextTest {
 
 	private final String TEST_CHANNEL_NAME = "test01";
 

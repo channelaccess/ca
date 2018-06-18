@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
 
 import org.epics.ca.Channel;
 import org.epics.ca.ChannelDescriptor;
@@ -15,27 +14,29 @@ import org.epics.ca.Channels;
 import org.epics.ca.ConnectionState;
 import org.epics.ca.Context;
 import org.epics.ca.annotation.CaChannel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class ChannelsTest extends TestCase {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-	static final double DELTA = 1e-10; 
+
+public class ChannelsTest
+{
+	static final double DELTA = 1e-10;
 
 	private Context context;
 	private CAJTestServer server;
-	
-	@Override
-	@Before
+
+	@BeforeEach
 	protected void setUp() throws Exception {
 		server = new CAJTestServer();
 		server.runInSeparateThread();
 		context = new Context();
 	}
 
-	@Override
-	@After
+	@AfterEach
 	protected void tearDown() throws Exception {
 		context.close();
 		server.destroy();
