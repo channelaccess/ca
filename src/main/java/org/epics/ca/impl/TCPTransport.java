@@ -343,7 +343,6 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 				// and sets the position back to zero again.
 				logger.log( Level.FINEST,"Flipping buffer." );
 				receiveBuffer.flip();
-				logger.log( Level.FINEST,"cmd is: " + String.valueOf( receiveBuffer.get( 0 ) ) );
 				logger.log( Level.FINEST,"ReceiveBuffer now has #bytes: " + String.valueOf( receiveBuffer.remaining() ) );
 
 				// Now go ahead and try to process whatever data we have obtained
@@ -431,7 +430,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 	            break;
 	        }
 
-				// If we get here then we have enough room to read the payload and the data is already present :-)
+			// If we get here then we have enough room to read the payload and the data is already present :-)
 			// in the buffer. We now have all the information needed to process the current message so go and
 			// do it.
 
@@ -467,11 +466,11 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable {
 		// to receive new data.
 
 		logger.log( Level.FINEST, "Checking for any remaining bytes." );
-		if (receiveBuffer.hasRemaining())
+		int unprocessedBytes = receiveBuffer.limit() - lastMessageStartPosition;
+		if ( unprocessedBytes > 0 )
 		{
 			// copy remaining buffer, lastMessageBytesAvailable bytes from lastMessagePosition,
 			// to the start of receiveBuffer
-			int unprocessedBytes = receiveBuffer.limit() - lastMessageStartPosition;
 			logger.log( Level.FINEST, "- moving remaining bytes to start of buffer. Unprocessed bytes = " + String.valueOf( unprocessedBytes ) );
 			if (unprocessedBytes < 1024)
 			{
