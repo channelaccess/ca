@@ -26,7 +26,7 @@ sourceSets {
 
     test {
         java {
-            srcDir 'test/java'
+            srcDir 'src/test/java'
         }
     }
 }
@@ -46,6 +46,10 @@ dependencies {
     testCompile 'org.epics:caj:1.1.16-SNAPSHOT'
     testCompile 'org.epics:jca:2.3.6'
     testCompile 'org.mockito:mockito-core:2.18.3'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 task javadocJar(type: Jar) {
