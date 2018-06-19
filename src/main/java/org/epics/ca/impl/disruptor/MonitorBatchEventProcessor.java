@@ -39,233 +39,235 @@ import com.lmax.disruptor.TimeoutHandler;
 
 /**
  * This is a modification of {@link BatchEventProcessor} that reports monitor connection loss events.
- * 
+ * <p>
  * Convenience class for handling the batching semantics of consuming entries from a {@link RingBuffer}
  * and delegating the available events to an {@link EventHandler}.
- *
+ * <p>
  * If the {@link EventHandler} also implements {@link LifecycleAware} it will be notified just after the thread
  * is started and just before the thread is shutdown.
  *
  * @param <T> event implementation storing the data for sharing during exchange or parallel coordination of an event.
  */
 public final class MonitorBatchEventProcessor<T>
-    implements EventProcessor
+      implements EventProcessor
 {
-    private final AtomicBoolean running = new AtomicBoolean(false);
-    private ExceptionHandler<? super T> exceptionHandler = new FatalExceptionHandler();
-    private final DataProvider<T> dataProvider;
-    private final SequenceBarrier sequenceBarrier;
-    private final EventHandler<? super T> eventHandler;
-    private final Sequence sequence = new Sequence(Sequencer.INITIAL_CURSOR_VALUE);
-    private final TimeoutHandler timeoutHandler;
+   private final AtomicBoolean running = new AtomicBoolean (false);
+   private ExceptionHandler<? super T> exceptionHandler = new FatalExceptionHandler ();
+   private final DataProvider<T> dataProvider;
+   private final SequenceBarrier sequenceBarrier;
+   private final EventHandler<? super T> eventHandler;
+   private final Sequence sequence = new Sequence (Sequencer.INITIAL_CURSOR_VALUE);
+   private final TimeoutHandler timeoutHandler;
 
-    private final ChannelImpl<?> channel;
-    private final T disconnectedValue;
-    private final Predicate<T> isDisconnectedValue;
-    
-    /**
-     * Construct a {@link EventProcessor} that will automatically track the progress by updating its sequence when
-     * the {@link EventHandler#onEvent(Object, long, boolean)} method returns.
-     *
-     * @param dataProvider to which events are published.
-     * @param sequenceBarrier on which it is waiting.
-     * @param eventHandler is the delegate to which events are dispatched.
-     */
-    public MonitorBatchEventProcessor(final ChannelImpl<?> channel,
-    						   final T disconnectedValue, final Predicate<T> isDisconnectedValue,
-    						   final DataProvider<T> dataProvider,
-                               final SequenceBarrier sequenceBarrier,
-                               final EventHandler<? super T> eventHandler)
-    {
-    	this.channel = channel;
-    	this.disconnectedValue = disconnectedValue;
-    	this.isDisconnectedValue = isDisconnectedValue;
-    	
-        this.dataProvider = dataProvider;
-        this.sequenceBarrier = sequenceBarrier;
-        this.eventHandler = eventHandler;
+   private final ChannelImpl<?> channel;
+   private final T disconnectedValue;
+   private final Predicate<T> isDisconnectedValue;
 
-        if (eventHandler instanceof SequenceReportingEventHandler)
-        {
-            ((SequenceReportingEventHandler<?>)eventHandler).setSequenceCallback(sequence);
-        }
+   /**
+    * Construct a {@link EventProcessor} that will automatically track the progress by updating its sequence when
+    * the {@link EventHandler#onEvent(Object, long, boolean)} method returns.
+    *
+    * @param dataProvider    to which events are published.
+    * @param sequenceBarrier on which it is waiting.
+    * @param eventHandler    is the delegate to which events are dispatched.
+    */
+   public MonitorBatchEventProcessor(
+         final ChannelImpl<?> channel,
+         final T disconnectedValue, final Predicate<T> isDisconnectedValue,
+         final DataProvider<T> dataProvider,
+         final SequenceBarrier sequenceBarrier,
+         final EventHandler<? super T> eventHandler
+   )
+   {
+      this.channel = channel;
+      this.disconnectedValue = disconnectedValue;
+      this.isDisconnectedValue = isDisconnectedValue;
 
-        timeoutHandler = (eventHandler instanceof TimeoutHandler) ? (TimeoutHandler) eventHandler : null;
-    }
+      this.dataProvider = dataProvider;
+      this.sequenceBarrier = sequenceBarrier;
+      this.eventHandler = eventHandler;
 
-    @Override
-    public Sequence getSequence()
-    {
-        return sequence;
-    }
+      if ( eventHandler instanceof SequenceReportingEventHandler )
+      {
+         ((SequenceReportingEventHandler<?>) eventHandler).setSequenceCallback (sequence);
+      }
 
-    @Override
-    public void halt()
-    {
-        running.set(false);
-        sequenceBarrier.alert();
-    }
+      timeoutHandler = (eventHandler instanceof TimeoutHandler) ? (TimeoutHandler) eventHandler : null;
+   }
 
-    @Override
-    public boolean isRunning()
-    {
-        return running.get();
-    }
+   @Override
+   public Sequence getSequence()
+   {
+      return sequence;
+   }
 
-    /**
-     * Set a new {@link ExceptionHandler} for handling exceptions propagated out of the {@link MonitorBatchEventProcessor}
-     *
-     * @param exceptionHandler to replace the existing exceptionHandler.
-     */
-    public void setExceptionHandler(final ExceptionHandler<? super T> exceptionHandler)
-    {
-        if (null == exceptionHandler)
-        {
-            throw new NullPointerException();
-        }
+   @Override
+   public void halt()
+   {
+      running.set (false);
+      sequenceBarrier.alert ();
+   }
 
-        this.exceptionHandler = exceptionHandler;
-    }
+   @Override
+   public boolean isRunning()
+   {
+      return running.get ();
+   }
 
-    /**
-     * It is ok to have another thread rerun this method after a halt().
-     *
-     * @throws IllegalStateException if this object instance is already running in a thread
-     */
-    @Override
-    public void run()
-    {
-        if (!running.compareAndSet(false, true))
-        {
-            throw new IllegalStateException("Thread is already running");
-        }
-        sequenceBarrier.clearAlert();
+   /**
+    * Set a new {@link ExceptionHandler} for handling exceptions propagated out of the {@link MonitorBatchEventProcessor}
+    *
+    * @param exceptionHandler to replace the existing exceptionHandler.
+    */
+   public void setExceptionHandler( final ExceptionHandler<? super T> exceptionHandler )
+   {
+      if ( null == exceptionHandler )
+      {
+         throw new NullPointerException ();
+      }
 
-        notifyStart();
-        
-        int lastConnectionLossId = channel.getConnectionLossId();
+      this.exceptionHandler = exceptionHandler;
+   }
 
-        T event = null;
-        long nextSequence = sequence.get() + 1L;
-        try
-        {
-            while (true)
-            {
-                try
-                {
-                    final long availableSequence = sequenceBarrier.waitFor(nextSequence);
+   /**
+    * It is ok to have another thread rerun this method after a halt().
+    *
+    * @throws IllegalStateException if this object instance is already running in a thread
+    */
+   @Override
+   public void run()
+   {
+      if ( !running.compareAndSet (false, true) )
+      {
+         throw new IllegalStateException ("Thread is already running");
+      }
+      sequenceBarrier.clearAlert ();
 
-                    while (nextSequence <= availableSequence)
-                    {
-                        event = dataProvider.get(nextSequence);
-                        if (isDisconnectedValue.test(event))
-                        	lastConnectionLossId = channel.getConnectionLossId();
-                        eventHandler.onEvent(event, nextSequence, nextSequence == availableSequence);
-                        nextSequence++;
-                    }
+      notifyStart ();
 
-                    sequence.set(availableSequence);
-                }
-                catch (final TimeoutException e)
-                {
-                    notifyTimeout(sequence.get());
-                }
-                catch (final AlertException ex)
-                {
-                    if (!running.get())
-                    {
-                        break;
-                    }
-                }
-                catch (final Throwable ex)
-                {
-                    exceptionHandler.handleEventException(ex, nextSequence, event);
-                    sequence.set(nextSequence);
-                    nextSequence++;
-                }
-                
-                try
-                {
-                    final int connectionLossId = channel.getConnectionLossId();
-                	if (lastConnectionLossId != connectionLossId)
-                	{
-                		lastConnectionLossId = connectionLossId;
-                		eventHandler.onEvent(disconnectedValue, -1, true);
-                	}
-                }
-                catch (final TimeoutException e)
-                {
-                    notifyTimeout(-1);
-                }
-                catch (final AlertException ex)
-                {
-                    if (!running.get())
-                    {
-                        break;
-                    }
-                }
-                catch (final Throwable ex)
-                {
-                    exceptionHandler.handleEventException(ex, -1, event);
-                }
-                
-            }
-        }
-        finally
-        {
-            notifyShutdown();
-            running.set(false);
-        }
-    }
+      int lastConnectionLossId = channel.getConnectionLossId ();
 
-    private void notifyTimeout(final long availableSequence)
-    {
-        try
-        {
-            if (timeoutHandler != null)
-            {
-                timeoutHandler.onTimeout(availableSequence);
-            }
-        }
-        catch (Throwable e)
-        {
-            exceptionHandler.handleEventException(e, availableSequence, null);
-        }
-    }
-
-    /**
-     * Notifies the EventHandler when this processor is starting up
-     */
-    private void notifyStart()
-    {
-        if (eventHandler instanceof LifecycleAware)
-        {
+      T event = null;
+      long nextSequence = sequence.get () + 1L;
+      try
+      {
+         while ( true )
+         {
             try
             {
-                ((LifecycleAware)eventHandler).onStart();
-            }
-            catch (final Throwable ex)
-            {
-                exceptionHandler.handleOnStartException(ex);
-            }
-        }
-    }
+               final long availableSequence = sequenceBarrier.waitFor (nextSequence);
 
-    /**
-     * Notifies the EventHandler immediately prior to this processor shutting down
-     */
-    private void notifyShutdown()
-    {
-        if (eventHandler instanceof LifecycleAware)
-        {
+               while ( nextSequence <= availableSequence )
+               {
+                  event = dataProvider.get (nextSequence);
+                  if ( isDisconnectedValue.test (event) )
+                     lastConnectionLossId = channel.getConnectionLossId ();
+                  eventHandler.onEvent (event, nextSequence, nextSequence == availableSequence);
+                  nextSequence++;
+               }
+
+               sequence.set (availableSequence);
+            }
+            catch ( final TimeoutException e )
+            {
+               notifyTimeout (sequence.get ());
+            }
+            catch ( final AlertException ex )
+            {
+               if ( !running.get () )
+               {
+                  break;
+               }
+            }
+            catch ( final Throwable ex )
+            {
+               exceptionHandler.handleEventException (ex, nextSequence, event);
+               sequence.set (nextSequence);
+               nextSequence++;
+            }
+
             try
             {
-                ((LifecycleAware)eventHandler).onShutdown();
+               final int connectionLossId = channel.getConnectionLossId ();
+               if ( lastConnectionLossId != connectionLossId )
+               {
+                  lastConnectionLossId = connectionLossId;
+                  eventHandler.onEvent (disconnectedValue, -1, true);
+               }
             }
-            catch (final Throwable ex)
+            catch ( final TimeoutException e )
             {
-                exceptionHandler.handleOnShutdownException(ex);
+               notifyTimeout (-1);
             }
-        }
-    }
+            catch ( final AlertException ex )
+            {
+               if ( !running.get () )
+               {
+                  break;
+               }
+            }
+            catch ( final Throwable ex )
+            {
+               exceptionHandler.handleEventException (ex, -1, event);
+            }
+
+         }
+      }
+      finally
+      {
+         notifyShutdown ();
+         running.set (false);
+      }
+   }
+
+   private void notifyTimeout( final long availableSequence )
+   {
+      try
+      {
+         if ( timeoutHandler != null )
+         {
+            timeoutHandler.onTimeout (availableSequence);
+         }
+      }
+      catch ( Throwable e )
+      {
+         exceptionHandler.handleEventException (e, availableSequence, null);
+      }
+   }
+
+   /**
+    * Notifies the EventHandler when this processor is starting up
+    */
+   private void notifyStart()
+   {
+      if ( eventHandler instanceof LifecycleAware )
+      {
+         try
+         {
+            ((LifecycleAware) eventHandler).onStart ();
+         }
+         catch ( final Throwable ex )
+         {
+            exceptionHandler.handleOnStartException (ex);
+         }
+      }
+   }
+
+   /**
+    * Notifies the EventHandler immediately prior to this processor shutting down
+    */
+   private void notifyShutdown()
+   {
+      if ( eventHandler instanceof LifecycleAware )
+      {
+         try
+         {
+            ((LifecycleAware) eventHandler).onShutdown ();
+         }
+         catch ( final Throwable ex )
+         {
+            exceptionHandler.handleOnShutdownException (ex);
+         }
+      }
+   }
 }

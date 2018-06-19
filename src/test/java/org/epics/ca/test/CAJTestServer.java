@@ -15,167 +15,192 @@ import com.cosylab.epics.caj.cas.util.DefaultServerImpl;
 import com.cosylab.epics.caj.cas.util.MemoryProcessVariable;
 import com.cosylab.epics.caj.cas.util.examples.CounterProcessVariable;
 
-public class CAJTestServer {
+public class CAJTestServer
+{
 
-	/**
-     * JCA server context.
-     */
-    private volatile ServerContext context = null;
-    
-    /**
-     * Initialize JCA context.
-     * @throws CAException	throws on any failure.
-     */
-    private void initialize() throws CAException {
-        
-		// Get the JCALibrary instance.
-		JCALibrary jca = JCALibrary.getInstance();
+   /**
+    * JCA server context.
+    */
+   private volatile ServerContext context = null;
 
-		// Create server implementation
-		DefaultServerImpl server = new DefaultServerImpl();
-		
-		// Create a context with default configuration values.
-		context = jca.createServerContext(JCALibrary.CHANNEL_ACCESS_SERVER_JAVA, server);
+   /**
+    * Initialize JCA context.
+    *
+    * @throws CAException throws on any failure.
+    */
+   private void initialize() throws CAException
+   {
 
-        // register process variables
-		registerProcessVariables(server); 
-    }
+      // Get the JCALibrary instance.
+      JCALibrary jca = JCALibrary.getInstance ();
 
-    /**
-     * Register process variables.
-     * @param server
-     */
-	private void registerProcessVariables(DefaultServerImpl server) {
-		
-		// simple in-memory PV
-		server.createMemoryProcessVariable("simple", DBR_Int.TYPE, new int[] { 1, 2, 3 });
+      // Create server implementation
+      DefaultServerImpl server = new DefaultServerImpl ();
 
-		// PV supporting all GR/CTRL info
-		MemoryProcessVariable mpv = new MemoryProcessVariable("adc01", null, DBR_Double.TYPE, new double[] { 12.08, 3.11 });
-		
-		mpv.setUpperDispLimit(new Double(10));
-		mpv.setLowerDispLimit(new Double(-10));
-		
-		mpv.setUpperAlarmLimit(new Double(9));
-		mpv.setLowerAlarmLimit(new Double(-9));
+      // Create a context with default configuration values.
+      context = jca.createServerContext (JCALibrary.CHANNEL_ACCESS_SERVER_JAVA, server);
 
-		mpv.setUpperCtrlLimit(new Double(8));
-		mpv.setLowerCtrlLimit(new Double(-8));
+      // register process variables
+      registerProcessVariables (server);
+   }
 
-		mpv.setUpperWarningLimit(new Double(7));
-		mpv.setLowerWarningLimit(new Double(-7));
+   /**
+    * Register process variables.
+    *
+    * @param server
+    */
+   private void registerProcessVariables( DefaultServerImpl server )
+   {
 
-		mpv.setUnits("units");
-		mpv.setPrecision((short)3);
+      // simple in-memory PV
+      server.createMemoryProcessVariable ("simple", DBR_Int.TYPE, new int[] { 1, 2, 3 });
 
-		server.registerProcessVaribale(mpv);
+      // PV supporting all GR/CTRL info
+      MemoryProcessVariable mpv = new MemoryProcessVariable ("adc01", null, DBR_Double.TYPE, new double[] { 12.08, 3.11 });
 
-		// enum in-memory PV
-		MemoryProcessVariable enumPV = new MemoryProcessVariable("enum", null, DBR_Enum.TYPE, new short[] { 0 }) 
-		{
-			private final String[] labels =
-				{ "zero", "one", "two", "three", "four", "five", "six", "seven" }; 
-			/* (non-Javadoc)
-			 * @see com.cosylab.epics.caj.cas.util.MemoryProcessVariable#getEnumLabels()
-			 */
-			public String[] getEnumLabels() {
-				return labels;
-			}
-			
-		};
-		server.registerProcessVaribale(enumPV);
+      mpv.setUpperDispLimit (new Double (10));
+      mpv.setLowerDispLimit (new Double (-10));
 
-		// counter PV
-		CounterProcessVariable counter = new CounterProcessVariable("counter", null, -10, 10, 1, 1000, -7, 7, -9, 9);
-		server.registerProcessVaribale(counter);
+      mpv.setUpperAlarmLimit (new Double (9));
+      mpv.setLowerAlarmLimit (new Double (-9));
 
-		// fast counter PV
-		//CounterProcessVariable fastCounter = new CounterProcessVariable("fastCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
-		//server.registerProcessVaribale(fastCounter);
+      mpv.setUpperCtrlLimit (new Double (8));
+      mpv.setLowerCtrlLimit (new Double (-8));
 
-		// simple in-memory 1MB array
-		final int[] arrayValue = new int[1024*1024];
-		for (int i = 0; i < arrayValue.length; i++)
-			arrayValue[i] = i;
-		server.createMemoryProcessVariable("large", DBR_Int.TYPE, arrayValue);
-	}
+      mpv.setUpperWarningLimit (new Double (7));
+      mpv.setLowerWarningLimit (new Double (-7));
 
-    /**
-     * Destroy JCA server  context.
-     */
-    public void destroy() {
-        
-        try {
+      mpv.setUnits ("units");
+      mpv.setPrecision ((short) 3);
 
-            // Destroy the context, check if never initialized.
-            if (context != null)
-                context.destroy();
-            
-        } catch (Throwable th) {
-            th.printStackTrace();
-        }
-    }
-    
-	/**
-	 * @param channelName
-	 */
-	public void execute() {
+      server.registerProcessVaribale (mpv);
 
-		try {
-			
-			// initialize context
-			initialize();
-		    
-			// Display basic information about the context.
-	        System.out.println(context.getVersion().getVersionString());
-	        context.printInfo(); System.out.println();
+      // enum in-memory PV
+      MemoryProcessVariable enumPV = new MemoryProcessVariable ("enum", null, DBR_Enum.TYPE, new short[] { 0 })
+      {
+         private final String[] labels =
+               { "zero", "one", "two", "three", "four", "five", "six", "seven" };
 
-	        System.out.println("Running server...");
+         /* (non-Javadoc)
+          * @see com.cosylab.epics.caj.cas.util.MemoryProcessVariable#getEnumLabels()
+          */
+         public String[] getEnumLabels()
+         {
+            return labels;
+         }
 
-			// run server 
-			context.run(0);
-			
-			System.out.println("Done.");
+      };
+      server.registerProcessVaribale (enumPV);
 
-		} catch (Throwable th) {
-			th.printStackTrace();
-		}
-		finally {
-		    // always finalize
-		    destroy();
-		}
+      // counter PV
+      CounterProcessVariable counter = new CounterProcessVariable ("counter", null, -10, 10, 1, 1000, -7, 7, -9, 9);
+      server.registerProcessVaribale (counter);
 
-	}
-	
-	public void runInSeparateThread()
-	{
-		try {
-			
-			// initialize context
-			initialize();
-		    
-			// run server 
-			new Thread(() -> { 
-				try { 
-					context.run(0);
-				} catch(Throwable th) { 
-					th.printStackTrace(); 
-				}
-			}).start();
+      // fast counter PV
+      //CounterProcessVariable fastCounter = new CounterProcessVariable("fastCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
+      //server.registerProcessVaribale(fastCounter);
 
-		} catch (Throwable th) {
-			throw new RuntimeException("Failed to start CA server.", th);
-		}
-	}
-	
-	
-	/**
-	 * Program entry point. 
-	 * @param args	command-line arguments
-	 */
-	public static void main(String[] args) {
-		// execute
-		new CAJTestServer().execute();
-	}
-	
+      // simple in-memory 1MB array
+      final int[] arrayValue = new int[ 1024 * 1024 ];
+      for ( int i = 0; i < arrayValue.length; i++ )
+         arrayValue[ i ] = i;
+      server.createMemoryProcessVariable ("large", DBR_Int.TYPE, arrayValue);
+   }
+
+   /**
+    * Destroy JCA server  context.
+    */
+   public void destroy()
+   {
+
+      try
+      {
+
+         // Destroy the context, check if never initialized.
+         if ( context != null )
+            context.destroy ();
+
+      }
+      catch ( Throwable th )
+      {
+         th.printStackTrace ();
+      }
+   }
+
+   /**
+    * @param channelName
+    */
+   public void execute()
+   {
+
+      try
+      {
+
+         // initialize context
+         initialize ();
+
+         // Display basic information about the context.
+         System.out.println (context.getVersion ().getVersionString ());
+         context.printInfo ();
+         System.out.println ();
+
+         System.out.println ("Running server...");
+
+         // run server
+         context.run (0);
+
+         System.out.println ("Done.");
+
+      }
+      catch ( Throwable th )
+      {
+         th.printStackTrace ();
+      }
+      finally
+      {
+         // always finalize
+         destroy ();
+      }
+
+   }
+
+   public void runInSeparateThread()
+   {
+      try
+      {
+
+         // initialize context
+         initialize ();
+
+         // run server
+         new Thread (() -> {
+            try
+            {
+               context.run (0);
+            }
+            catch ( Throwable th )
+            {
+               th.printStackTrace ();
+            }
+         }).start ();
+
+      }
+      catch ( Throwable th )
+      {
+         throw new RuntimeException ("Failed to start CA server.", th);
+      }
+   }
+
+
+   /**
+    * Program entry point.
+    *
+    * @param args command-line arguments
+    */
+   public static void main( String[] args )
+   {
+      // execute
+      new CAJTestServer ().execute ();
+   }
+
 }

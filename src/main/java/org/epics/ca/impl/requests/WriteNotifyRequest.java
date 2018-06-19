@@ -15,86 +15,94 @@ import org.epics.ca.impl.TypeSupports.TypeSupport;
 /**
  * CA write notify.
  */
-public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements NotifyResponseRequest {
+public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements NotifyResponseRequest
+{
 
-	/**
-	 * Context.
-	 */
-	protected final ContextImpl context;
+   /**
+    * Context.
+    */
+   protected final ContextImpl context;
 
-	/**
-	 * I/O ID given by the context when registered.
-	 */
-	protected final int ioid;
+   /**
+    * I/O ID given by the context when registered.
+    */
+   protected final int ioid;
 
-	/**
-	 * Channel server ID.
-	 */
-	protected final int sid;
+   /**
+    * Channel server ID.
+    */
+   protected final int sid;
 
-	/**
-	 * Channel.
-	 */
-	protected final ChannelImpl<?> channel;
+   /**
+    * Channel.
+    */
+   protected final ChannelImpl<?> channel;
 
-	/**
-	 */
-	public WriteNotifyRequest(ChannelImpl<?> channel, Transport transport, int sid, TypeSupport<T> typeSupport,
-			T value, int count) {
+   /**
+    */
+   public WriteNotifyRequest(
+         ChannelImpl<?> channel, Transport transport, int sid, TypeSupport<T> typeSupport,
+         T value, int count
+   )
+   {
 
-		this.channel = channel;
-		this.sid = sid;
-		
-		context = transport.getContext();
-		ioid = context.registerResponseRequest(this);
-		channel.registerResponseRequest(this);
+      this.channel = channel;
+      this.sid = sid;
 
-		Messages.writeNotifyMessage(transport, sid, ioid, typeSupport, value, count);
-		transport.flush();
-	}
+      context = transport.getContext ();
+      ioid = context.registerResponseRequest (this);
+      channel.registerResponseRequest (this);
 
-	@Override
-	public int getIOID() {
-		return ioid;
-	}
+      Messages.writeNotifyMessage (transport, sid, ioid, typeSupport, value, count);
+      transport.flush ();
+   }
 
-	@Override
-	public void response(
-		int status,
-		short dataType,
-		int dataCount,
-		ByteBuffer dataPayloadBuffer) {
+   @Override
+   public int getIOID()
+   {
+      return ioid;
+   }
 
-		try
-		{			
-			
-			Status caStatus = Status.forStatusCode(status);
-			complete(caStatus);
-		}
-		finally
-		{
-			// always cancel request
-			cancel();
-		}
-	}
+   @Override
+   public void response(
+         int status,
+         short dataType,
+         int dataCount,
+         ByteBuffer dataPayloadBuffer
+   )
+   {
 
-	@Override	
-	public void cancel() {
-		// unregister response request
-		context.unregisterResponseRequest(this);
-		channel.unregisterResponseRequest(this);
-	}
-	
-	@Override
-	public void exception(int errorCode, String errorMessage)
-	{
-		cancel();
-		
-		Status status = Status.forStatusCode(errorCode);
-		if (status == null)
-		    status = Status.PUTFAIL;
-		
-		completeExceptionally(new CompletionException(status, errorMessage));
-	}
-	
+      try
+      {
+
+         Status caStatus = Status.forStatusCode (status);
+         complete (caStatus);
+      }
+      finally
+      {
+         // always cancel request
+         cancel ();
+      }
+   }
+
+   @Override
+   public void cancel()
+   {
+      // unregister response request
+      context.unregisterResponseRequest (this);
+      channel.unregisterResponseRequest (this);
+   }
+
+   @Override
+   public void exception( int errorCode, String errorMessage )
+   {
+      cancel ();
+
+      Status status = Status.forStatusCode (errorCode);
+      if ( status == null )
+         status = Status.PUTFAIL;
+
+      completeExceptionally (new CompletionException (status, errorMessage));
+   }
+
 }

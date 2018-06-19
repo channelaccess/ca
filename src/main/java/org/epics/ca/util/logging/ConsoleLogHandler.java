@@ -10,63 +10,72 @@ import java.util.logging.Logger;
 /**
  * Implementation of Java Logging API handler.
  */
-public class ConsoleLogHandler extends Handler {
+public class ConsoleLogHandler extends Handler
+{
 
-	/**
-	 * Logging formatter.
-	 */
-	private final Formatter formatter; 
-	
-	/**
-	 * Default constructor.
-	 */
-	public ConsoleLogHandler() {
-		this(new ConsoleLogFormatter());
-	}
+   /**
+    * Logging formatter.
+    */
+   private final Formatter formatter;
 
-	/**
-	 * Construct handler with using giver formatter.
-	 * @param	formatter	console log formatter, non-<code>null</code>.
-	 */
-	public ConsoleLogHandler(Formatter formatter) {
-		this.formatter = formatter;
-	}
+   /**
+    * Default constructor.
+    */
+   public ConsoleLogHandler()
+   {
+      this (new ConsoleLogFormatter ());
+   }
 
-	/**
-	 * @see java.util.logging.Handler#close()
-	 */
-	public void close() throws SecurityException {
-		// noop
-	}
+   /**
+    * Construct handler with using giver formatter.
+    *
+    * @param   formatter   console log formatter, non-<code>null</code>.
+    */
+   public ConsoleLogHandler( Formatter formatter )
+   {
+      this.formatter = formatter;
+   }
 
-	/**
-	 * @see java.util.logging.Handler#flush()
-	 */
-	public void flush() {
-		System.out.flush();
-	}
+   /**
+    * @see java.util.logging.Handler#close()
+    */
+   public void close() throws SecurityException
+   {
+      // noop
+   }
 
-	/**
-	 * Prints the log record to the console using the current formatter, if the 
-	 * log record is loggable.
-	 * @param record the log record to publish
-	 * @see java.util.logging.Handler#publish(java.util.logging.LogRecord)
-	 */
-	public void publish(LogRecord record) {
-		if (isLoggable(record))
-			System.out.print(formatter.format(record));
-	}
-	
-	/**
-	 * Setup this handler as the only one root handler.
-	 * @param logLevel root log level to be set.
-	 */
-	public static void defaultConsoleLogging(Level logLevel)
-	{
-		LogManager.getLogManager().reset();
-		Logger rootLogger = Logger.getLogger("");
-		rootLogger.setLevel(logLevel);
-		rootLogger.addHandler(new ConsoleLogHandler());
-	}
+   /**
+    * @see java.util.logging.Handler#flush()
+    */
+   public void flush()
+   {
+      System.out.flush ();
+   }
+
+   /**
+    * Prints the log record to the console using the current formatter, if the
+    * log record is loggable.
+    *
+    * @param record the log record to publish
+    * @see java.util.logging.Handler#publish(java.util.logging.LogRecord)
+    */
+   public void publish( LogRecord record )
+   {
+      if ( isLoggable (record) )
+         System.out.print (formatter.format (record));
+   }
+
+   /**
+    * Setup this handler as the only one root handler.
+    *
+    * @param logLevel root log level to be set.
+    */
+   public static void defaultConsoleLogging( Level logLevel )
+   {
+      LogManager.getLogManager ().reset ();
+      Logger rootLogger = Logger.getLogger ("");
+      rootLogger.setLevel (logLevel);
+      rootLogger.addHandler (new ConsoleLogHandler ());
+   }
 
 }

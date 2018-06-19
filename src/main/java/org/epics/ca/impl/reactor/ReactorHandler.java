@@ -5,12 +5,14 @@ import java.nio.channels.SelectionKey;
 /**
  * Reactor handler interface.
  */
-public interface ReactorHandler {
+public interface ReactorHandler
+{
 
-	/**
-	 * Process request of given <code>SelectionKey</code>.
-	 * @param key key to be processed.
-	 */
-	public void handleEvent(SelectionKey key);
+   /**
+    * Process request of given <code>SelectionKey</code>.
+    *
+    * @param key key to be processed.
+    */
+   public void handleEvent( SelectionKey key );
 
 }
