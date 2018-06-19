@@ -48,8 +48,7 @@ import com.lmax.disruptor.TimeoutHandler;
  *
  * @param <T> event implementation storing the data for sharing during exchange or parallel coordination of an event.
  */
-public final class MonitorBatchEventProcessor<T>
-      implements EventProcessor
+public final class MonitorBatchEventProcessor<T> implements EventProcessor
 {
    private final AtomicBoolean running = new AtomicBoolean (false);
    private ExceptionHandler<? super T> exceptionHandler = new FatalExceptionHandler ();
@@ -67,13 +66,17 @@ public final class MonitorBatchEventProcessor<T>
     * Construct a {@link EventProcessor} that will automatically track the progress by updating its sequence when
     * the {@link EventHandler#onEvent(Object, long, boolean)} method returns.
     *
+    * @param channel the channel.
+    * @param disconnectedValue the value to be published to indicate channel disconnection.
+    * @param isDisconnectedValue predicate which returns true when the channel is disconnected.
     * @param dataProvider    to which events are published.
     * @param sequenceBarrier on which it is waiting.
     * @param eventHandler    is the delegate to which events are dispatched.
     */
    public MonitorBatchEventProcessor(
          final ChannelImpl<?> channel,
-         final T disconnectedValue, final Predicate<T> isDisconnectedValue,
+         final T disconnectedValue,
+         final Predicate<T> isDisconnectedValue,
          final DataProvider<T> dataProvider,
          final SequenceBarrier sequenceBarrier,
          final EventHandler<? super T> eventHandler

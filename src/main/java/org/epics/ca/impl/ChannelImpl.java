@@ -578,10 +578,10 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
     * <code>sid</code>, <code>typeCode</code>, <code>elementCount</code> might not be
     * valid, this depends on protocol revision.
     *
-    * @param transport
-    * @param sid
-    * @param typeCode
-    * @param elementCount
+    * @param transport the transport.
+    * @param sid the CA server ID.
+    * @param typeCode the CA DBR typecode.
+    * @param elementCount the number of elements to be associated  with each CA get/put/monitor operation.
     */
    public void createChannel( TCPTransport transport, int sid, short typeCode, int elementCount )
    {
@@ -771,13 +771,13 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
     * Called when channel created succeeded on the server.
     * <code>sid</code> might not be valid, this depends on protocol revision.
     *
-    * @param sid
-    * @param typeCode
-    * @param elementCount
-    * @throws IllegalStateException
+    * @param sid the CA server ID.
+    * @param typeCode the CA DBR typecode.
+    * @param elementCount the number of elements to be associated with each CA get/put/monitor operation.
+    *
+    * @throws IllegalStateException if the channel was in an unexpected stated.
     */
-   public synchronized void connectionCompleted( int sid, short typeCode, int elementCount )
-         throws IllegalStateException
+   public synchronized void connectionCompleted( int sid, short typeCode, int elementCount ) throws IllegalStateException
    {
       // do this silently
       if ( connectionState.get () == ConnectionState.CLOSED )
@@ -819,7 +819,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       // but this cannot happen since transport (TCP) is serving in this thread
       resubscribeSubscriptions (transport);
       setConnectionState (ConnectionState.CONNECTED);
-
    }
 
    public void createChannelFailed()
@@ -830,6 +829,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
    /**
     * Send search message.
+    *
+    * @param transport the transport.
+    * @param buffer the buffer to send.
     *
     * @return success status.
     */

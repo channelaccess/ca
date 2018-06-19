@@ -113,16 +113,17 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
    private final ScheduledFuture<?> echoTimer;
 
    /**
-    * @param context
-    * @param responseHandler
-    * @param client
-    * @param channel
-    * @param remoteTransportRevision
-    * @param priority
+    * Constructs a new object for managing the TCP connection with a remote server.
+    *
+    * @param context the CA context in which the communication takes place.
+    * @param responseHandler reference to an object which will manage the handling of the server responses.
+    * @param client the client.
+    * @param channel socket through which communication will flow.
+    * @param remoteTransportRevision the CA transport revision (a constant) to be used in communication.
+    * @param priority the CA message priority.
     */
-   public TCPTransport(
-         ContextImpl context, TransportClient client, ResponseHandler responseHandler,
-         SocketChannel channel, short remoteTransportRevision, int priority
+   public TCPTransport( ContextImpl context, TransportClient client, ResponseHandler responseHandler,
+                        SocketChannel channel, short remoteTransportRevision, int priority
    )
    {
       this.context = context;

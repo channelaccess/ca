@@ -40,6 +40,8 @@ public class Header
     * Parse CA response header.
     *
     * @param headerBuffer response header to be parsed, condition: headerBuffer.remaining() &gt;= CA_MESSAGE_HEADER_SIZE
+    *
+    * @return success token, set true if the response header was successfully parsed.
     */
    public boolean read( ByteBuffer headerBuffer )
    {

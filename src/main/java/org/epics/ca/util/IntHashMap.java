@@ -228,7 +228,7 @@ public class IntHashMap<T>
     * @param value a value to search for.
     * @return <code>true</code> if and only if some key maps to the
     * <code>value</code> argument in this hashtable as
-    * determined by the <tt>equals</tt> method;
+    * determined by the <code>equals</code> method;
     * <code>false</code> otherwise.
     * @throws NullPointerException if the value is <code>null</code>.
     * @see #containsKey(int)
@@ -278,7 +278,7 @@ public class IntHashMap<T>
     *
     * @param key possible key.
     * @return <code>true</code> if and only if the specified object is a
-    * key in this hashtable, as determined by the <tt>equals</tt>
+    * key in this hashtable, as determined by the <code>equals</code>
     * method; <code>false</code> otherwise.
     * @see #contains(Object)
     */

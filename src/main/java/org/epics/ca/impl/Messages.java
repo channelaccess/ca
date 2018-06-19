@@ -25,16 +25,19 @@ public final class Messages
    /**
     * Start CA message.
     *
-    * @param transport transport to be used when sending.
+    * @param transport the transport,
+    * @param command the CA command
+    * @param payloadSize the size of the payload in bytes.
+    * @param dataType the CA data type.
+    * @param dataCount the CA element count.
+    * @param parameter1 CA additional parameter 1
+    * @param parameter2 CA additional parameter 2
     * @return filled buffer, if given buffer size is less that header size,
-    * then new buffer is allocated and returned.
+    *         then new buffer is allocated and returned.
     */
-   public static ByteBuffer startCAMessage(
-         Transport transport,
-         short command, int payloadSize,
-         short dataType, int dataCount,
-         int parameter1, int parameter2
-   )
+   public static ByteBuffer startCAMessage( Transport transport, short command, int payloadSize,
+                                            short dataType, int dataCount,
+                                            int parameter1, int parameter2 )
    {
       boolean useExtendedHeader = payloadSize >= 0xFFFF || dataCount >= 0xFFFF;
 
@@ -80,7 +83,8 @@ public final class Messages
     * Generate repeater registration message.
     * A special case implementation since message is sent via UDP.
     *
-    * @param buffer
+    * @param buffer the buffer.
+    * @return result, always true.
     */
    public static final boolean generateRepeaterRegistration( ByteBuffer buffer )
    {
@@ -102,15 +106,14 @@ public final class Messages
     * Generate search request message.
     * A special case implementation since message is sent via UDP.
     *
-    * @param transport
-    * @param buffer
-    * @param name
-    * @param cid
+    * @param transport the transport.
+    * @param buffer the buffer.
+    * @param name the name.
+    * @param cid the CA client ID.
+    *
+    * @return success status.
     */
-   public static final boolean generateSearchRequestMessage(
-         Transport transport, ByteBuffer buffer,
-         String name, int cid
-   )
+   public static final boolean generateSearchRequestMessage( Transport transport, ByteBuffer buffer, String name, int cid )
    {
       // name length was already validated at channel creation time
 
@@ -140,16 +143,15 @@ public final class Messages
    /**
     * Generate version request message.
     *
-    * @param transport
-    * @param buffer
-    * @param priority
-    * @param sequenceNumber
-    * @param isSequenceNumberValid
+    * @param transport the transport.
+    * @param buffer the buffer.
+    * @param priority the message priority.
+    * @param sequenceNumber the CA sequence number.
+    * @param isSequenceNumberValid boolean switch which determines whether sequence number
+    *        or priority argument is used in the formatting of the message.
     */
-   public static final void generateVersionRequestMessage(
-         Transport transport, ByteBuffer buffer, short priority,
-         int sequenceNumber, boolean isSequenceNumberValid
-   )
+   public static final void generateVersionRequestMessage( Transport transport, ByteBuffer buffer, short priority,
+                                                           int sequenceNumber, boolean isSequenceNumberValid )
    {
       short isSequenceNumberValidCode = isSequenceNumberValid ? (short) 1 : (short) 0;
 
@@ -165,6 +167,9 @@ public final class Messages
 
    /**
     * Generate echo message.
+    *
+    * @param transport the transport.
+    * @param buffer the buffer.
     */
    public static final void generateEchoMessage( Transport transport, ByteBuffer buffer )
    {
@@ -196,17 +201,14 @@ public final class Messages
    /**
     * Version message.
     *
-    * @param transport
-    * @param priority
-    * @param sequenceNumber
-    * @param isSequenceNumberValid
+    * @param transport the transport.
+    * @param priority the message priority.
+    * @param sequenceNumber the CA message sequence number.
+    * @param isSequenceNumberValid boolean switch which determines whether sequence number
+    *        or priority argument is used in the formatting of the message.
     */
-   public static void versionMessage(
-         Transport transport, short priority,
-         int sequenceNumber, boolean isSequenceNumberValid
-   )
+   public static void versionMessage( Transport transport, short priority, int sequenceNumber, boolean isSequenceNumberValid )
    {
-
       boolean ignore = true;
       try
       {
@@ -230,12 +232,10 @@ public final class Messages
    /**
     * Hostname message.
     *
-    * @param transport
-    * @param hostName
+    * @param transport the transport.
+    * @param hostName the IP or name of the host.
     */
-   public static void hostNameMessage(
-         Transport transport, String hostName
-   )
+   public static void hostNameMessage( Transport transport, String hostName )
    {
       // compatibility check
       if ( transport.getMinorRevision () < 1 )
@@ -272,12 +272,10 @@ public final class Messages
    /**
     * Username message.
     *
-    * @param transport
-    * @param userName
+    * @param transport the transport.
+    * @param userName the username.
     */
-   public static void userNameMessage(
-         Transport transport, String userName
-   )
+   public static void userNameMessage( Transport transport, String userName )
    {
       // compatibility check
       if ( transport.getMinorRevision () < 1 )
@@ -314,13 +312,11 @@ public final class Messages
    /**
     * Create channel message.
     *
-    * @param transport
-    * @param channelName
-    * @param cid
+    * @param transport the transport.
+    * @param channelName the channel
+    * @param cid the CA client ID.
     */
-   public static void createChannelMessage(
-         Transport transport, String channelName, int cid
-   )
+   public static void createChannelMessage( Transport transport, String channelName, int cid )
    {
       // v4.4+ or newer
       if ( transport.getMinorRevision () < 4 )
@@ -368,15 +364,13 @@ public final class Messages
    /**
     * Read notify message.
     *
-    * @param transport
-    * @param dataType
-    * @param dataCount
-    * @param sid
-    * @param ioid
+    * @param transport the transport.
+    * @param dataType the CA data type.
+    * @param dataCount the CA element count.
+    * @param sid the CA Server ID.
+    * @param ioid theCA message IOID.
     */
-   public static void readNotifyMessage(
-         Transport transport, int dataType, int dataCount, int sid, int ioid
-   )
+   public static void readNotifyMessage( Transport transport, int dataType, int dataCount, int sid, int ioid )
    {
       boolean ignore = true;
       try
@@ -400,16 +394,14 @@ public final class Messages
    /**
     * Create subscription (aka event add) message.
     *
-    * @param transport
-    * @param dataType
-    * @param dataCount
-    * @param sid
-    * @param ioid
-    * @param mask
+    * @param transport the transport.
+    * @param dataType the CA data type.
+    * @param dataCount the CA element count.
+    * @param sid the CA Server ID.
+    * @param ioid the CA message IOID.
+    * @param mask the mask indicating which events are to be subscribed to.
     */
-   public static void createSubscriptionMessage(
-         Transport transport, int dataType, int dataCount, int sid, int ioid, int mask
-   )
+   public static void createSubscriptionMessage( Transport transport, int dataType, int dataCount, int sid, int ioid, int mask )
    {
       boolean ignore = true;
       try
@@ -441,11 +433,11 @@ public final class Messages
    /**
     * Cancel subscription (aka event add) message.
     *
-    * @param transport transport
-    * @param dataType  data type
-    * @param dataCount data count
-    * @param sid       sid
-    * @param ioid      ioid
+    * @param transport the transport.
+    * @param dataType the CA data type.
+    * @param dataCount the CA element count.
+    * @param sid the CA Server ID.
+    * @param ioid the CA message IOID.
     */
    public static void cancelSubscriptionMessage(
          Transport transport, int dataType, int dataCount, int sid, int ioid
@@ -473,9 +465,9 @@ public final class Messages
    /**
     * Clear channel message.
     *
-    * @param transport
-    * @param cid
-    * @param sid
+    * @param transport the transport.
+    * @param cid the CA Client ID.
+    * @param sid the CA Server ID.
     */
    public static void clearChannelMessage(
          Transport transport, int cid, int sid
@@ -503,15 +495,13 @@ public final class Messages
    /**
     * Update subscription message.
     *
-    * @param transport
-    * @param dataType
-    * @param dataCount
-    * @param sid
-    * @param ioid
+    * @param transport the transport.
+    * @param dataType the CA data type.
+    * @param dataCount the CA element count.
+    * @param sid the CA Server ID.
+    * @param ioid the CA message IOID.
     */
-   public static void subscriptionUpdateMessage(
-         Transport transport, int dataType, int dataCount, int sid, int ioid
-   )
+   public static void subscriptionUpdateMessage( Transport transport, int dataType, int dataCount, int sid, int ioid )
    {
       boolean ignore = true;
       try
@@ -535,15 +525,15 @@ public final class Messages
    /**
     * Write (best-effort) message.
     *
-    * @param transport   transport
-    * @param sid         sid
-    * @param cid         cid
-    * @param typeSupport type support
-    * @param value       value
+    * @param transport the transport.
+    * @param sid the CA Server ID.
+    * @param cid the CA Client ID.
+    * @param typeSupport the type support object.
+    * @param value the CA value.
+    * @param count the CA data element count.
+    * @param <T> the CA type to be transported.
     */
-   public static <T> void writeMessage(
-         Transport transport, int sid, int cid, TypeSupport<T> typeSupport, T value, int count
-   )
+   public static <T> void writeMessage( Transport transport, int sid, int cid, TypeSupport<T> typeSupport, T value, int count )
    {
       int calculatedPayloadSize = typeSupport.serializeSize (value, count);
       int alignedPayloadSize = calculateAlignedSize (8, calculatedPayloadSize);
@@ -576,15 +566,15 @@ public final class Messages
    /**
     * Write notify message.
     *
-    * @param transport   transport
-    * @param sid         sid
-    * @param ioid        ioid
-    * @param typeSupport type support
-    * @param value       value
+    * @param transport the transport.
+    * @param sid the CA Server ID.
+    * @param ioid the CA IOID.
+    * @param typeSupport the type support object.
+    * @param value the CA value
+    * @param count the CA data element count.
+    * @param <T> the CA type to be transported.
     */
-   public static <T> void writeNotifyMessage(
-         Transport transport, int sid, int ioid, TypeSupport<T> typeSupport, T value, int count
-   )
+   public static <T> void writeNotifyMessage( Transport transport, int sid, int ioid, TypeSupport<T> typeSupport, T value, int count )
    {
       int calculatedPayloadSize = typeSupport.serializeSize (value, count);
       int alignedPayloadSize = calculateAlignedSize (8, calculatedPayloadSize);

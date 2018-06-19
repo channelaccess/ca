@@ -52,6 +52,10 @@ test {
     useJUnitPlatform()
 }
 
+javadoc {
+    options.addBooleanOption('html5', true)
+}
+
 task javadocJar(type: Jar) {
     classifier = 'javadoc'
     from javadoc

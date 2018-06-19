@@ -43,7 +43,13 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
     */
    protected final TypeSupport<T> typeSupport;
 
+
    /**
+    *
+    * @param channel the channel.
+    * @param transport the transport.
+    * @param sid the CA Server ID.
+    * @param typeSupport reference to an object which can provide support for this type.
     */
    public ReadNotifyRequest( ChannelImpl<?> channel, Transport transport, int sid, TypeSupport<T> typeSupport )
    {
@@ -72,14 +78,8 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
    }
 
    @Override
-   public void response(
-         int status,
-         short dataType,
-         int dataCount,
-         ByteBuffer dataPayloadBuffer
-   )
+   public void response( int status, short dataType, int dataCount, ByteBuffer dataPayloadBuffer )
    {
-
       try
       {
 

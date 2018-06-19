@@ -192,13 +192,12 @@ public class SearchTimer extends Thread
     * Return the next task to execute, or null if thread is interrupted.
     *
     * @param blockAndExtract block and extract
-    * @param dt              dt
+    * @param dt dt
+    * @return the timer task.
     **/
    protected synchronized TimerTask nextTask( boolean blockAndExtract, long dt )
    {
-
       // Note: This code assumes that there is only one run loop thread
-
       try
       {
          while ( !Thread.interrupted () )
@@ -347,6 +346,9 @@ public class SearchTimer extends Thread
 
       /**
        * Perform element comparisons using comparator or natural ordering.
+       * @param a the first object to compare.
+       * @param b the second object to compare.
+       * @return the comparison result.
        **/
       protected int compare( Object a, Object b )
       {

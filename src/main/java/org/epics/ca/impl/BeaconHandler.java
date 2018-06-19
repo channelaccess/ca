@@ -53,15 +53,15 @@ public class BeaconHandler
    }
 
    /**
-    * Update beacon period and do analytical checks (server re-stared, routing problems, etc.)
+    * Update beacon period and do analytical checks (server re-started, routing problems, etc.)
     *
-    * @param remoteTransportRevision
-    * @param timestamp
-    * @param sequentalID
+    * @param remoteTransportRevision the EPICS CA protocol revision number.
+    * @param timestamp the timestamp.
+    * @param sequentialID the ID.
     */
-   public void beaconNotify( short remoteTransportRevision, long timestamp, long sequentalID )
+   public void beaconNotify( short remoteTransportRevision, long timestamp, long sequentialID )
    {
-      boolean networkChanged = updateBeaconPeriod (remoteTransportRevision, timestamp, sequentalID);
+      boolean networkChanged = updateBeaconPeriod (remoteTransportRevision, timestamp, sequentialID);
       if ( networkChanged )
       {
          // what to do here?!!
@@ -72,12 +72,12 @@ public class BeaconHandler
    /**
     * Update beacon period.
     *
-    * @param remoteTransportRevision
-    * @param timestamp
-    * @param sequentalID
+    * @param remoteTransportRevision the EPICS CA protocol revision number.
+    * @param timestamp the timestamp.
+    * @param sequentialID the ID.
     * @return network change (server restarted) detected.
     */
-   private synchronized boolean updateBeaconPeriod( short remoteTransportRevision, long timestamp, long sequentalID )
+   private synchronized boolean updateBeaconPeriod( short remoteTransportRevision, long timestamp, long sequentialID )
    {
 
       // first beacon notification check
@@ -88,7 +88,7 @@ public class BeaconHandler
 
          if ( remoteTransportRevision >= 10 )
          {
-            lastBeaconSequenceID = sequentalID;
+            lastBeaconSequenceID = sequentialID;
          }
 
          lastBeaconTimeStamp = timestamp;
@@ -101,12 +101,12 @@ public class BeaconHandler
       if ( remoteTransportRevision >= 10 )
       {
          long beaconSeqAdvance;
-         if ( sequentalID >= lastBeaconSequenceID )
-            beaconSeqAdvance = sequentalID - lastBeaconSequenceID;
+         if ( sequentialID >= lastBeaconSequenceID )
+            beaconSeqAdvance = sequentialID - lastBeaconSequenceID;
          else
-            beaconSeqAdvance = (0x00000000FFFFFFFFL - lastBeaconSequenceID) + sequentalID;
+            beaconSeqAdvance = (0x00000000FFFFFFFFL - lastBeaconSequenceID) + sequentialID;
 
-         lastBeaconSequenceID = sequentalID;
+         lastBeaconSequenceID = sequentialID;
 
          // throw out sequence numbers just prior to, or the same as, the last one received
          // (this situation is probably caused by a temporary duplicate route )

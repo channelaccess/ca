@@ -11,10 +11,10 @@ public interface NotifyResponseRequest extends ResponseRequest
    /**
     * Notification response.
     *
-    * @param status
-    * @param dataType
-    * @param dataCount
-    * @param dataPayloadBuffer
+    * @param status the CA status code.
+    * @param dataType the CA data type.
+    * @param dataCount the CA channel element count.
+    * @param dataPayloadBuffer the buffer with the payload
     */
    public void response( int status, short dataType, int dataCount, ByteBuffer dataPayloadBuffer );
 

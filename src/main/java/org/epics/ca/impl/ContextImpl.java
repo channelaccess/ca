@@ -336,6 +336,8 @@ public class ContextImpl implements AutoCloseable, Constants
 
    /**
     * Initialize context logger.
+    *
+    * @param properties the properties to be used for the logger.
     */
    protected void initializeLogger( Properties properties )
    {
@@ -637,7 +639,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Unregister response request.
     *
-    * @param request
+    * @param request the request.
     * @return removed object, can be <code>null</code>
     */
    public ResponseRequest unregisterResponseRequest( ResponseRequest request )

@@ -63,13 +63,20 @@ public class BroadcastTransport implements ReactorHandler, Transport
     */
    private final Header header = new Header ();
 
+
    /**
-    * @param context
+    *
+    * @param context the context.
+    * @param responseHandler the response handler.
+    * @param channel the channel.
+    * @param connectAddress the connect address.
+    * @param broadcastAddresses array of broadcast addresses.
     */
-   public BroadcastTransport(
-         ContextImpl context, ResponseHandler responseHandler,
-         DatagramChannel channel, InetSocketAddress connectAddress, InetSocketAddress[] broadcastAddresses
-   )
+   public BroadcastTransport( ContextImpl context,
+                              ResponseHandler responseHandler,
+                              DatagramChannel channel,
+                              InetSocketAddress connectAddress,
+                              InetSocketAddress[] broadcastAddresses )
    {
       this.context = context;
       this.responseHandler = responseHandler;
@@ -212,7 +219,8 @@ public class BroadcastTransport implements ReactorHandler, Transport
     *
     * @param buffer  buffer to send.
     * @param address send address.
-    * @throws IOException
+    *
+    * @throws IOException if attempts to write to the channel fail.
     */
    public void send( ByteBuffer buffer, InetSocketAddress address ) throws IOException
    {

@@ -65,14 +65,16 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
    protected T overrunValue;
    protected Holder<T> lastValue;
 
-   /**
-    */
-   public MonitorRequest(
-         ChannelImpl<?> channel, Transport transport, TypeSupport<T> typeSupport, int mask,
-         Disruptor<Holder<T>> disruptor
-   )
-   {
 
+   /**
+    * @param channel the channel.
+    * @param transport the transport.
+    * @param typeSupport the object which will provide type support.
+    * @param mask the mask.
+    * @param disruptor the disruptor.
+    */
+   public MonitorRequest( ChannelImpl<?> channel, Transport transport, TypeSupport<T> typeSupport, int mask, Disruptor<Holder<T>> disruptor )
+   {
       this.channel = channel;
       this.typeSupport = typeSupport;
       this.mask = mask;

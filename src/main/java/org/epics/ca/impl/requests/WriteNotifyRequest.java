@@ -39,13 +39,15 @@ public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements 
    protected final ChannelImpl<?> channel;
 
    /**
+    * @param channel the channel.
+    * @param transport the transport.
+    * @param sid the CA Server ID.
+    * @param typeSupport reference to an object which can provide support for this type.
+    * @param value the value.
+    * @param count the element count.
     */
-   public WriteNotifyRequest(
-         ChannelImpl<?> channel, Transport transport, int sid, TypeSupport<T> typeSupport,
-         T value, int count
-   )
+   public WriteNotifyRequest( ChannelImpl<?> channel, Transport transport, int sid, TypeSupport<T> typeSupport, T value, int count )
    {
-
       this.channel = channel;
       this.sid = sid;
 
