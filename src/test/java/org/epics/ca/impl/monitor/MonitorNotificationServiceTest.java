@@ -1,5 +1,6 @@
 package org.epics.ca.impl.monitor;
 
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -77,8 +78,8 @@ class MonitorNotificationServiceTest
             Arguments.of( 2_000, intArray1, intArray2, "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
             Arguments.of( 1_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl"                   ),
             Arguments.of( 2_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl"                   ),
-            //Arguments.of( 1_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl2"                   ),
-            //Arguments.of( 2_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl2"                   ),
+            Arguments.of( 1_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl2"                   ),
+            Arguments.of( 2_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl2"                   ),
 
             // Perform String throughput tests on all implementations
             Arguments.of( 1_000_000, "Str1", "Str2", "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
@@ -122,8 +123,12 @@ class MonitorNotificationServiceTest
    }
    @ParameterizedTest
    @MethodSource( "getArgumentsForTestThroughputWithSameConsumer" )
-   <T> void testThroughputWithSameConsumer( int notifications,  T notifyValue1,  T notifyValue2, String monitorNotifierImpl )
+   <T> void testThroughputWithSameConsumer( int notifications, T notifyValue1, T notifyValue2, String monitorNotifierImpl )
    {
+      Validate.notNull( notifyValue1 );
+      Validate.notNull( notifyValue2 );
+      Validate.notNull( monitorNotifierImpl );
+
       logger.info( "Starting test with {} notifications, Type: '{}' and service configuration '{}'", notifications, notifyValue1.getClass(), monitorNotifierImpl );
       assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
       {
@@ -143,9 +148,10 @@ class MonitorNotificationServiceTest
          // notified correctly
          notifier.publish( notifyValue2 );
 
+
          // Wait for the last notification. Poll relatively often so that it doesn't
          // perturb the timing measurement too much.
-         while ( ! consumer.getValue().equals( notifyValue2 ) )
+         while ( ! notifyValue2.equals( consumer.getValue()) )
          {
             busyWait(1 );
          }
