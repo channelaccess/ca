@@ -6,7 +6,7 @@ apply plugin: 'signing'
 group = 'org.epics'
 archivesBaseName = 'ca'
 sourceCompatibility = 10
-version = '1.0.2-RELEASE'
+version = '1.0.2-SNAPSHOT'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
@@ -44,6 +44,17 @@ dependencies {
     compile 'com.lmax:disruptor:3.4.2'
     compile 'com.lmax:disruptor:3.4.2:javadoc'
 
+    // Needed for parameter validation (als0 the stopwatch timing class
+    // that is used in testing).
+    compile 'org.apache.commons:commons-lang3:3.7'
+
+    // Support for improved logging
+    compile 'org.slf4j:slf4j-api:1.7.25'
+    compile 'org.slf4j:slf4j-jdk14:1.7.25'
+
+    // Supports for documenting Thread-Safety
+    compile 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
+
     // Supports unit and integration tests
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.2.0'
     testCompile('org.junit.jupiter:junit-jupiter-api:5.2.0:javadoc')
@@ -60,15 +71,6 @@ dependencies {
     testCompile 'org.epics:jca:2.3.6'
     testCompile 'org.epics:jca:2.3.6:javadoc'
 
-    // Needed for stopwatch timing class
-    compile 'org.apache.commons:commons-lang3:3.7'
-
-    // Support for improved logging
-    compile 'org.slf4j:slf4j-api:1.7.25'
-    compile 'org.slf4j:slf4j-jdk14:1.7.25'
-
-    // Supports documenting Thread-Safety
-    compile 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
 }
 
 test {

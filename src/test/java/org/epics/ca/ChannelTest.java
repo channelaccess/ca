@@ -6,11 +6,15 @@ package org.epics.ca;
 import org.epics.ca.data.*;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
@@ -31,6 +35,12 @@ public class ChannelTest
    private Context context;
    private CAJTestServer server;
    private static final int TIMEOUT_SEC = 5;
+
+   @BeforeAll
+   static void beforeAll()
+   {
+      System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s  %5$s%6$s%n");
+   }
 
    @BeforeEach
    protected void setUp() throws Exception
@@ -482,38 +492,36 @@ public class ChannelTest
    @Test
    public void testMonitorDisconnectionBehaviour() throws InterruptedException
    {
-      try ( Channel<Integer> channel = context.createChannel ("test:db_ok", Integer.class) )
+      try ( Channel<Integer> channel = context.createChannel ("adc01", Integer.class) )
       {
+
          channel.addConnectionListener( (c,h) -> logger.info ( "Channel {}, new connection state is: {} ", c.getName(), c.getConnectionState() ) );
+
+         // Connect to some channel and get the default value (= value on creation) for the test PV
          channel.connect();
+         final int defautAdcValue = channel.get();
 
-         Consumer<Timestamped> consumer = new Consumer<Timestamped>()
-         {
-            @Override
-            public void accept( Timestamped integerMetadata )
-            {
-               if ( integerMetadata == null )
-               {
-                  throw new NullPointerException();
-                 // logger.info( "null was sent " );
-                  //return;
-               }
+         // Change the PV value to something else, allow the change to propagate
+         // then verify that the expected value was receved.
+         final int testValue = 99;
+         channel.put( testValue );
+         final Consumer<Integer> consumer = Mockito.mock( Consumer.class );
+         final Monitor<Integer> monitor = channel.addValueMonitor( consumer );
+         Thread.sleep( 1_000 );
+         Mockito.verify( consumer, Mockito.times( 1) ).accept( testValue );
 
-               long timestamp = integerMetadata.getNanos();
-               Integer value = (Integer) integerMetadata.getValue();
-               logger.info( "accept called at time {} with value {}", timestamp, value );
-            }
-         };
+         // Destroy the test server which will create a channel disconnection event.
+         // Verify that the monitor did not receive a new update
+         server.destroy();
+         Thread.sleep( 1_000 );
+         Mockito.verifyNoMoreInteractions( consumer );
 
-         Monitor<Timestamped> mon = channel.addMonitor( Timestamped.class, consumer );
-
-         //channel.close();
-         Thread.sleep( 120_000 );
-         logger.info( "Closing...");
-         channel.close();
-         Thread.sleep( 5000 );
-         logger.info( "Closed." );
-
+         // Now recreate the server and check that the monitor received an update with the default value
+         // for this PV
+         server = new CAJTestServer ();
+         server.runInSeparateThread ();
+         Thread.sleep( 1_000 );
+         Mockito.verify( consumer, Mockito.times( 1 ) ).accept( defautAdcValue );
       }
    }
 
@@ -633,6 +641,7 @@ public class ChannelTest
             System.setProperty (propName, oldValue);
       }
    }
+
 
 
 }
