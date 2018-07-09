@@ -2,21 +2,16 @@ package org.epics.ca.impl.requests;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.Validate;
 import org.epics.ca.Monitor;
 import org.epics.ca.Status;
-import org.epics.ca.impl.ChannelImpl;
-import org.epics.ca.impl.ContextImpl;
-import org.epics.ca.impl.Messages;
-import org.epics.ca.impl.NotifyResponseRequest;
-import org.epics.ca.impl.Transport;
+import org.epics.ca.impl.*;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
-import org.epics.ca.util.Holder;
-
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.dsl.Disruptor;
+import org.epics.ca.impl.monitor.MonitorNotificationService;
 
 /**
  * CA monitor.
@@ -53,32 +48,34 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
    protected final int mask;
 
    /**
-    * Disruptor (event dispatcher).
+    * Reference to an object which will push out notifications to the Consumer.
     */
-   protected final Disruptor<Holder<T>> disruptor;
+   protected MonitorNotificationService notifier;
+
+   /**
+    * Reference to an object which will consume monitor update events.
+    */
+   protected Consumer<? super T> consumer;
 
    /**
     * Closed flag.
     */
    protected final AtomicBoolean closed = new AtomicBoolean ();
 
-   protected T overrunValue;
-   protected Holder<T> lastValue;
-
-
    /**
     * @param channel the channel.
     * @param transport the transport.
     * @param typeSupport the object which will provide type support.
     * @param mask the mask.
-    * @param disruptor the disruptor.
+    * @param notifier the monitor notification service.
     */
-   public MonitorRequest( ChannelImpl<?> channel, Transport transport, TypeSupport<T> typeSupport, int mask, Disruptor<Holder<T>> disruptor )
+   public MonitorRequest( ChannelImpl<?> channel, Transport transport, TypeSupport<T> typeSupport, int mask, MonitorNotificationService notifier, Consumer<? super T> consumer  )
    {
-      this.channel = channel;
-      this.typeSupport = typeSupport;
+      this.channel = Validate.notNull( channel );
+      this.typeSupport = Validate.notNull(typeSupport );
       this.mask = mask;
-      this.disruptor = disruptor;
+      this.notifier = Validate.notNull(notifier );
+      this.consumer = Validate.notNull(consumer );
 
       context = transport.getContext ();
       ioid = context.registerResponseRequest (this);
@@ -94,41 +91,17 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
    }
 
    @Override
-   public void response(
-         int status,
-         short dataType,
-         int dataCount,
-         ByteBuffer dataPayloadBuffer
-   )
+   public void response( int status, short dataType, int dataCount, ByteBuffer dataPayloadBuffer )
    {
-
+      Validate.notNull( dataPayloadBuffer );
       Status caStatus = Status.forStatusCode (status);
       if ( caStatus == Status.NORMAL )
       {
-         RingBuffer<Holder<T>> ringBuffer = disruptor.getRingBuffer ();
-         // this is OK only for single producer
-         if ( ringBuffer.hasAvailableCapacity (1) )
-         {
-            long next = ringBuffer.next ();
-            try
-            {
-               lastValue = ringBuffer.get (next);
-               lastValue.value = typeSupport.deserialize (dataPayloadBuffer, lastValue.value, dataCount);
-            }
-            finally
-            {
-               ringBuffer.publish (next);
-            }
-         }
-         else
-         {
-            overrunValue = typeSupport.deserialize (dataPayloadBuffer, overrunValue, dataCount);
+         T value = typeSupport.deserialize (dataPayloadBuffer, null, dataCount);
 
-            // nasty trick, swap the reference of the last value with overrunValue
-            T tmp = lastValue.value;
-            lastValue.value = overrunValue;
-            overrunValue = tmp;
-         }
+         // Publish the new value to the consumer. Or simply update the value that will
+         // be sent if a notification is already scheduled.
+         notifier.publish( value );
       }
       else
       {
@@ -143,9 +116,10 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       context.unregisterResponseRequest (this);
       channel.unregisterResponseRequest (this);
 
-      // NOTE: this does not wait until all events in the ring buffer are processed
-      // but we do not want to block by calling shutdown()
-      disruptor.halt ();
+      // Tell the monitor notifier that we are finished handling events for
+      // this consumer.
+      notifier.dispose();
+
    }
 
    public void resubscribe( Transport transport )
@@ -178,33 +152,15 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       }
       else if ( status == Status.DISCONN )
       {
-         RingBuffer<Holder<T>> ringBuffer = disruptor.getRingBuffer ();
-         // this is OK only for single producer
-         if ( ringBuffer.hasAvailableCapacity (1) )
-         {
-            long next = ringBuffer.next ();
-            try
-            {
-               Holder<T> holder = ringBuffer.get (next);
-               // holder.value will be restored by deserialize method
-               holder.value = null;
-            }
-            finally
-            {
-               ringBuffer.publish (next);
-            }
-         }
+         // The old Disruptor-based implementation pushes out a null here,
+         // but only if there is room in the buffer. If there is no room
+         // in the buffer the event was quietly dropped.
+         // notifier.publish( null );
       }
       else
       {
          logger.warning (() -> "Exception with CA status " + status + " received for monitor, message: " + ((errorMessage != null) ? errorMessage : status.getMessage ()));
       }
-   }
-
-   @Override
-   public Disruptor<Holder<T>> getDisruptor()
-   {
-      return disruptor;
    }
 
    @Override
