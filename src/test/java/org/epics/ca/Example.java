@@ -94,14 +94,14 @@ public class Example
          //Thread.sleep(10000);
          //mon.close();
 
-         Monitor<Timestamped<Double>> mon2 =
-               adc.addMonitor (
-                     Timestamped.class,
-                     value -> {
-                        if ( value != null )
-                           System.out.println (new Date (value.getMillis ()) + " / " + value.getValue ());
-                     }
-               );
+//         Monitor<Timestamped<Double>> mon2 =
+//               adc.addMonitor (
+//                     Timestamped.class,
+//                     value -> {
+//                        if ( value != null )
+//                           System.out.println (new Date (value.getMillis ()) + " / " + value.getValue ());
+//                     }
+//               );
 
          Thread.sleep (5000);
 
@@ -150,12 +150,12 @@ public class Example
          Monitor<Double> monitor = adc.addValueMonitor (value -> System.out.println (value));
          monitor.close ();   // try-catch-resource can be used
 
-         Monitor<Timestamped<Double>> monitor2 =
-               adc.addMonitor (
-                     Timestamped.class,
-                     value -> System.out.println (value)
-               );
-
+//         Monitor<Timestamped<Double>> monitor2 =
+//               adc.addMonitor (
+//                     Timestamped.class,
+//                     value -> System.out.println (value)
+//               );
+//
       }
    }
 }

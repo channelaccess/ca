@@ -1,19 +1,23 @@
 /**
  *
  */
-package org.epics.ca.test;
+package org.epics.ca;
 
-import org.epics.ca.*;
 import org.epics.ca.data.*;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,9 +35,12 @@ public class ChannelTest
    @BeforeEach
    protected void setUp() throws Exception
    {
+      Properties prop = new Properties();
+      prop.setProperty( "CA_MONITOR_NOTIFIER", "DisruptorMonitorNotificationServiceImpl2" );
+      prop.setProperty( "CA_DEBUG", "0" );
       server = new CAJTestServer ();
       server.runInSeparateThread ();
-      context = new Context ();
+      context = new Context ( prop );
    }
 
    @AfterEach
@@ -65,7 +72,6 @@ public class ChannelTest
 
          assertEquals (ConnectionState.NEVER_CONNECTED, channel.getConnectionState ());
       }
-      ;
 
       try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
       {
@@ -77,7 +83,6 @@ public class ChannelTest
          assertEquals (ConnectionState.CONNECTED, channel.getConnectionState ());
          assertEquals ("adc01", channel.getName ());
       }
-      ;
 
       // connect to the previously closed channel
       try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
@@ -88,7 +93,6 @@ public class ChannelTest
          channel.connectAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
          assertEquals (ConnectionState.CONNECTED, channel.getConnectionState ());
       }
-      ;
 
    }
 
@@ -104,7 +108,7 @@ public class ChannelTest
 
          final AtomicInteger connectedCount = new AtomicInteger ();
          final AtomicInteger disconnectedCount = new AtomicInteger ();
-         final AtomicInteger unregsiteredEventCount = new AtomicInteger ();
+         final AtomicInteger unregisteredEventCount = new AtomicInteger ();
 
          Listener cl = channel.addConnectionListener (( c, connected ) -> {
             if ( c == channel )
@@ -117,9 +121,9 @@ public class ChannelTest
          });
          assertNotNull (cl);
 
-         Listener cl2 = channel.addConnectionListener (( c, connected ) -> unregsiteredEventCount.incrementAndGet ());
+         Listener cl2 = channel.addConnectionListener (( c, connected ) -> unregisteredEventCount.incrementAndGet ());
          assertNotNull (cl2);
-         assertEquals (0, unregsiteredEventCount.get ());
+         assertEquals (0, unregisteredEventCount.get ());
          cl2.close ();
 
          channel.connectAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
@@ -131,7 +135,7 @@ public class ChannelTest
          assertEquals (1, connectedCount.get ());
          assertEquals (0, disconnectedCount.get ());
 
-         assertEquals (0, unregsiteredEventCount.get ());
+         assertEquals (0, unregisteredEventCount.get ());
 
          channel.close ();
 
@@ -142,9 +146,8 @@ public class ChannelTest
          assertEquals (1, connectedCount.get ());
          assertEquals (0, disconnectedCount.get ());
 
-         assertEquals (0, unregsiteredEventCount.get ());
+         assertEquals (0, unregisteredEventCount.get ());
       }
-      ;
    }
 
    @Test
@@ -387,7 +390,6 @@ public class ChannelTest
       meta.setUnits ("units");
       meta.setPrecision ((short) 3);
 
-
       internalTestMetaPutAndGet ("adc01", String.class, String.class, "12.346", alarm, meta, async);   // precision == 3
       internalTestMetaPutAndGet ("adc01", Short.class, Short.class, Short.valueOf ((short) 123), alarm, meta, async);
       internalTestMetaPutAndGet ("adc01", Float.class, Float.class, Float.valueOf (-123.4f), alarm, meta, async);
@@ -474,6 +476,48 @@ public class ChannelTest
       internalTestGraphicEnum ("enum", short[].class, new short[] { 3, 4 }, alarm, labels, true);
    }
 
+   private final Logger logger = LoggerFactory.getLogger( ChannelTest.class);
+
+
+   @Test
+   public void testMonitorDisconnectionBehaviour() throws InterruptedException
+   {
+      try ( Channel<Integer> channel = context.createChannel ("test:db_ok", Integer.class) )
+      {
+         channel.addConnectionListener( (c,h) -> logger.info ( "Channel {}, new connection state is: {} ", c.getName(), c.getConnectionState() ) );
+         channel.connect();
+
+         Consumer<Timestamped> consumer = new Consumer<Timestamped>()
+         {
+            @Override
+            public void accept( Timestamped integerMetadata )
+            {
+               if ( integerMetadata == null )
+               {
+                  throw new NullPointerException();
+                 // logger.info( "null was sent " );
+                  //return;
+               }
+
+               long timestamp = integerMetadata.getNanos();
+               Integer value = (Integer) integerMetadata.getValue();
+               logger.info( "accept called at time {} with value {}", timestamp, value );
+            }
+         };
+
+         Monitor<Timestamped> mon = channel.addMonitor( Timestamped.class, consumer );
+
+         //channel.close();
+         Thread.sleep( 120_000 );
+         logger.info( "Closing...");
+         channel.close();
+         Thread.sleep( 5000 );
+         logger.info( "Closed." );
+
+      }
+   }
+
+
    @Test
    public void testMonitors() throws Throwable
    {
@@ -487,7 +531,7 @@ public class ChannelTest
             channel.addValueMonitor (null);
             fail ("null handler accepted");
          }
-         catch ( IllegalArgumentException iae )
+         catch ( NullPointerException iae )
          {
             // ok
          }
@@ -495,40 +539,7 @@ public class ChannelTest
          try
          {
             channel.addValueMonitor (( value ) -> {
-            }, 0, Monitor.VALUE_MASK);
-            fail ("invalid (0) queue size accepted");
-         }
-         catch ( IllegalArgumentException iae )
-         {
-            // ok
-         }
-
-         try
-         {
-            channel.addValueMonitor (( value ) -> {
-            }, -1, Monitor.VALUE_MASK);
-            fail ("invalid negative queue size accepted");
-         }
-         catch ( IllegalArgumentException iae )
-         {
-            // ok
-         }
-
-         try
-         {
-            channel.addValueMonitor (( value ) -> {
-            }, 3, Monitor.VALUE_MASK);
-            fail ("non-pow2 queue size accepted");
-         }
-         catch ( IllegalArgumentException iae )
-         {
-            // ok
-         }
-
-         try
-         {
-            channel.addValueMonitor (( value ) -> {
-            }, 2, 0);
+            }, 0);
             fail ("empty mask accepted");
          }
          catch ( IllegalArgumentException iae )
@@ -537,17 +548,15 @@ public class ChannelTest
          }
 
          // note: we accept currently non-valid masks to allow future/unstandard extensions
-
-
          try ( Monitor<Integer> m = channel.addValueMonitor (( value ) -> {
-         }, 2, Monitor.VALUE_MASK)
+         }, Monitor.VALUE_MASK)
          )
          {
             assertNotNull (m);
          }
 
          AtomicInteger monitorCount = new AtomicInteger ();
-         Monitor<Integer> m = channel.addValueMonitor (( value ) -> monitorCount.incrementAndGet (), 2, Monitor.VALUE_MASK);
+         Monitor<Integer> m = channel.addValueMonitor (( value ) -> monitorCount.incrementAndGet (), Monitor.VALUE_MASK);
          assertNotNull (m);
          Thread.sleep (TIMEOUT_SEC * 1000);
          m.close ();
@@ -558,7 +567,6 @@ public class ChannelTest
          assertEquals (monitors, monitorCount.get ());
 
       }
-
    }
 
    @Test
@@ -577,7 +585,6 @@ public class ChannelTest
          internalTestMetaPutAndGet (false);
          internalTestMetaPutAndGet (true);
       }
-
    }
 
    @Test

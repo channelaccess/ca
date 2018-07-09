@@ -1,7 +1,7 @@
 /*
  */
 
-package org.epics.ca.test;
+package org.epics.ca;
 
 
 import gov.aps.jca.CAException;
@@ -17,7 +17,6 @@ import com.cosylab.epics.caj.cas.util.examples.CounterProcessVariable;
 
 public class CAJTestServer
 {
-
    /**
     * JCA server context.
     */
@@ -97,8 +96,8 @@ public class CAJTestServer
       server.registerProcessVaribale (counter);
 
       // fast counter PV
-      //CounterProcessVariable fastCounter = new CounterProcessVariable("fastCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
-      //server.registerProcessVaribale(fastCounter);
+      CounterProcessVariable fastCounter = new CounterProcessVariable("fastCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
+      server.registerProcessVaribale(fastCounter);
 
       // simple in-memory 1MB array
       final int[] arrayValue = new int[ 1024 * 1024 ];
@@ -127,10 +126,8 @@ public class CAJTestServer
       }
    }
 
-   /**
-    * @param channelName
-    */
-   public void execute()
+
+   void execute()
    {
 
       try
@@ -168,7 +165,6 @@ public class CAJTestServer
    {
       try
       {
-
          // initialize context
          initialize ();
 
@@ -190,7 +186,6 @@ public class CAJTestServer
          throw new RuntimeException ("Failed to start CA server.", th);
       }
    }
-
 
    /**
     * Program entry point.

@@ -1,4 +1,4 @@
-package org.epics.ca.test;
+package org.epics.ca;
 
 import java.util.ArrayList;
 import java.util.HashMap;
