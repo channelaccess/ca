@@ -12,9 +12,6 @@ import com.lmax.disruptor.dsl.Disruptor;
 
 public interface Channel<T> extends AutoCloseable
 {
-
-   public static final int MONITOR_QUEUE_SIZE_DEFAULT = 2;
-
    public String getName();
 
    public ConnectionState getConnectionState();
@@ -74,36 +71,30 @@ public interface Channel<T> extends AutoCloseable
    // monitors
    //
 
-   // value only, queueSize = DEFAULT_MONITOR_QUEUE_SIZE, called from its own thread
+   // Value-only monitor. Default, value-change, notification mask.
    default Monitor<T> addValueMonitor( Consumer<? super T> handler )
    {
-      return addValueMonitor (handler, MONITOR_QUEUE_SIZE_DEFAULT, Monitor.VALUE_MASK);
+      return addValueMonitor (handler, Monitor.VALUE_MASK);
    }
 
-   // value only, called from its own thread
-   public Monitor<T> addValueMonitor( Consumer<? super T> handler, int queueSize, int mask );
+   // Value-only monitor. User-specified notification mask.
+   public Monitor<T> addValueMonitor( Consumer<? super T> handler, int mask );
 
-   // queueSize = DEFAULT_MONITOR_QUEUE_SIZE, called from its own thread
+   // Metadata monitor.  Default, value-change, notification mask.
    @SuppressWarnings( "rawtypes" )
-   default <MT extends Metadata<T>> Monitor<MT> addMonitor( Class<? extends Metadata> clazz, Consumer<MT> handler )
+   default  <MT extends Metadata<T>> Monitor<MT> addMonitor( Class<? extends Metadata> clazz, Consumer<MT> handler )
    {
-      return addMonitor (clazz, handler, MONITOR_QUEUE_SIZE_DEFAULT, Monitor.VALUE_MASK);
+      return addMonitor( clazz, handler, Monitor.VALUE_MASK );
    }
 
-   // called from its own thread
+   // Metadata monitor.  User-specified notification mask.
    @SuppressWarnings( "rawtypes" )
-   public <MT extends Metadata<T>> Monitor<MT> addMonitor( Class<? extends Metadata> clazz, Consumer<MT> handler, int queueSize, int mask );
+   public <MT extends Metadata<T>> Monitor<MT> addMonitor( Class<? extends Metadata> clazz, Consumer<MT> handler, int mask );
 
-   // advanced monitor, user provides its own Disruptor
-   public Monitor<T> addValueMonitor( Disruptor<Holder<T>> disruptor, int mask );
-
-   @SuppressWarnings( "rawtypes" )
-   public <MT extends Metadata<T>> Monitor<MT> addMonitor( Class<? extends Metadata> clazz, Disruptor<Holder<MT>> disruptor, int mask );
 
    //
    // misc
    //
-
 
    // get channel properties, e.g. native type, host, etc.
    Map<String, Object> getProperties();
