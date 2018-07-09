@@ -1,11 +1,22 @@
 package org.epics.ca.impl;
 
+import com.lmax.disruptor.EventFactory;
+import org.epics.ca.*;
+import org.epics.ca.data.Metadata;
+import org.epics.ca.impl.TypeSupports.TypeSupport;
+import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
+import org.epics.ca.impl.monitor.MonitorNotificationService;
+import org.epics.ca.impl.requests.MonitorRequest;
+import org.epics.ca.impl.requests.ReadNotifyRequest;
+import org.epics.ca.impl.requests.WriteNotifyRequest;
+import org.epics.ca.util.Holder;
+import org.epics.ca.util.IntHashMap;
+
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,27 +24,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.epics.ca.AccessRights;
-import org.epics.ca.Channel;
-import org.epics.ca.ConnectionState;
-import org.epics.ca.Constants;
-import org.epics.ca.Listener;
-import org.epics.ca.Monitor;
-import org.epics.ca.Status;
-import org.epics.ca.data.Metadata;
-import org.epics.ca.impl.TypeSupports.TypeSupport;
-import org.epics.ca.impl.disruptor.MonitorBatchEventProcessor;
-import org.epics.ca.impl.requests.MonitorRequest;
-import org.epics.ca.impl.requests.ReadNotifyRequest;
-import org.epics.ca.impl.requests.WriteNotifyRequest;
-import org.epics.ca.util.Holder;
-import org.epics.ca.util.IntHashMap;
-
-import com.lmax.disruptor.BlockingWaitStrategy;
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.dsl.Disruptor;
-import com.lmax.disruptor.dsl.ProducerType;
 
 public class ChannelImpl<T> implements Channel<T>, TransportClient
 {
@@ -410,35 +400,30 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       }
       catch ( Throwable th )
       {
-         throw new RuntimeException ("Failed to do get.", th);
+         throw new RuntimeException( "Failed to do get.", th );
       }
    }
 
    @SuppressWarnings( { "rawtypes", "unchecked" } )
    @Override
-   public <MT extends Metadata<T>> CompletableFuture<MT> getAsync(
-         Class<? extends Metadata> clazz
-   )
+   public <MT extends Metadata<T>> CompletableFuture<MT> getAsync( Class<? extends Metadata> clazz )
    {
-
-      TCPTransport t = connectionRequiredCheck ();
-
-      TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>) getTypeSupport (clazz, channelType);
+      final TCPTransport t = connectionRequiredCheck ();
+      final TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>) getTypeSupport (clazz, channelType);
 
       // check read access
       AccessRights currentRights = getAccessRights ();
-      if ( currentRights != AccessRights.READ &&
-            currentRights != AccessRights.READ_WRITE )
-         throw new IllegalStateException ("No read rights.");
+      if ( currentRights != AccessRights.READ && currentRights != AccessRights.READ_WRITE )
+      {
+         throw new IllegalStateException("No read rights.");
+      }
 
       return new ReadNotifyRequest<MT> (this, t, sid, metaTypeSupport);
    }
 
    static class HolderEventFactory<TT> implements EventFactory<Holder<TT>>
    {
-
       private final TypeSupport<TT> typeSupport;
-
       public HolderEventFactory( TypeSupport<TT> typeSupport )
       {
          this.typeSupport = typeSupport;
@@ -449,98 +434,41 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       {
          return new Holder<TT> (typeSupport.newInstance ());
       }
-
    }
-
-   ;
 
    @Override
-   public Monitor<T> addValueMonitor( Consumer<? super T> handler, int queueSize, int mask )
+   public Monitor<T> addValueMonitor( Consumer<? super T> handler, int mask )
    {
-
       if ( mask == 0 )
-         throw new IllegalArgumentException ("null mask");
+      {
+         throw new IllegalArgumentException("null mask");
+      }
 
-      Disruptor<Holder<T>> disruptor = createMonitorDisruptor (typeSupport, handler, queueSize);
-      return addValueMonitor (disruptor, mask);
-   }
+      final TCPTransport transport = connectionRequiredCheck ();
 
-   @SuppressWarnings( "unchecked" )
-   protected <MT> Disruptor<Holder<MT>> createMonitorDisruptor( TypeSupport<MT> typeSupport, Consumer<? super MT> handler, int queueSize )
-   {
+      final MonitorNotificationServiceFactory notifierFactory = context.getMonitorNotificationFactory();
+      final MonitorNotificationService<? super T> notifier  = notifierFactory.getServiceForConsumer(handler );
 
-      // check handler fist
-      if ( handler == null )
-         throw new IllegalArgumentException ("null handler");
-
-      // Executor that will be used to construct new threads for consumers
-      Executor executor = context.getMonitorExecutor ();
-
-      // NOTE: queueSize specifies the size of the ring buffer, must be power of 2.
-      EventFactory<Holder<MT>> eventFactory = new HolderEventFactory<MT> (typeSupport);
-
-      Disruptor<Holder<MT>> disruptor =
-            new Disruptor<> (eventFactory, queueSize, executor,
-                             ProducerType.SINGLE, new BlockingWaitStrategy ());
-      //disruptor.handleEventsWith((event, sequence, endOfBatch) -> handler.accept(event.value));
-
-      disruptor.handleEventsWith (
-            ( ringBuffer, barrierSequences ) ->
-                  new MonitorBatchEventProcessor<Holder<MT>> (
-                        this, new Holder<MT> (), ( value ) -> (value.value == null),
-                        disruptor.getRingBuffer (), ringBuffer.newBarrier (barrierSequences),
-                        ( event, sequence, endOfBatch ) -> handler.accept (event.value)));
-      disruptor.start ();
-      return disruptor;
+      return new MonitorRequest<T> (this, transport, typeSupport, mask, notifier, handler );
    }
 
    @SuppressWarnings( "rawtypes" )
    @Override
-   public <MT extends Metadata<T>> Monitor<MT> addMonitor(
-         Class<? extends Metadata> clazz, Consumer<MT> handler, int queueSize, int mask
-   )
+   public <MT extends Metadata<T>> Monitor<MT> addMonitor( Class<? extends Metadata> clazz, Consumer<MT> handler, int mask )
    {
-
       if ( mask == 0 )
-         throw new IllegalArgumentException ("null mask");
+      {
+         throw new IllegalArgumentException("null mask");
+      }
 
-      TCPTransport t = connectionRequiredCheck ();
+      final TCPTransport transport = connectionRequiredCheck ();
 
       @SuppressWarnings( "unchecked" )
-      TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>) getTypeSupport (clazz, channelType);
+      final TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>) getTypeSupport (clazz, channelType);
+      final MonitorNotificationServiceFactory notifierFactory = context.getMonitorNotificationFactory();
+      final MonitorNotificationService<? super MT> notifier  = notifierFactory.getServiceForConsumer(handler );
 
-      Disruptor<Holder<MT>> disruptor = createMonitorDisruptor (metaTypeSupport, handler, queueSize);
-
-      return new MonitorRequest<MT> (this, t, metaTypeSupport, mask, disruptor);
-   }
-
-   @Override
-   public Monitor<T> addValueMonitor( Disruptor<Holder<T>> disruptor, int mask )
-   {
-
-      if ( mask == 0 )
-         throw new IllegalArgumentException ("null mask");
-
-      TCPTransport t = connectionRequiredCheck ();
-      return new MonitorRequest<T> (this, t, typeSupport, mask, disruptor);
-   }
-
-   @SuppressWarnings( "rawtypes" )
-   @Override
-   public <MT extends Metadata<T>> Monitor<MT> addMonitor(
-         Class<? extends Metadata> clazz, Disruptor<Holder<MT>> disruptor, int mask
-   )
-   {
-
-      if ( mask == 0 )
-         throw new IllegalArgumentException ("null mask");
-
-      TCPTransport t = connectionRequiredCheck ();
-
-      @SuppressWarnings( "unchecked" )
-      TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>) getTypeSupport (clazz, channelType);
-
-      return new MonitorRequest<MT> (this, t, metaTypeSupport, mask, disruptor);
+      return new MonitorRequest<MT> (this, transport, metaTypeSupport, mask, notifier, handler );
    }
 
    @Override
@@ -574,7 +502,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
    /**
     * Create a channel, i.e. submit create channel request to the server.
-    * This method is called after seatch is complete.
+    * This method is called after search is complete.
     * <code>sid</code>, <code>typeCode</code>, <code>elementCount</code> might not be
     * valid, this depends on protocol revision.
     *
@@ -938,6 +866,4 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    {
       return typeSupport;
    }
-
-
 }
