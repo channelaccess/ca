@@ -1,4 +1,4 @@
-package org.epics.ca.test;
+package org.epics.ca;
 
 import org.epics.ca.impl.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,14 +25,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class TCPTransportTest
+class TCPTransportTest
 {
    private SocketChannel channel;
    private TCPTransport transport;
    private ResponseHandlers.ResponseHandler handler;
 
    @BeforeEach
-   public void setupTcpTransport()
+   void setupTcpTransport()
    {
       // Create a mock for the first argument of the TCPTransport constructor
       final ContextImpl context = Mockito.mock (ContextImpl.class);
@@ -54,18 +54,18 @@ public class TCPTransportTest
       // mocking behaviour...
       // Note: INetSocketAddress cant be mocked (because it declares hashcode and equals as final).
       // So we create a real one here. For the purpose of the test the difference is irrelevant.
-      final InetSocketAddress socketAddress = new InetSocketAddress (1234);
-      final ScheduledFuture scheduledFuture = Mockito.mock (ScheduledFuture.class);
-      final ScheduledExecutorService scheduledExecutorService = Mockito.mock (ScheduledExecutorService.class);
-      final TransportRegistry transportRegistry = Mockito.mock (TransportRegistry.class);
-      final Socket socket = Mockito.mock (Socket.class);
+      final InetSocketAddress socketAddress = new InetSocketAddress(1234);
+      final ScheduledFuture scheduledFuture = Mockito.mock( ScheduledFuture.class );
+      final ScheduledExecutorService scheduledExecutorService = Mockito.mock (ScheduledExecutorService.class );
+      final TransportRegistry transportRegistry = Mockito.mock( TransportRegistry.class );
+      final Socket socket = Mockito.mock( Socket.class );
 
       // Now provide the mocking behavioural support to allow the TCPTransport constructor to get invoked.
-      Mockito.when (channel.socket ()).thenReturn (socket);
-      Mockito.when (socket.getRemoteSocketAddress ()).thenReturn (socketAddress);
-      Mockito.when (context.getScheduledExecutor ()).thenReturn (scheduledExecutorService);
-      Mockito.when (scheduledExecutorService.scheduleWithFixedDelay (any (), ArgumentMatchers.anyLong (), ArgumentMatchers.anyLong (), any ())).thenReturn (scheduledFuture);
-      Mockito.when (context.getTransportRegistry ()).thenReturn (transportRegistry);
+      Mockito.when( channel.socket ()).thenReturn (socket);
+      Mockito.when( socket.getRemoteSocketAddress ()).thenReturn (socketAddress);
+      Mockito.when( context.getScheduledExecutor ()).thenReturn (scheduledExecutorService);
+      Mockito.when( scheduledExecutorService.scheduleWithFixedDelay (any (), ArgumentMatchers.anyLong (), ArgumentMatchers.anyLong (), any ())).thenReturn( scheduledFuture );
+      Mockito.when( context.getTransportRegistry ()).thenReturn (transportRegistry);
 
       // Ok, we now have everything in place to construct our TCPTransport that we will test/
       // Go and build the test object.
@@ -76,9 +76,8 @@ public class TCPTransportTest
       setGlobalLoggingLevel (Level.FINEST);
    }
 
-
    @Test
-   public void testCaCommandWithNoPayload_HeaderSuppliedInOneChunk() throws IOException
+   void testCaCommandWithNoPayload_HeaderSuppliedInOneChunk() throws IOException
    {
       // We will use CA_PROTO_EVENT_CANCEL as an example as
       // (a) it has no payload
@@ -103,7 +102,7 @@ public class TCPTransportTest
       // object under test when it reads the channel
       Mockito.when (channel.read (ArgumentMatchers.<ByteBuffer> any ())).thenAnswer (i -> {
          // The first time the channel is read return our command.
-         final ByteBuffer suppliedBuf = (ByteBuffer) i.getArgument (0);
+         final ByteBuffer suppliedBuf = i.getArgument (0);
          suppliedBuf.put (bufSocketRead1);
          return 16;
       }).thenAnswer (i -> {
@@ -151,7 +150,7 @@ public class TCPTransportTest
    }
 
    @Test
-   public void testCaCommandWithNoPayload_HeaderSuppliedInTwoChunks() throws IOException
+   void testCaCommandWithNoPayload_HeaderSuppliedInTwoChunks() throws IOException
    {
       // We will use CA_PROTO_EVENT_CANCEL as an example as
       // (a) it has no payload
@@ -179,12 +178,12 @@ public class TCPTransportTest
       // object under test when it reads the channel
       Mockito.when (channel.read (ArgumentMatchers.<ByteBuffer> any ())).thenAnswer (i -> {
          // The first time the channel is read return our command.
-         final ByteBuffer suppliedBuf = (ByteBuffer) i.getArgument (0);
+         final ByteBuffer suppliedBuf = i.getArgument (0);
          suppliedBuf.put (bufSocketRead1);
          return 8;
       }).thenAnswer (i -> {
          // The first time the channel is read return our command.
-         final ByteBuffer suppliedBuf = (ByteBuffer) i.getArgument (0);
+         final ByteBuffer suppliedBuf = i.getArgument (0);
          suppliedBuf.put (bufSocketRead2);
          return 8;
       }).thenAnswer (i -> {
@@ -232,7 +231,7 @@ public class TCPTransportTest
    }
 
    @Test
-   public void testCaCommandWithPayload_HeaderSuppliedInOneChunk() throws IOException
+   void testCaCommandWithPayload_HeaderSuppliedInOneChunk() throws IOException
    {
       // We will use CA_PROTO_READ_NOTIFY with an element count of 1 and a long payload as an example
       final short cmdVersion = 0x000F;
@@ -259,12 +258,12 @@ public class TCPTransportTest
       // object under test when it reads the channel
       Mockito.when (channel.read (ArgumentMatchers.<ByteBuffer> any ())).thenAnswer (i -> {
          // The first time the channel is read return the buffer containing the header
-         final ByteBuffer suppliedBuf = (ByteBuffer) i.getArgument (0);
+         final ByteBuffer suppliedBuf = i.getArgument (0);
          suppliedBuf.put (bufSocketRead1);
          return 16;
       }).thenAnswer (i -> {
          // The second time our channel is read return the buffer containing the payload
-         final ByteBuffer suppliedBuf = (ByteBuffer) i.getArgument (0);
+         final ByteBuffer suppliedBuf = i.getArgument (0);
          suppliedBuf.put (bufSocketRead2);
          return 4;
       }).thenAnswer (i -> {
@@ -317,7 +316,7 @@ public class TCPTransportTest
    }
 
    @Test
-   public void testCaCommandWithPayload_HeaderSuppliedInTwoChunks() throws IOException
+   void testCaCommandWithPayload_HeaderSuppliedInTwoChunks() throws IOException
    {
       // We will use CA_PROTO_READ_NOTIFY with an element count of 1 and a float payload as an example
       final short cmdVersion = 0x000F;
@@ -347,17 +346,17 @@ public class TCPTransportTest
       // object under test when it reads the channel
       Mockito.when (channel.read (ArgumentMatchers.<ByteBuffer> any ())).thenAnswer (i -> {
          // The first time the channel is read return our command.
-         final ByteBuffer suppliedBuf = (ByteBuffer) i.getArgument (0);
+         final ByteBuffer suppliedBuf = i.getArgument (0);
          suppliedBuf.put (bufSocketRead1);
          return 8;
       }).thenAnswer (i -> {
          // The first time the channel is read return our command.
-         final ByteBuffer suppliedBuf = (ByteBuffer) i.getArgument (0);
+         final ByteBuffer suppliedBuf = i.getArgument (0);
          suppliedBuf.put (bufSocketRead2);
          return 8;
       }).thenAnswer (i -> {
          // The second time our channel is read return the payload
-         final ByteBuffer suppliedBuf = (ByteBuffer) i.getArgument (0);
+         final ByteBuffer suppliedBuf = i.getArgument (0);
          suppliedBuf.put (bufSocketRead3);
          return 4;
       }).thenAnswer (i -> {
@@ -369,8 +368,8 @@ public class TCPTransportTest
       // Create the mocking behaviour which ensures that a selection event
       // triggers the socket read handling
       final SelectionKey selectionKey = Mockito.mock (SelectionKey.class);
-      Mockito.when (selectionKey.isValid ()).thenReturn (true);
-      Mockito.when (selectionKey.readyOps ()).thenReturn (1);
+      Mockito.when( selectionKey.isValid ()).thenReturn (true);
+      Mockito.when( selectionKey.readyOps ()).thenReturn (1);
 
       // Go ahead and trigger the processing which reads data from the socket.
       transport.handleEvent (selectionKey);
@@ -380,37 +379,37 @@ public class TCPTransportTest
       ArgumentCaptor<Transport> captor2 = ArgumentCaptor.forClass (Transport.class);
       ArgumentCaptor<Header> captor3 = ArgumentCaptor.forClass (Header.class);
       ArgumentCaptor<ByteBuffer> captor4 = ArgumentCaptor.forClass (ByteBuffer.class);
-      verify (handler).handleResponse (captor1.capture (), captor2.capture (), captor3.capture (), captor4.capture ());
+      verify( handler ).handleResponse (captor1.capture (), captor2.capture (), captor3.capture (), captor4.capture ());
 
       // Verify that the passed InetSocketAddress had the expected port
-      assertEquals (1234, captor1.getValue ().getPort ());
+      assertEquals(1234, captor1.getValue ().getPort ());
 
       // Verify that the transport reference was passed as expected
       assertEquals (transport, captor2.getValue ());
 
       // Verify all the values in the supplied header
-      assertEquals (0x000F, captor3.getValue ().command);
-      assertEquals (0x0004, captor3.getValue ().payloadSize);
-      assertEquals (0x0002, captor3.getValue ().dataType);
-      assertEquals (0x0001, captor3.getValue ().dataCount);
-      assertEquals (0xDEADBEEF, captor3.getValue ().parameter1);
-      assertEquals (0xDABBAD00, captor3.getValue ().parameter2);
+      assertEquals(0x000F, captor3.getValue ().command);
+      assertEquals(0x0004, captor3.getValue ().payloadSize);
+      assertEquals(0x0002, captor3.getValue ().dataType);
+      assertEquals(0x0001, captor3.getValue ().dataCount);
+      assertEquals(0xDEADBEEF, captor3.getValue ().parameter1);
+      assertEquals(0xDABBAD00, captor3.getValue ().parameter2);
 
       // Verify that the first byte in the supplied Bytebuffer is the first
       // byte in the header (which is our command).
-      assertEquals (0x000F, captor4.getValue ().getShort (0));
+      assertEquals(0x000F, captor4.getValue ().getShort (0));
 
       // Verify that the buffer also contains the payload data.
       // Note: payload data starts at offset 16 because the header occupies
       // the earlier space in the buffer
-      assertEquals (1234.5678f, captor4.getValue ().getFloat (16));
+      assertEquals(1234.5678f, captor4.getValue ().getFloat (16));
 
       // Verify no further interactions take place
       verifyNoMoreInteractions (handler);
    }
 
    @Test
-   public void testCaCommandWithPayload_HeaderAndPayloadSpiltDifferently() throws IOException
+   void testCaCommandWithPayload_HeaderAndPayloadSplitDifferently() throws IOException
    {
       // We will use CA_PROTO_READ_NOTIFY with an element count of 1 and a long payload as an example
       final short cmdVersion = 0x000F;
@@ -437,12 +436,12 @@ public class TCPTransportTest
       // object under test when it reads the channel
       Mockito.when (channel.read (ArgumentMatchers.<ByteBuffer> any ())).thenAnswer (i -> {
          // The first time the channel is read return our command.
-         final ByteBuffer suppliedBuf = (ByteBuffer) i.getArgument (0);
+         final ByteBuffer suppliedBuf = i.getArgument (0);
          suppliedBuf.put (bufSocketRead1);
          return 16;
       }).thenAnswer (i -> {
          // The second time our channel is read return the payload
-         final ByteBuffer suppliedBuf = (ByteBuffer) i.getArgument (0);
+         final ByteBuffer suppliedBuf = i.getArgument (0);
          suppliedBuf.put (bufSocketRead2);
          return 4;
       }).thenAnswer (i -> {
@@ -468,18 +467,18 @@ public class TCPTransportTest
       verify (handler).handleResponse (captor1.capture (), captor2.capture (), captor3.capture (), captor4.capture ());
 
       // Verify that the passed InetSocketAddress had the expected port
-      assertEquals (1234, captor1.getValue ().getPort ());
+      assertEquals(1234, captor1.getValue ().getPort ());
 
       // Verify that the transport reference was passed as expected
-      assertEquals (transport, captor2.getValue ());
+      assertEquals( transport, captor2.getValue ());
 
       // Verify all the values in the supplied header
-      assertEquals (0x000F, captor3.getValue ().command);
-      assertEquals (0x0004, captor3.getValue ().payloadSize);
-      assertEquals (0x0005, captor3.getValue ().dataType);
-      assertEquals (0x0001, captor3.getValue ().dataCount);
-      assertEquals (0xDEADBEEF, captor3.getValue ().parameter1);
-      assertEquals (0xDABBAD00, captor3.getValue ().parameter2);
+      assertEquals(0x000F, captor3.getValue ().command);
+      assertEquals(0x0004, captor3.getValue ().payloadSize);
+      assertEquals(0x0005, captor3.getValue ().dataType);
+      assertEquals(0x0001, captor3.getValue ().dataCount);
+      assertEquals(0xDEADBEEF, captor3.getValue ().parameter1);
+      assertEquals(0xDABBAD00, captor3.getValue ().parameter2);
 
       // Verify that the first byte in the supplied Bytebuffer is the first
       // byte in the header (which is our command).
