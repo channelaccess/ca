@@ -68,6 +68,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
     * @param typeSupport the object which will provide type support.
     * @param mask the mask.
     * @param notifier the monitor notification service.
+    * @param consumer the consumer to be informed of monitor update events.
     */
    public MonitorRequest( ChannelImpl<?> channel, Transport transport, TypeSupport<T> typeSupport, int mask, MonitorNotificationService notifier, Consumer<? super T> consumer  )
    {
