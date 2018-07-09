@@ -58,7 +58,7 @@ public final class MonitorBatchEventProcessor<T> implements EventProcessor
    private final Sequence sequence = new Sequence (Sequencer.INITIAL_CURSOR_VALUE);
    private final TimeoutHandler timeoutHandler;
 
-   private final ChannelImpl<?> channel;
+   private final ConnectionInterruptable channel;
    private final T disconnectedValue;
    private final Predicate<T> isDisconnectedValue;
 
@@ -66,7 +66,7 @@ public final class MonitorBatchEventProcessor<T> implements EventProcessor
     * Construct a {@link EventProcessor} that will automatically track the progress by updating its sequence when
     * the {@link EventHandler#onEvent(Object, long, boolean)} method returns.
     *
-    * @param channel the channel.
+    * @param channel reference to an object which can report on the state of the connection.
     * @param disconnectedValue the value to be published to indicate channel disconnection.
     * @param isDisconnectedValue predicate which returns true when the channel is disconnected.
     * @param dataProvider    to which events are published.
@@ -74,7 +74,7 @@ public final class MonitorBatchEventProcessor<T> implements EventProcessor
     * @param eventHandler    is the delegate to which events are dispatched.
     */
    public MonitorBatchEventProcessor(
-         final ChannelImpl<?> channel,
+         final ConnectionInterruptable channel,
          final T disconnectedValue,
          final Predicate<T> isDisconnectedValue,
          final DataProvider<T> dataProvider,
