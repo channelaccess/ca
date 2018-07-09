@@ -8,8 +8,6 @@ public interface Constants
       nativeType, nativeTypeCode, remoteAddress, nativeElementCount
    }
 
-   ;
-
    /**
     * String value of the JVM property key to turn on debugging.
     */
@@ -25,6 +23,15 @@ public interface Constants
     */
    public static final String CA_HOSTNAME_KEY = "HOSTNAME";
 
+   /**
+    * String value of the JVM property key to configure the monitor notification engine.
+    */
+   public static final String CA_MONITOR_NOTIFIER = "CA_MONITOR_NOTIFIER";
+
+   /**
+    * String value defining the default monitor notification engine.
+    */
+   public static final String CA_MONITOR_NOTIFIER_DEFAULT = "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl";
 
    /**
     * Minimal priority.
