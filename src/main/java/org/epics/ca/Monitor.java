@@ -33,8 +33,6 @@ public interface Monitor<T> extends AutoCloseable
       return mask;
    }
 
-   Disruptor<Holder<T>> getDisruptor();
-
    // suppresses AutoCloseable.close() exception
    @Override
    void close();
