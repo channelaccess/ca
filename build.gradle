@@ -6,7 +6,7 @@ apply plugin: 'signing'
 group = 'org.epics'
 archivesBaseName = 'ca'
 sourceCompatibility = 10
-version = '1.0.2-SNAPSHOT'
+version = '1.1.0-SNAPSHOT'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
@@ -27,6 +27,7 @@ sourceSets {
     test {
         java {
             srcDir 'src/test/java'
+            exclude '**/proto/*'
         }
     }
 }

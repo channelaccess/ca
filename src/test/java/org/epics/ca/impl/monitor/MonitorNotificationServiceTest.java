@@ -2,6 +2,7 @@ package org.epics.ca.impl.monitor;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -50,6 +51,8 @@ class MonitorNotificationServiceTest
       assertThrows( NullPointerException.class, () -> new MonitorNotificationServiceFactory( monitorNotifierImpl ).getServiceForConsumer(null ) );
    }
 
+
+   @Disabled( "Still to be decided: whether publication of null values should be allowed (in the old implementation it was) ")
    @ParameterizedTest
    @MethodSource( "getMonitorNotificationServiceImplementations" )
    void testNotifyConsumer_ThrowsNullPointerExceptionWhenValueNull( String monitorNotifierImpl )
@@ -64,8 +67,8 @@ class MonitorNotificationServiceTest
 
    private static Stream<Arguments> getArgumentsForTestThroughputWithSameConsumer()
    {
-      Integer[] intArray1 = new Integer[ 100_000 ];
-      Integer[] intArray2 = new Integer[ 100_000 ];
+      Integer[] intArray1 = new Integer[ 10 ];
+      Integer[] intArray2 = new Integer[ 100];
 
       return Stream.of (
             Arguments.of( 1_000, intArray1, intArray2, "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
@@ -74,8 +77,8 @@ class MonitorNotificationServiceTest
             Arguments.of( 2_000, intArray1, intArray2, "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
             Arguments.of( 1_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl"                   ),
             Arguments.of( 2_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl"                   ),
-            Arguments.of( 1_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl2"                   ),
-            Arguments.of( 2_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl2"                   ),
+            //Arguments.of( 1_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl2"                   ),
+            //Arguments.of( 2_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl2"                   ),
 
             // Perform String throughput tests on all implementations
             Arguments.of( 1_000_000, "Str1", "Str2", "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
