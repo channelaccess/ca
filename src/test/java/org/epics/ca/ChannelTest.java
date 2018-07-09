@@ -9,6 +9,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -22,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,9 +49,7 @@ public class ChannelTest
    @BeforeEach
    protected void setUp() throws Exception
    {
-      Properties prop = new Properties();
-      prop.setProperty( "CA_MONITOR_NOTIFIER", "DisruptorMonitorNotificationServiceImpl2" );
-      prop.setProperty( "CA_DEBUG", "0" );
+      Properties prop = new Properties();;
       server = new CAJTestServer ();
       server.runInSeparateThread ();
       context = new Context ( prop );
@@ -489,12 +491,24 @@ public class ChannelTest
    private final Logger logger = LoggerFactory.getLogger( ChannelTest.class);
 
 
-   @Test
-   public void testMonitorDisconnectionBehaviour() throws InterruptedException
+   // Provides a possible method source to iterate test over all service implementations
+   private static Stream<Arguments> getMonitorNotificationServiceImplementations()
    {
-      try ( Channel<Integer> channel = context.createChannel ("adc01", Integer.class) )
-      {
+      return Stream.of(Arguments.of("SingleWorkerBlockingQueueMonitorNotificationServiceImpl"),
+                       Arguments.of("MultipleWorkerBlockingQueueMonitorNotificationServiceImpl"),
+                       Arguments.of("DisruptorMonitorNotificationServiceImpl"),
+                       Arguments.of("DisruptorMonitorNotificationServiceImpl2"));
+   }
+   @MethodSource( "getMonitorNotificationServiceImplementations" )
+   @ParameterizedTest
+   public void testMonitorDisconnectionBehaviour( String monitorNotificationServiceImpl ) throws InterruptedException
+   {
+      final Properties contextProperties = new Properties();
+      contextProperties.setProperty( "CA_MONITOR_NOTIFIER", monitorNotificationServiceImpl );
+      final Context mySpecialContext = new Context( contextProperties );
 
+      try ( Channel<Integer> channel = mySpecialContext.createChannel ("adc01", Integer.class) )
+      {
          channel.addConnectionListener( (c,h) -> logger.info ( "Channel {}, new connection state is: {} ", c.getName(), c.getConnectionState() ) );
 
          // Connect to some channel and get the default value (= value on creation) for the test PV
