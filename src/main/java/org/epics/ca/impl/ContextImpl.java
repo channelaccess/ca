@@ -10,11 +10,7 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Handler;
@@ -25,6 +21,7 @@ import org.epics.ca.Channel;
 import org.epics.ca.Constants;
 import org.epics.ca.Context;
 import org.epics.ca.Version;
+import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.epics.ca.impl.reactor.Reactor;
 import org.epics.ca.impl.reactor.ReactorHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersHandler;
@@ -94,6 +91,10 @@ public class ContextImpl implements AutoCloseable, Constants
     */
    protected int maxArrayBytes = 0; //16384;
 
+   /**
+    * Configuration for the monitor notifier.
+    */
+   protected String monitorNotifierConfig = "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl";
 
    /**
     * Timer.
@@ -134,6 +135,11 @@ public class ContextImpl implements AutoCloseable, Constants
     * Context instance.
     */
    private final NamedLockPattern namedLocker = new NamedLockPattern ();
+
+   /**
+    * Factory to be used for returning MonitorNotifier instances.
+    */
+   private final MonitorNotificationServiceFactory monitorNotificationFactory;
 
    /**
     * TCP transport registry.
@@ -242,6 +248,13 @@ public class ContextImpl implements AutoCloseable, Constants
       { /* noop */ }
 
       channelSearchManager = new ChannelSearchManager (broadcastTransport.get ());
+
+      monitorNotificationFactory = new MonitorNotificationServiceFactory(monitorNotifierConfig );
+   }
+
+   protected MonitorNotificationServiceFactory getMonitorNotificationFactory()
+   {
+      return monitorNotificationFactory;
    }
 
    protected String readStringProperty( Properties properties, String key, String defaultValue )
@@ -332,6 +345,9 @@ public class ContextImpl implements AutoCloseable, Constants
       if ( maxArrayBytes > 0 )
          maxArrayBytes = Math.max (1024, maxArrayBytes);
       logger.config (() -> Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString () + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
+
+      monitorNotifierConfig = readStringProperty( properties, CA_MONITOR_NOTIFIER, CA_MONITOR_NOTIFIER_DEFAULT );
+      logger.config(() -> "CA_MONITOR_NOTIFIER: " + monitorNotifierConfig );
    }
 
    /**
@@ -955,11 +971,6 @@ public class ContextImpl implements AutoCloseable, Constants
          }
          return handler;
       }
-   }
-
-   public ExecutorService getMonitorExecutor()
-   {
-      return monitorExecutor;
    }
 
    public ScheduledExecutorService getScheduledExecutor()
