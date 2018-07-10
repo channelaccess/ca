@@ -71,7 +71,6 @@ dependencies {
     testCompile 'org.epics:caj:1.1.16-SNAPSHOT:javadoc'
     testCompile 'org.epics:jca:2.3.6'
     testCompile 'org.epics:jca:2.3.6:javadoc'
-
 }
 
 test {
@@ -92,9 +91,15 @@ task sourcesJar(type: Jar) {
     from sourceSets.main.allSource
 }
 
+
+task fatJar(type: Jar) {
+    classifier 'all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
 artifacts {
-//    archives javadocJar, sourcesJar
-    archives jar, sourcesJar, javadocJar
+    archives jar, fatJar, sourcesJar, javadocJar
 }
 
 signing {
@@ -113,6 +118,13 @@ uploadArchives {
 
             snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
                 authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+            repository(        url: "https://artifacts.psi.ch/artifactory/libs-releases-local") {
+                authentication(userName: mavenUser, password: mavenPassword)
+            }
+
+            snapshotRepository(url: "https://artifacts.psi.ch/artifactory/libs-snapshots-local") {
+                authentication(userName: mavenUser, password: mavenPassword)
             }
 
             pom.project {
@@ -147,8 +159,4 @@ uploadArchives {
     }
 }
 
-task fatJar(type: Jar) {
-    baseName = project.name + '-all'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    with jar
-}
+
