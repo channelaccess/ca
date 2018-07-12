@@ -6,8 +6,14 @@ This log describes the functionality of tagged versions within the repository.
 * [1.1.0-RELEASE](https://github.com/channelaccess/ca/releases/tag/1.1.0)
   ###### Overview:
   - This release provides an initial fix for the scalability bottleneck which prevented the use of more than ~4000 monitors
-    in the Disruptor implementation. 
-  - Additionally, various cleanups have been made with the intention of making this product more maintainable in the future.
+    in the Disruptor implementation. The default monitor implementation now uses a single shared work queue from which ten 
+    threads take off tasks. The chosen implementation is configurable via a property ('CA_MONITOR_NOTIFIER') which may be 
+    set differently for each context or globally. The following values are supported:
+      - MultipleWorkerBlockingQueueMonitorNotificationServiceImpl  <<< DEFAULT
+      - SingleWorkerBlockingQueueMonitorNotificationServiceImpl
+      - DisruptorMonitorNotificationServiceOldImpl"
+      - DisruptorMonitorNotificationServiceNewImpl
+  - Additionally, various cleanups have been made with the intention of making this library more maintainable in the future.
   ###### Change List: 
   - [Issue #23](https://github.com/channelaccess/ca/issues/23) Documentation Improvements.
      - added comment to README file on CA version compatibility. 
