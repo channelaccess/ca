@@ -538,110 +538,102 @@ class TCPTransportTest
    // Also the first test always runs slower
    private static Stream<Arguments> getArgumentsForCaLatencyTest()
    {
-      return Stream.of ( Arguments.of( Level.FINEST, 100 ),
-                         Arguments.of( Level.INFO, 1 ),
-                         Arguments.of( Level.INFO, 1 ),
-                         Arguments.of( Level.INFO, 1 ),
-                         Arguments.of( Level.INFO, 1 ),
-                         Arguments.of( Level.INFO, 1 ),
-                         Arguments.of( Level.INFO, 1 ) );
+      return Stream.of ( Arguments.of( Level.FINEST, 100_000 ),
+                         Arguments.of( Level.INFO, 3000 ),
+                         Arguments.of( Level.INFO, 3000 ),
+                         Arguments.of( Level.INFO, 3000 ),
+                         Arguments.of( Level.INFO, 3000 ),
+                         Arguments.of( Level.INFO, 3000 ),
+                         Arguments.of( Level.INFO, 3000 ) );
    }
    @MethodSource( "getArgumentsForCaLatencyTest" )
    @ParameterizedTest
-   void testCaReadLatency( Level debugLevel, int maximumExecutionTimeInMilliseconds )
+   void testCaReadLatency( Level debugLevel, int maximumExecutionTimeInMicroseconds) throws IOException
    {
       // Set the required debug level
       setGlobalLoggingLevel( debugLevel );
 
-      // If this test takes more than ten times longer than the expected execution time
-      // then kill the job
-      long executionTimeInMicroseconds = assertTimeoutPreemptively( Duration.ofMillis( 10 * maximumExecutionTimeInMilliseconds ), () ->
-      {
-         // We will use CA_PROTO_READ_NOTIFY with an element count of 1 and a long payload as an example
-         final short cmdVersion = 0x000F;
-         final short payloadSize = 0x0004; // DBR_LONG has a payload size of 4 bytes
-         final short dataType = 0x0005;    // DBR_LONG ID
-         final short dataCount = 0x0001;   // must be 1
-         final int param1 = 0xDEADBEEF;     // SID
-         final int param2 = 0xDABBAD00;     // IOID
+      // We will use CA_PROTO_READ_NOTIFY with an element count of 1 and a long payload as an example
+      final short cmdVersion = 0x000F;
+      final short payloadSize = 0x0004; // DBR_LONG has a payload size of 4 bytes
+      final short dataType = 0x0005;    // DBR_LONG ID
+      final short dataCount = 0x0001;   // must be 1
+      final int param1 = 0xDEADBEEF;     // SID
+      final int param2 = 0xDABBAD00;     // IOID
 
-         final ByteBuffer bufSocketRead1 = ByteBuffer.allocate( 20 )
-               .putShort(cmdVersion)
-               .putShort(payloadSize)
-               .putShort(dataType)
-               .putShort(dataCount)
-               .putInt(param1)
-               .putInt(param2)
-               .putInt(0xCAFEBABE)
-               .flip();
+      final ByteBuffer bufSocketRead1 = ByteBuffer.allocate( 20 )
+            .putShort(cmdVersion)
+            .putShort(payloadSize)
+            .putShort(dataType)
+            .putShort(dataCount)
+            .putInt(param1)
+            .putInt(param2)
+            .putInt(0xCAFEBABE)
+            .flip();
 
-         // Create the mocking behaviour which passes our prepared buffers to the
-         // object under test when it reads the channel
-         Mockito.when(channel.read(ArgumentMatchers.<ByteBuffer> any())).thenAnswer(i -> {
-            // The first time the channel is read return the buffer containing the header
-            final ByteBuffer suppliedBuf = i.getArgument(0);
-            suppliedBuf.put(bufSocketRead1);
-            return 20;
-         }).thenAnswer(i -> {
-            // The second time our channel is read return an indicator showing
-            // that there are no further bytes to be read.
-            return 0;
-         });
+      // Create the mocking behaviour which passes our prepared buffers to the
+      // object under test when it reads the channel
+      Mockito.when(channel.read(ArgumentMatchers.<ByteBuffer> any())).thenAnswer(i -> {
+         // The first time the channel is read return the buffer containing the header
+         final ByteBuffer suppliedBuf = i.getArgument(0);
+         suppliedBuf.put(bufSocketRead1);
+         return 20;
+      }).thenAnswer(i -> {
+         // The second time our channel is read return an indicator showing
+         // that there are no further bytes to be read.
+         return 0;
+      });
 
-         // Create the mocking behaviour which ensures that a selection event
-         // triggers the socket read handling
-         final SelectionKey selectionKey = Mockito.mock(SelectionKey.class);
-         Mockito.when(selectionKey.isValid()).thenReturn(true);
-         Mockito.when(selectionKey.readyOps()).thenReturn(1);
+      // Create the mocking behaviour which ensures that a selection event
+      // triggers the socket read handling
+      final SelectionKey selectionKey = Mockito.mock(SelectionKey.class);
+      Mockito.when(selectionKey.isValid()).thenReturn(true);
+      Mockito.when(selectionKey.readyOps()).thenReturn(1);
 
-         // Now verify our expectation that the handler class gets called with the expected arguments
-         final ArgumentCaptor<InetSocketAddress> captor1 = ArgumentCaptor.forClass(InetSocketAddress.class);
-         final ArgumentCaptor<Transport> captor2 = ArgumentCaptor.forClass(Transport.class);
-         final ArgumentCaptor<Header> captor3 = ArgumentCaptor.forClass(Header.class);
-         final ArgumentCaptor<ByteBuffer> captor4 = ArgumentCaptor.forClass(ByteBuffer.class);
+      // Now verify our expectation that the handler class gets called with the expected arguments
+      final ArgumentCaptor<InetSocketAddress> captor1 = ArgumentCaptor.forClass(InetSocketAddress.class);
+      final ArgumentCaptor<Transport> captor2 = ArgumentCaptor.forClass(Transport.class);
+      final ArgumentCaptor<Header> captor3 = ArgumentCaptor.forClass(Header.class);
+      final ArgumentCaptor<ByteBuffer> captor4 = ArgumentCaptor.forClass(ByteBuffer.class);
 
-         // Go ahead and trigger the processing which reads data from the socket.
-         final StopWatch s = StopWatch.createStarted();
-         transport.handleEvent( selectionKey );
-         final long elapsedTimeInMicroseconds = s.getTime(TimeUnit.MICROSECONDS);
-         logger.log( Level.INFO,String.format( "Transport latency time was '%.3f' ", (float) elapsedTimeInMicroseconds / 1000) + "ms" );
+      // Go ahead and trigger the processing which reads data from the socket.
+      final StopWatch s = StopWatch.createStarted();
+      transport.handleEvent( selectionKey );
+      final long elapsedTimeInMicroseconds = s.getTime(TimeUnit.MICROSECONDS);
+      logger.log( Level.INFO,String.format( "Transport latency time was '%.3f' ", (float) elapsedTimeInMicroseconds / 1000) + "ms" );
 
-         verify( handler ).handleResponse( captor1.capture(), captor2.capture(), captor3.capture(), captor4.capture() );
+      verify( handler ).handleResponse( captor1.capture(), captor2.capture(), captor3.capture(), captor4.capture() );
 
-         // Verify that the passed InetSocketAddress had the expected port
-         assertEquals(1234, captor1.getValue().getPort());
+      // Verify that the passed InetSocketAddress had the expected port
+      assertEquals(1234, captor1.getValue().getPort());
 
-         // Verify that the transport reference was passed as expected
-         assertEquals(transport, captor2.getValue());
+      // Verify that the transport reference was passed as expected
+      assertEquals(transport, captor2.getValue());
 
-         // Verify all the values in the supplied header
-         assertEquals(0x000F, captor3.getValue().command);
-         assertEquals(0x0004, captor3.getValue().payloadSize);
-         assertEquals(0x0005, captor3.getValue().dataType);
-         assertEquals(0x0001, captor3.getValue().dataCount);
-         assertEquals(0xDEADBEEF, captor3.getValue().parameter1);
-         assertEquals(0xDABBAD00, captor3.getValue().parameter2);
+      // Verify all the values in the supplied header
+      assertEquals(0x000F, captor3.getValue().command);
+      assertEquals(0x0004, captor3.getValue().payloadSize);
+      assertEquals(0x0005, captor3.getValue().dataType);
+      assertEquals(0x0001, captor3.getValue().dataCount);
+      assertEquals(0xDEADBEEF, captor3.getValue().parameter1);
+      assertEquals(0xDABBAD00, captor3.getValue().parameter2);
 
-         // Verify that the first byte in the supplied Bytebuffer is the first
-         // byte in the header (which is our command).
-         assertEquals(0x000F, captor4.getValue().getShort(0));
+      // Verify that the first byte in the supplied Bytebuffer is the first
+      // byte in the header (which is our command).
+      assertEquals(0x000F, captor4.getValue().getShort(0));
 
-         // Verify that the buffer also contains the payload data.
-         // Note: payload data starts at offset 16 because the header occupies
-         // the earlier space in the buffer
-         assertEquals(0xCAFEBABE, captor4.getValue().getInt(16));
+      // Verify that the buffer also contains the payload data.
+      // Note: payload data starts at offset 16 because the header occupies
+      // the earlier space in the buffer
+      assertEquals(0xCAFEBABE, captor4.getValue().getInt(16));
 
-         // Verify no further interactions take place
-         verifyNoMoreInteractions(handler);
+      // Verify no further interactions take place
+      verifyNoMoreInteractions(handler);
 
-         // Return the execution time
-         return elapsedTimeInMicroseconds;
-      } );
-
-      final int maximumExecutionTimeInMicroseconds = maximumExecutionTimeInMilliseconds * 1000;
-      assertTrue(executionTimeInMicroseconds < maximumExecutionTimeInMicroseconds,
-                 "Actual Execution Time was: "  + String.valueOf( executionTimeInMicroseconds ) + "us. " +
-                          "Maximum Execution Time was: " + String.valueOf( maximumExecutionTimeInMicroseconds ) + "us" );
+      // Verify the timing was no greater than expected
+      assertTrue(elapsedTimeInMicroseconds < maximumExecutionTimeInMicroseconds,
+                 "Actual Execution Time was: "  + String.valueOf( elapsedTimeInMicroseconds ) + " us. " +
+                          "Maximum Execution Time was: " + String.valueOf( maximumExecutionTimeInMicroseconds ) + " us" );
    }
 
    private void setGlobalLoggingLevel( Level level )
