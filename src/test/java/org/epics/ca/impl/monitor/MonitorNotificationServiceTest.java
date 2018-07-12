@@ -35,8 +35,8 @@ class MonitorNotificationServiceTest
    {
       return Stream.of ( Arguments.of( "SingleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
                          Arguments.of( "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
-                         Arguments.of( "DisruptorMonitorNotificationServiceImpl" ),
-                         Arguments.of( "DisruptorMonitorNotificationServiceImpl2" ));
+                         Arguments.of( "DisruptorMonitorNotificationServiceNewImpl" ),
+                         Arguments.of( "DisruptorMonitorNotificationServiceOldImpl" ));
    }
 
    @BeforeAll
@@ -60,8 +60,9 @@ class MonitorNotificationServiceTest
    {
       assertThrows( NullPointerException.class, () ->
       {
-         final ConsumerImpl<Long> consumer = new ConsumerImpl<>( 0L );
-         final MonitorNotificationService<? super Long> notifier = new MonitorNotificationServiceFactory(monitorNotifierImpl ).getServiceForConsumer(consumer );
+         final ConsumerImpl<? super Long> consumer = new ConsumerImpl<>( 0L );
+         final MonitorNotificationServiceFactory factory = new MonitorNotificationServiceFactory( monitorNotifierImpl );
+         final MonitorNotificationService<Long> notifier = factory.getServiceForConsumer( consumer );
          notifier.publish( null );
       } );
    }
@@ -76,49 +77,49 @@ class MonitorNotificationServiceTest
             Arguments.of( 2_000, intArray1, intArray2, "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
             Arguments.of( 1_000, intArray1, intArray2, "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
             Arguments.of( 2_000, intArray1, intArray2, "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
-            Arguments.of( 1_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl"                   ),
-            Arguments.of( 2_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl"                   ),
-            Arguments.of( 1_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl2"                   ),
-            Arguments.of( 2_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceImpl2"                   ),
+            Arguments.of( 1_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceNewImpl"                   ),
+            Arguments.of( 2_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceNewImpl"                   ),
+            Arguments.of( 1_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceOldImpl"                   ),
+            Arguments.of( 2_000, intArray1, intArray2, "DisruptorMonitorNotificationServiceOldImpl"                   ),
 
             // Perform String throughput tests on all implementations
             Arguments.of( 1_000_000, "Str1", "Str2", "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
             Arguments.of( 2_000_000, "Str1", "Str2", "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
             Arguments.of( 1_000_000, "Str1", "Str2", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
             Arguments.of( 2_000_000, "Str1", "Str2", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
-            Arguments.of( 1_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceImpl"                   ),
-            Arguments.of( 2_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceImpl"                   ),
-            Arguments.of( 1_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceImpl2"                   ),
-            Arguments.of( 2_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceImpl2"                   ),
+            Arguments.of( 1_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceNewImpl"                   ),
+            Arguments.of( 2_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceNewImpl"                   ),
+            Arguments.of( 1_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceOldImpl"                   ),
+            Arguments.of( 2_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceOldImpl"                   ),
 
             Arguments.of( 1_000_000, "Str1", "Str2", "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
             Arguments.of( 2_000_000, "Str1", "Str2", "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
             Arguments.of( 1_000_000, "Str1", "Str2", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
             Arguments.of( 2_000_000, "Str1", "Str2", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
-            Arguments.of( 1_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceImpl"                   ),
-            Arguments.of( 2_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceImpl"                   ),
-            Arguments.of( 1_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceImpl2"                   ),
-            Arguments.of( 2_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceImpl2"                   ),
+            Arguments.of( 1_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceNewImpl"                   ),
+            Arguments.of( 2_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceNewImpl"                   ),
+            Arguments.of( 1_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceOldImpl"                   ),
+            Arguments.of( 2_000_000, "Str1", "Str2", "DisruptorMonitorNotificationServiceOldImpl"                   ),
 
             // Perform Long throughput tests on all implementations
             Arguments.of( 1_000_000, 123L, 456L,   "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"     ),
             Arguments.of( 2_000_000, 123L, 456L,   "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"     ),
             Arguments.of( 1_000_000, 123L, 456L,   "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
             Arguments.of( 2_000_000, 123L, 456L,   "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
-            Arguments.of( 1_000_000, 123L, 456L,   "DisruptorMonitorNotificationServiceImpl"                     ),
-            Arguments.of( 2_000_000, 123L, 456L,   "DisruptorMonitorNotificationServiceImpl"                     ),
-            Arguments.of( 1_000_000, 123L, 456L,   "DisruptorMonitorNotificationServiceImpl2"                     ),
-            Arguments.of( 2_000_000, 123L, 456L,   "DisruptorMonitorNotificationServiceImpl2"                     ),
+            Arguments.of( 1_000_000, 123L, 456L,   "DisruptorMonitorNotificationServiceNewImpl"                     ),
+            Arguments.of( 2_000_000, 123L, 456L,   "DisruptorMonitorNotificationServiceNewImpl"                     ),
+            Arguments.of( 1_000_000, 123L, 456L,   "DisruptorMonitorNotificationServiceOldImpl"                     ),
+            Arguments.of( 2_000_000, 123L, 456L,   "DisruptorMonitorNotificationServiceOldImpl"                     ),
 
             // Perform Double throughput tests on all implementations
             Arguments.of( 1_000_000, 15.8, 12.2,   "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"     ),
             Arguments.of( 2_000_000, 15.8, 12.2,   "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"     ),
             Arguments.of( 1_000_000, 15.8, 12.2,   "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
             Arguments.of( 2_000_000, 15.8, 12.2,   "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
-            Arguments.of( 1_000_000, 15.8, 12.2,   "DisruptorMonitorNotificationServiceImpl"                     ),
-            Arguments.of( 2_000_000, 15.8, 12.2,   "DisruptorMonitorNotificationServiceImpl"                     ),
-            Arguments.of( 1_000_000, 15.8, 12.2,   "DisruptorMonitorNotificationServiceImpl2"                     ),
-            Arguments.of( 2_000_000, 15.8, 12.2,   "DisruptorMonitorNotificationServiceImpl2"                     )
+            Arguments.of( 1_000_000, 15.8, 12.2,   "DisruptorMonitorNotificationServiceNewImpl"                     ),
+            Arguments.of( 2_000_000, 15.8, 12.2,   "DisruptorMonitorNotificationServiceNewImpl"                     ),
+            Arguments.of( 1_000_000, 15.8, 12.2,   "DisruptorMonitorNotificationServiceOldImpl"                     ),
+            Arguments.of( 2_000_000, 15.8, 12.2,   "DisruptorMonitorNotificationServiceOldImpl"                     )
       );
    }
    @ParameterizedTest
@@ -147,7 +148,6 @@ class MonitorNotificationServiceTest
          // For the last notification send a different value, so that we can check it gets
          // notified correctly
          notifier.publish( notifyValue2 );
-
 
          // Wait for the last notification. Poll relatively often so that it doesn't
          // perturb the timing measurement too much.
@@ -195,14 +195,14 @@ class MonitorNotificationServiceTest
          Arguments.of( 200_000,   "SomeString", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
          Arguments.of( 500_000,   "SomeString", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
          Arguments.of( 1000_000,  "SomeString", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
-         Arguments.of( 100,       "SomeString", "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 200,       "SomeString", "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 500,       "SomeString", "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 1000,      "SomeString", "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 100,       "SomeString", "DisruptorMonitorNotificationServiceImpl2"                   ),
-         Arguments.of( 200,       "SomeString", "DisruptorMonitorNotificationServiceImpl2"                   ),
-         Arguments.of( 500,       "SomeString", "DisruptorMonitorNotificationServiceImpl2"                   ),
-         Arguments.of( 1000,      "SomeString", "DisruptorMonitorNotificationServiceImpl2"                   ),
+         Arguments.of( 100,       "SomeString", "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 200,       "SomeString", "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 500,       "SomeString", "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 1000,      "SomeString", "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 100,       "SomeString", "DisruptorMonitorNotificationServiceOldImpl"                   ),
+         Arguments.of( 200,       "SomeString", "DisruptorMonitorNotificationServiceOldImpl"                   ),
+         Arguments.of( 500,       "SomeString", "DisruptorMonitorNotificationServiceOldImpl"                   ),
+         Arguments.of( 1000,      "SomeString", "DisruptorMonitorNotificationServiceOldImpl"                   ),
 
          // Perform Long throughput tests on all implementations
          Arguments.of( 1_000,     123L,         "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
@@ -225,14 +225,14 @@ class MonitorNotificationServiceTest
          Arguments.of( 200_000,   123L,         "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
          Arguments.of( 500_000,   123L,         "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
          Arguments.of( 1000_000,  123L,         "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
-         Arguments.of( 100,       123L,         "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 200,       123L,         "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 500,       123L,         "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 1000,      123L,         "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 100,       123L,         "DisruptorMonitorNotificationServiceImpl2"                   ),
-         Arguments.of( 200,       123L,         "DisruptorMonitorNotificationServiceImpl2"                   ),
-         Arguments.of( 500,       123L,         "DisruptorMonitorNotificationServiceImpl2"                   ),
-         Arguments.of( 1000,      123L,         "DisruptorMonitorNotificationServiceImpl2"                   ),
+         Arguments.of( 100,       123L,         "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 200,       123L,         "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 500,       123L,         "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 1000,      123L,         "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 100,       123L,         "DisruptorMonitorNotificationServiceOldImpl"                   ),
+         Arguments.of( 200,       123L,         "DisruptorMonitorNotificationServiceOldImpl"                   ),
+         Arguments.of( 500,       123L,         "DisruptorMonitorNotificationServiceOldImpl"                   ),
+         Arguments.of( 1000,      123L,         "DisruptorMonitorNotificationServiceOldImpl"                   ),
 
          // Perform Double throughput tests on all implementations
          Arguments.of( 1_000,     49.3,         "SingleWorkerBlockingQueueMonitorNotificationServiceImpl"   ),
@@ -255,14 +255,14 @@ class MonitorNotificationServiceTest
          Arguments.of( 200_000,   49.3,         "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
          Arguments.of( 500_000,   49.3,         "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
          Arguments.of( 1000_000,  49.3,         "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
-         Arguments.of( 100,       49.3,         "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 200,       49.3,         "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 500,       49.3,         "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 1000,      49.3,         "DisruptorMonitorNotificationServiceImpl"                   ),
-         Arguments.of( 100,       49.3,         "DisruptorMonitorNotificationServiceImpl2"                   ),
-         Arguments.of( 200,       49.3,         "DisruptorMonitorNotificationServiceImpl2"                   ),
-         Arguments.of( 500,       49.3,         "DisruptorMonitorNotificationServiceImpl2"                   ),
-         Arguments.of( 1000,      49.3,         "DisruptorMonitorNotificationServiceImpl2"                   )
+         Arguments.of( 100,       49.3,         "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 200,       49.3,         "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 500,       49.3,         "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 1000,      49.3,         "DisruptorMonitorNotificationServiceNewImpl"                   ),
+         Arguments.of( 100,       49.3,         "DisruptorMonitorNotificationServiceOldImpl"                   ),
+         Arguments.of( 200,       49.3,         "DisruptorMonitorNotificationServiceOldImpl"                   ),
+         Arguments.of( 500,       49.3,         "DisruptorMonitorNotificationServiceOldImpl"                   ),
+         Arguments.of( 1000,      49.3,         "DisruptorMonitorNotificationServiceOldImpl"                   )
       );
    }
 
@@ -281,7 +281,7 @@ class MonitorNotificationServiceTest
       // Start the stopwatch and send all the notifications
       logger.info( "Sending {} notifications. Value to send is '{}' ", notifications, notifyValue );
 
-      List<MonitorNotificationService<? super T> > resourceList = new ArrayList<>();
+      final List<MonitorNotificationService<? super T> > resourceList = new ArrayList<>();
 
       MonitorNotificationService<? super T> notifier = null;
       final StopWatch stopWatch = StopWatch.createStarted();
@@ -301,7 +301,7 @@ class MonitorNotificationServiceTest
       final long elapsedTimeInMicroseconds = stopWatch.getTime( TimeUnit.MICROSECONDS );
 
       // Now shutdown the services for good housekeeping
-      resourceList.stream().forEach( r -> r.dispose() );
+      resourceList.forEach( MonitorNotificationService::dispose );
       notifier.disposeAllResources();
 
       // Check that the expected number of notification events were received from all the consumers
@@ -318,7 +318,7 @@ class MonitorNotificationServiceTest
 
 
    @ParameterizedTest
-   @ValueSource( strings = { "SingleWorkerBlockingQueueMonitorNotificationServiceImpl", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl", "DisruptorMonitorNotificationServiceImpl" } )
+   @ValueSource( strings = { "SingleWorkerBlockingQueueMonitorNotificationServiceImpl", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl", "DisruptorMonitorNotificationServiceNewImpl" } )
    void testSlowConsumerBehavior( String monitorNotifierImpl )
    {
       logger.info( "Starting test with MonitorNotifier configuration '{}'", monitorNotifierImpl );
@@ -389,7 +389,6 @@ class MonitorNotificationServiceTest
       private static AtomicInteger notificationCounter = new AtomicInteger(0 );
       private AtomicReference<T> value = new AtomicReference<>();
 
-
       static int getNotificationCounter()
       {
          return notificationCounter.get();
@@ -404,6 +403,7 @@ class MonitorNotificationServiceTest
       {
          value.set( initialValue );
       }
+
 
       @Override
       public void accept( T t )
