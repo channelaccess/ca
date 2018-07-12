@@ -35,7 +35,7 @@ class ChannelThroughputTests
    }
 
    @AfterEach
-   void tearDown() throws Exception
+   void tearDown()
    {
       context.close();
       server.destroy();
@@ -114,8 +114,8 @@ class ChannelThroughputTests
    @ParameterizedTest
    @ValueSource( strings = { "SingleWorkerBlockingQueueMonitorNotificationServiceImpl",
                              "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl",
-                             "DisruptorMonitorNotificationServiceImpl",
-                             "DisruptorMonitorNotificationServiceImpl2" } )
+                             "DisruptorMonitorNotificationServiceOldImpl",
+                             "DisruptorMonitorNotificationServiceNewImpl" } )
    void TestPutAndMonitor( String monitorNotifierServiceImpl )
    {
       logger.info( "Starting PutAndMonitor throughput test using impl: '{}'...", monitorNotifierServiceImpl );
@@ -172,8 +172,10 @@ class ChannelThroughputTests
    }
 
    @ParameterizedTest
-   @ValueSource( strings = { "SingleWorkerBlockingQueueMonitorNotificationServiceImpl", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl",
-                             "DisruptorMonitorNotificationServiceImpl", "DisruptorMonitorNotificationServiceImpl2" } )
+   @ValueSource( strings = { "SingleWorkerBlockingQueueMonitorNotificationServiceImpl",
+                             "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl",
+                             "DisruptorMonitorNotificationServiceOldImpl",
+                             "DisruptorMonitorNotificationServiceNewImpl" } )
    void TestFastCounterMonitor( String monitorNotifierServiceImpl ) throws InterruptedException
    {
       logger.info( "Starting TestFastCounterMonitor throughput test using impl: '{}'...", monitorNotifierServiceImpl );
