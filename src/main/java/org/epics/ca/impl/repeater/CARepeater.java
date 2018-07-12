@@ -28,7 +28,7 @@ public class CARepeater implements Runnable
 {
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger (CARepeater.class.getName ());
+   private static final Logger logger = Logger.getLogger( CARepeater.class.getName () );
 
    static
    {
@@ -88,7 +88,7 @@ public class CARepeater implements Runnable
          catch ( Throwable th )
          {
             // failed to connect
-            logger.log (Level.FINEST, "Failed to connect to: " + clientAddress, th);
+            logger.log( Level.FINEST, "Failed to connect to: " + clientAddress, th);
             return false;
          }
          return true;
@@ -125,7 +125,7 @@ public class CARepeater implements Runnable
             // this should fail, if client is listening
             DatagramSocket socket = createDatagramSocket (clientAddress.getPort (), false);
             socket.close ();
-            logger.log (Level.FINEST, "Dead client detected: " + clientAddress);
+            logger.log( Level.FINEST, "Dead client detected: " + clientAddress);
             return false;
          }
          catch ( Throwable th )
@@ -146,13 +146,13 @@ public class CARepeater implements Runnable
          packet.setSocketAddress (clientAddress);
          try
          {
-            logger.log (Level.FINEST, "Sending packet to: " + clientAddress);
+            logger.log( Level.FINEST, "Sending packet to: " + clientAddress);
             clientSocket.send (packet);
          }
          catch ( Throwable th )
          {
             // failed to send
-            logger.log (Level.FINEST, "Failed to send packet to: " + clientAddress, th);
+            logger.log( Level.FINEST, "Failed to send packet to: " + clientAddress, th);
             return false;
          }
          return true;
@@ -217,7 +217,7 @@ public class CARepeater implements Runnable
          }
          catch ( NumberFormatException nfe )
          {
-            logger.log (Level.FINE, "Failed to parse repeater port '" + port + "'.", nfe);
+            logger.log( Level.FINE, "Failed to parse repeater port '" + port + "'.", nfe);
          }
       }
    }
@@ -242,7 +242,7 @@ public class CARepeater implements Runnable
 
    protected void registerNewClient( InetSocketAddress clientAddress )
    {
-      logger.fine ("Registering client: " + clientAddress);
+      logger.log( Level.FINE, "Registering client: " + clientAddress);
 
       final int INADDR_LOOPBACK = 0x7F000001;
       if ( InetAddressUtil.ipv4AddressToInt (clientAddress.getAddress ()) != INADDR_LOOPBACK )
@@ -256,7 +256,7 @@ public class CARepeater implements Runnable
             }
             catch ( Throwable th )
             {
-               logger.log (Level.FINEST, "Failed to create local test datagram socket.", th);
+               logger.log( Level.FINEST, "Failed to create local test datagram socket.", th);
             }
          }
 
@@ -342,7 +342,7 @@ public class CARepeater implements Runnable
          client.destroy ();
       }
 
-      logger.fine ("Client registered: " + clientAddress);
+      logger.log( Level.FINE, "Client registered: " + clientAddress);
 
       // send noop message to all other clients, not to accumulate clients
       // when there are no beacons
@@ -429,7 +429,7 @@ public class CARepeater implements Runnable
       DatagramSocket socket = null;
       try
       {
-         logger.fine ("Initializing CA repeater.");
+         logger.log( Level.FINE,"Initializing CA repeater.");
 
          // Create a buffer to read datagrams into. If a packet is
          // larger than this buffer, the excess will simply be discarded.
@@ -447,12 +447,11 @@ public class CARepeater implements Runnable
          catch ( BindException be )
          {
             // notrify and finish
-            logger.log (Level.FINE, "Failed to bind.", be);
+            logger.log( Level.FINE, "Failed to bind.", be);
             return;
          }
-         logger.fine ("Binded to UDP socket: " + socket.getLocalSocketAddress ());
-
-         logger.fine ("CA repeater attached and initialized.");
+         logger.log( Level.FINE,"Binded to UDP socket: " + socket.getLocalSocketAddress ());
+         logger.log( Level.FINE,"CA repeater attached and initialized.");
 
          while ( true )
          {
@@ -503,7 +502,7 @@ public class CARepeater implements Runnable
       }
       catch ( Throwable th )
       {
-         logger.log (Level.SEVERE, "Unexpected exception caught.", th);
+         logger.log( Level.SEVERE, "Unexpected exception caught.", th);
       }
       finally
       {
@@ -572,7 +571,7 @@ public class CARepeater implements Runnable
       catch ( Throwable th )
       {
          // unexpected error
-         logger.log (Level.WARNING, "", th);
+         logger.log( Level.WARNING, "", th);
          return false;
       }
    }
@@ -628,7 +627,7 @@ public class CARepeater implements Runnable
             catch ( Throwable th )
             {
                System.err.println ("Failed to exec '" + commandLine[ 0 ] + "', trying to start native repeater...");
-               logger.log (Level.SEVERE, "Failed to exec '" + commandLine[ 0 ] + "', trying to start native repeater...", th);
+               logger.log( Level.SEVERE, "Failed to exec '" + commandLine[ 0 ] + "', trying to start native repeater...", th);
 
                try
                {
@@ -638,7 +637,7 @@ public class CARepeater implements Runnable
                catch ( Throwable th2 )
                {
                   System.err.println ("Failed to start native repeater.");
-                  logger.log (Level.SEVERE, "Failed to start native repeater.", th);
+                  logger.log( Level.SEVERE, "Failed to start native repeater.", th);
                }
             }
 

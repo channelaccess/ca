@@ -3,12 +3,9 @@ package org.epics.ca;
 import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.impl.*;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
@@ -20,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
-import java.util.Locale;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +34,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class TCPTransportTest
 {
+   private static final Logger logger = Logger.getLogger( TCPTransportTest.class.getName() );
+
    private SocketChannel channel;
    private TCPTransport transport;
    private ResponseHandlers.ResponseHandler handler;
@@ -108,7 +106,7 @@ class TCPTransportTest
       final int param1 = 0xDEADBEEF;     // SID
       final int param2 = 0xDABBAD00;     // SubscriptionID
 
-      final ByteBuffer bufSocketRead1 = ByteBuffer.allocate (16)
+      final ByteBuffer bufSocketRead1 = (ByteBuffer) ByteBuffer.allocate (16)
             .putShort (cmdVersion)
             .putShort (payloadSize)
             .putShort (dataType)
@@ -185,14 +183,14 @@ class TCPTransportTest
       final int param1 = 0xDEADBEEF;     // SID
       final int param2 = 0xDABBAD00;     // SubscriptionID
 
-      final ByteBuffer bufSocketRead1 = ByteBuffer.allocate (8)
+      final ByteBuffer bufSocketRead1 = (ByteBuffer) ByteBuffer.allocate (8)
             .putShort (cmdVersion)
             .putShort (payloadSize)
             .putShort (dataType)
             .putShort (dataCount)
             .flip ();
 
-      final ByteBuffer bufSocketRead2 = ByteBuffer.allocate (8)
+      final ByteBuffer bufSocketRead2 = (ByteBuffer) ByteBuffer.allocate (8)
             .putInt (param1)
             .putInt (param2)
             .flip ();
@@ -268,7 +266,7 @@ class TCPTransportTest
       final int param1 = 0xDEADBEEF;     // SID
       final int param2 = 0xDABBAD00;     // IOID
 
-      final ByteBuffer bufSocketRead1 = ByteBuffer.allocate (16)
+      final ByteBuffer bufSocketRead1 = (ByteBuffer) ByteBuffer.allocate (16)
             .putShort (cmdVersion)
             .putShort (payloadSize)
             .putShort (dataType)
@@ -277,7 +275,7 @@ class TCPTransportTest
             .putInt (param2)
             .flip ();
 
-      final ByteBuffer bufSocketRead2 = ByteBuffer.allocate (4)
+      final ByteBuffer bufSocketRead2 = (ByteBuffer) ByteBuffer.allocate (4)
             .putInt (0xCAFEBABE)
             .flip ();
 
@@ -357,19 +355,19 @@ class TCPTransportTest
       final int param1 = 0xDEADBEEF;     // SID
       final int param2 = 0xDABBAD00;     // IOID
 
-      final ByteBuffer bufSocketRead1 = ByteBuffer.allocate (8)
+      final ByteBuffer bufSocketRead1 = (ByteBuffer) ByteBuffer.allocate (8)
             .putShort (cmdVersion)
             .putShort (payloadSize)
             .putShort (dataType)
             .putShort (dataCount)
             .flip ();
 
-      final ByteBuffer bufSocketRead2 = ByteBuffer.allocate (8)
+      final ByteBuffer bufSocketRead2 = (ByteBuffer) ByteBuffer.allocate (8)
             .putInt (param1)
             .putInt (param2)
             .flip ();
 
-      final ByteBuffer bufSocketRead3 = ByteBuffer.allocate (4)
+      final ByteBuffer bufSocketRead3 = (ByteBuffer) ByteBuffer.allocate (4)
             .putFloat (1234.5678f)
             .flip ();
 
@@ -454,7 +452,7 @@ class TCPTransportTest
       final int param1 = 0xDEADBEEF;     // SID
       final int param2 = 0xDABBAD00;     // IOID
 
-      final ByteBuffer bufSocketRead1 = ByteBuffer.allocate (12)
+      final ByteBuffer bufSocketRead1 = (ByteBuffer) ByteBuffer.allocate (12)
             .putShort (cmdVersion)
             .putShort (payloadSize)
             .putShort (dataType)
@@ -462,7 +460,7 @@ class TCPTransportTest
             .putInt (param1)
             .flip ();
 
-      final ByteBuffer bufSocketRead2 = ByteBuffer.allocate (8)
+      final ByteBuffer bufSocketRead2 = (ByteBuffer) ByteBuffer.allocate (8)
             .putInt (param2)
             .putInt (0xCAFEBABE)
             .flip ();
@@ -558,7 +556,7 @@ class TCPTransportTest
          final int param1 = 0xDEADBEEF;     // SID
          final int param2 = 0xDABBAD00;     // IOID
 
-         final ByteBuffer bufSocketRead1 = ByteBuffer.allocate( 20 )
+         final ByteBuffer bufSocketRead1 = (ByteBuffer) ByteBuffer.allocate( 20 )
                .putShort(cmdVersion)
                .putShort(payloadSize)
                .putShort(dataType)
@@ -597,7 +595,7 @@ class TCPTransportTest
          final StopWatch s = StopWatch.createStarted();
          transport.handleEvent( selectionKey );
          final long elapsedTime = s.getTime(TimeUnit.MICROSECONDS);
-         System.out.println("Transport latency time was : " + String.format(Locale.ROOT, "%.3f", (float) elapsedTime / 1000) + " ms");
+         logger.log( Level.INFO, String.format( "Transport latency time was '%.3f' ", (float) elapsedTime / 1000) + " ms");
 
          verify( handler ).handleResponse( captor1.capture(), captor2.capture(), captor3.capture(), captor4.capture() );
 

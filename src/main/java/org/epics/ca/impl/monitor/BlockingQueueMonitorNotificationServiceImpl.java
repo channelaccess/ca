@@ -9,9 +9,8 @@ package org.epics.ca.impl.monitor;
 
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.impl.BroadcastTransport;
 import org.epics.ca.impl.TypeSupports;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -19,6 +18,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @ThreadSafe
 class BlockingQueueMonitorNotificationServiceImpl<T> implements MonitorNotificationService<T>, Supplier<T>
@@ -27,7 +28,8 @@ class BlockingQueueMonitorNotificationServiceImpl<T> implements MonitorNotificat
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private final Logger logger = LoggerFactory.getLogger( BlockingQueueMonitorNotificationServiceImpl.class);
+   // Get Logger
+   private static final Logger logger = Logger.getLogger( BlockingQueueMonitorNotificationServiceImpl.class.getName() );
 
    private final ThreadPoolExecutor executor;
    private final Consumer<? super T> consumer;
@@ -85,13 +87,13 @@ class BlockingQueueMonitorNotificationServiceImpl<T> implements MonitorNotificat
 
       if ( latestValue.getAndSet( new Holder<>( value ) ) == null )
       {
-         logger.debug( "notifyConsumer: Queueing Task for consumer '{}' on work queue '{}'. Latest value is: {}", consumer, executor.getQueue().hashCode(), value );
+         logger.log( Level.FINEST, String.format( "notifyConsumer: Queueing Task for consumer '%s' on work queue '%s'. Latest value is: '%s'", consumer, executor.getQueue().hashCode(), value ) );
          final MonitorNotificationTask<T> task = new MonitorNotificationTask<>( consumer, this );
          executor.submit( task );
       }
       else
       {
-         logger.debug( "notifyConsumer: Update Task is already pending - latest value now set to {}", value );
+         logger.log(Level.FINEST,"publish: Update Task is already pending - latest value now set to '%s'", value.toString() );
       }
    }
 
@@ -140,7 +142,7 @@ class BlockingQueueMonitorNotificationServiceImpl<T> implements MonitorNotificat
 
    private void shutdownAll()
    {
-      logger.info ("Shutting down this executor" );
+      logger.log ( Level.INFO, "Shutting down this executor" );
       executor.shutdown();
       try
       {

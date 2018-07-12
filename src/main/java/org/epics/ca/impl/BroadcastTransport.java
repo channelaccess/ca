@@ -21,7 +21,7 @@ public class BroadcastTransport implements ReactorHandler, Transport
 {
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger (BroadcastTransport.class.getName ());
+   private static final Logger logger = Logger.getLogger( BroadcastTransport.class.getName() );
 
    /**
     * Context instance.
@@ -96,7 +96,7 @@ public class BroadcastTransport implements ReactorHandler, Transport
    public void close()
    {
       if ( connectAddress != null )
-         logger.finer (() -> "UDP connection to " + connectAddress + " closed.");
+         logger.log( Level.FINER, "UDP connection to " + connectAddress + " closed.");
       context.getReactor ().unregisterAndClose (channel);
    }
 
@@ -139,7 +139,7 @@ public class BroadcastTransport implements ReactorHandler, Transport
             if ( fromAddress == null )
                break;
 
-            //logger.finest(() ->"Received " + receiveBuffer.position() + " bytes from " + fromAddress + ".");
+            logger.log( Level.FINEST, "Received " + receiveBuffer.position() + " bytes from " + fromAddress + ".");
 
             // prepare buffer for reading
             receiveBuffer.flip ();
@@ -154,7 +154,7 @@ public class BroadcastTransport implements ReactorHandler, Transport
                if ( endOfMessage > receiveBuffer.limit () )
                {
                   // we need whole payload, ignore rest of the packet
-                  logger.warning ("Malformed UDP packet/CA message - the packet does not contain complete payload.");
+                  logger.log (Level.WARNING, "Malformed UDP packet/CA message - the packet does not contain complete payload.");
                   break;
                }
 
@@ -164,7 +164,7 @@ public class BroadcastTransport implements ReactorHandler, Transport
                }
                catch ( Throwable th )
                {
-                  logger.log (Level.WARNING, th, () -> "Unexpected exception caught while processing CA message over UDP from " + fromAddress);
+                  logger.log( Level.WARNING, String.format( "'%s': unexpected exception caught while processing CA message over UDP from '%s'", th, fromAddress ) );
                }
                finally
                {
@@ -209,7 +209,7 @@ public class BroadcastTransport implements ReactorHandler, Transport
          }
          catch ( Throwable ioex )
          {
-            logger.log (Level.WARNING, "Failed to sent a datagram to:" + broadcastAddresses[ i ], ioex);
+            logger.log ( Level.WARNING, "Failed to sent a datagram to:" + broadcastAddresses[ i ], ioex);
          }
       }
    }

@@ -11,14 +11,15 @@ import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.Disruptor;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.impl.BroadcastTransport;
 import org.epics.ca.impl.TypeSupports;
 import org.epics.ca.util.Holder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @ThreadSafe
 class DisruptorMonitorNotificationServiceNewImpl<T> implements MonitorNotificationService<T>
@@ -27,7 +28,8 @@ class DisruptorMonitorNotificationServiceNewImpl<T> implements MonitorNotificati
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LoggerFactory.getLogger( DisruptorMonitorNotificationServiceNewImpl.class);
+   // Get Logger
+   private static final Logger logger = Logger.getLogger ( DisruptorMonitorNotificationServiceNewImpl.class.getName ());
 
    private final Disruptor<Holder<T>> disruptor;
    private final MySpecialEventProducer<T> producer;
@@ -185,20 +187,20 @@ class DisruptorMonitorNotificationServiceNewImpl<T> implements MonitorNotificati
 
       public void onEvent( Holder<T> event, long sequence, boolean endOfBatch)
       {
-         logger.debug( "MySpecialEventHandler is digesting Event " + event.value + " on Thread: " + Thread.currentThread() + "... " );
+         logger.log( Level.FINEST, "MySpecialEventHandler is digesting Event " + event.value + " on Thread: " + Thread.currentThread() + "... " );
          consumer.accept( event.value );
       }
 
       @Override
       public void onStart()
       {
-         logger.debug( "MySpecialEventHandler started on Thread: " + Thread.currentThread() + "... " );
+         logger.log( Level.FINEST,"MySpecialEventHandler started on Thread: " + Thread.currentThread() + "... " );
       }
 
       @Override
       public void onShutdown()
       {
-         logger.debug( "MySpecialEventHandler shutdown on Thread: " + Thread.currentThread() + "... " );
+         logger.log( Level.FINEST,"MySpecialEventHandler shutdown on Thread: " + Thread.currentThread() + "... " );
       }
    }
 

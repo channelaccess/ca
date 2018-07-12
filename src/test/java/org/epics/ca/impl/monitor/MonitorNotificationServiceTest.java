@@ -8,17 +8,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class MonitorNotificationServiceTest
 {
-   private static Logger logger = LoggerFactory.getLogger( MonitorNotificationServiceTest.class );
+   // Get Logger
+   private static final Logger logger = Logger.getLogger( MonitorNotificationTask.class.getName() );
 
    // Provides a possible method source to iterate test over all service implementations
    private static Stream<Arguments> getMonitorNotificationServiceImplementations()
@@ -130,7 +130,7 @@ class MonitorNotificationServiceTest
       Validate.notNull( notifyValue2 );
       Validate.notNull( monitorNotifierImpl );
 
-      logger.info( "Starting test with {} notifications, Type: '{}' and service configuration '{}'", notifications, notifyValue1.getClass(), monitorNotifierImpl );
+      logger.log( Level.INFO, String.format( "Starting test with '%s' notifications, Type: '%s' and service configuration '%s'", notifications, notifyValue1.getClass(), monitorNotifierImpl ) );
       assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
       {
          // Startup the service
@@ -164,9 +164,9 @@ class MonitorNotificationServiceTest
          double averageNotificationTimeInMicroseconds = (double) elapsedTimeInMicroseconds / (double) notifications;
          double elapsedTimeInMilliseconds = (double) elapsedTimeInMicroseconds / 1000;
          double throughput = 1_000_000 / averageNotificationTimeInMicroseconds;
-         logger.info("Time to send {} notification to a SINGLE Consumer was: {} ms ", notifications, String.format(Locale.ROOT, "%,.3f", elapsedTimeInMilliseconds ) );
-         logger.info("Average notification time was: {} us ", String.format(Locale.ROOT, "%,.3f", averageNotificationTimeInMicroseconds));
-         logger.info("Throughput was: {} notifications per second.\n", String.format(Locale.ROOT, "%,.0f", throughput));
+         logger.log( Level.INFO, String.format( "Time to send '%s' notification to a SINGLE Consumer was: %,.3f ms ", notifications, elapsedTimeInMilliseconds ) );
+         logger.log( Level.INFO, String.format( "Average notification time was: %,.3f us ", averageNotificationTimeInMicroseconds) );
+         logger.log( Level.INFO, String.format( "Throughput was: %,.0f notifications per second.\n", throughput ) );
       } );
    }
 
@@ -270,7 +270,7 @@ class MonitorNotificationServiceTest
    @MethodSource( "getArgumentsForTestThroughputWithDifferentConsumers" )
    <T> void testThroughputWithDifferentConsumers( int notifications, T notifyValue, String monitorNotifierImpl )
    {
-      logger.info( "Starting test with {} notifications, Type: '{}' and service configuration '{}'", notifications, notifyValue.getClass(), monitorNotifierImpl );
+      logger.log( Level.INFO, String.format( "Starting test with '%s' notifications, Type: '%s' and service configuration '%s'", notifications, notifyValue.getClass(), monitorNotifierImpl ) );
 
       // Create the Notifier factory:
       final MonitorNotificationServiceFactory factory = new MonitorNotificationServiceFactory( monitorNotifierImpl );
@@ -279,7 +279,7 @@ class MonitorNotificationServiceTest
       ConsumerImpl.clearNotificationCounter();
 
       // Start the stopwatch and send all the notifications
-      logger.info( "Sending {} notifications. Value to send is '{}' ", notifications, notifyValue );
+      logger.log( Level.INFO,  String.format( "Sending '%s' notifications. Value to send is '%s' ", notifications, notifyValue ) );
 
       final List<MonitorNotificationService<? super T> > resourceList = new ArrayList<>();
 
@@ -311,9 +311,9 @@ class MonitorNotificationServiceTest
       double elapsedTimeInMilliseconds = (double) elapsedTimeInMicroseconds / 1000;
       double throughput = 1_000_000 / averageNotificationTimeInMicroseconds;
 
-      logger.info("{} Time to send notification to {} DISTINCT Consumers of Type '{}' was: {} ms ", monitorNotifierImpl, notifications, notifyValue.getClass(), String.format(Locale.ROOT, "%,.3f", elapsedTimeInMilliseconds ) );
-      logger.info("Average notification time was: {} us ", String.format(Locale.ROOT, "%,.3f", averageNotificationTimeInMicroseconds));
-      logger.info("Throughput was: {} notifications per second.\n", String.format(Locale.ROOT, "%,.0f", throughput));
+      logger.log( Level.INFO, String.format( "'%s' Time to send notification to '%s' DISTINCT Consumers of Type '%s' was: '%,.3f' ms ", monitorNotifierImpl, notifications, notifyValue.getClass(), elapsedTimeInMilliseconds ) );
+      logger.log( Level.INFO, String.format( "Average notification time was: '%,.3f' us ", averageNotificationTimeInMicroseconds ) );
+      logger.log( Level.INFO, String.format( "Throughput was: '%,.0f' notifications per second.\n", throughput ) );
    }
 
 
@@ -321,14 +321,14 @@ class MonitorNotificationServiceTest
    @ValueSource( strings = { "SingleWorkerBlockingQueueMonitorNotificationServiceImpl", "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl", "DisruptorMonitorNotificationServiceNewImpl" } )
    void testSlowConsumerBehavior( String monitorNotifierImpl )
    {
-      logger.info( "Starting test with MonitorNotifier configuration '{}'", monitorNotifierImpl );
+      logger.log( Level.INFO,  "Starting test with MonitorNotifier configuration '{}'", monitorNotifierImpl );
       assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
       {
          // Setup  a slow and a normal consumer
          final Consumer<Long> slowConsumer = v -> {
-            logger.info( "Slow Consumer: accept called" );
+            logger.log( Level.INFO,  "Slow Consumer: accept called" );
             busyWait( 5_000 );
-            logger.info( "Slow Consumer: Thread: {} I've been notified with value: {} ", Thread.currentThread(),  v );
+            logger.log( Level.INFO, String.format( "Slow Consumer: Thread: '%s' I've been notified with value: '%s' ", Thread.currentThread(), v ) );
          };
          final ConsumerImpl<Long> normalConsumer = new ConsumerImpl<>( 0L );
 

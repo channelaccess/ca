@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.epics.ca.Constants;
@@ -14,7 +15,7 @@ public class ResponseHandlers
 {
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger (ResponseHandlers.class.getName ());
+   private static final Logger logger = Logger.getLogger( ResponseHandlers.class.getName() );
 
    /**
     * Interface defining response handler.
@@ -70,11 +71,11 @@ public class ResponseHandlers
    {
       if ( header.command < 0 || header.command >= handlers.length )
       {
-         logger.warning (() -> "Invalid response message (command = " + header.command + ") received from: " + responseFrom);
+         logger.log (Level.WARNING,"Invalid response message (command = " + header.command + ") received from: " + responseFrom);
          return;
       }
 
-      //logger.finest(() -> "Message " + header.command + " received from " + responseFrom + ", payload size " + header.payloadSize + ".");
+      logger.log (Level.FINEST, "Message " + header.command + " received from " + responseFrom + ", payload size " + header.payloadSize + ".");
 
       handlers[ header.command ].handleResponse (responseFrom, transport, header, payloadBuffer);
    }
@@ -86,7 +87,7 @@ public class ResponseHandlers
 
    public static void badResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
    {
-      logger.warning (() -> "Unexpected response message (command = " + header.command + ") received from: " + responseFrom);
+      logger.log ( Level.WARNING, "Unexpected response message (command = " + header.command + ") received from: " + responseFrom);
    }
 
    public static void beaconResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
@@ -248,7 +249,7 @@ public class ResponseHandlers
       short commandID = (originalHeaderBuffer != null ? originalHeaderBuffer.getShort (0) : -1);
       if ( commandID < 0 || commandID >= 27 )
       {
-         logger.warning (() -> "Invalid (or unsupported) exception message command: " + commandID + ".");
+         logger.log( Level.WARNING, "Invalid (or unsupported) exception message command: " + commandID + ".");
          return;
       }
 
@@ -261,7 +262,7 @@ public class ResponseHandlers
       }
       else
       {
-         logger.warning ("Exception message reported, code: " + Status.forStatusCode (header.parameter2) + ", message: '" + errorMessage + "'.");
+         logger.log( Level.WARNING, "Exception message reported, code: " + Status.forStatusCode (header.parameter2) + ", message: '" + errorMessage + "'.");
       }
 
 

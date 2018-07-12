@@ -28,7 +28,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
 {
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger (TCPTransport.class.getName ());
+   private static final Logger logger = Logger.getLogger( TCPTransport.class.getName() );
 
    /**
     * Connection status.
@@ -183,7 +183,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
 
       closedNotifyClients ();
 
-      logger.finer (() -> "Connection to " + socketAddress + " closed.");
+      logger.log ( Level.FINER, "Connection to " + socketAddress + " closed.");
 
       context.getReactor ().unregisterAndClose (channel);
    }
@@ -201,7 +201,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
          if ( refs == 0 )
             return;
 
-         logger.fine (() -> "Transport to " + socketAddress + " still has " + refs + " client(s) active and closing...");
+         logger.log(Level.FINE,"Transport to " + socketAddress + " still has " + refs + " client(s) active and closing...");
          clients = new TransportClient[ refs ];
          owners.toArray (clients);
          owners.clear ();
@@ -234,7 +234,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
       if ( closed.get () )
          return false;
 
-      logger.finer (() -> "Acquiring transport to " + socketAddress + ".");
+      logger.log( Level.FINER,"Acquiring transport to " + socketAddress + ".");
 
       synchronized ( owners )
       {
@@ -258,7 +258,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
       if ( closed.get () )
          return;
 
-      logger.finer (() -> "Releasing transport to " + socketAddress + ".");
+      logger.log( Level.FINER, "Releasing transport to " + socketAddress + ".");
 
       synchronized ( owners )
       {
@@ -308,15 +308,15 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
             // attempt to read from the channel as many bytes as available
             // in the supplied receive buffer. Store the data at successive
             // locations starting from the current position.
-            logger.log (Level.FINEST, "About to read into buffer starting at pos: " + String.valueOf (receiveBuffer.position ()));
+            logger.log( Level.FINEST,"About to read into buffer starting at pos: " + String.valueOf (receiveBuffer.position ()));
 
             int bytesRead = channel.read (receiveBuffer);
-            logger.log (Level.FINEST, "Read #bytes from channel: " + String.valueOf (bytesRead));
+            logger.log( Level.FINEST,"Read #bytes from channel: " + String.valueOf (bytesRead));
 
             if ( bytesRead < 0 )
             {
                // error (disconnect, end-of-stream) detected
-               logger.log (Level.FINEST, "End of stream ");
+               logger.log( Level.FINEST, "End of stream ");
                close (true);
                return;
             }
@@ -326,12 +326,12 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
                // more data to be read pretty soon.
                // Note: flow control only works with monitors !
                bufferFullCount = 0;
-               logger.log (Level.FINEST, "Disabling flow control...");
+               logger.log( Level.FINEST, "Disabling flow control...");
                disableFlowControl ();
                break;
             }
 
-            //logger.finest(() -> "Received " + bytesRead + " bytes from " + socketAddress + ".");
+            logger.log(Level.FINEST,"Received " + bytesRead + " bytes from " + socketAddress + ".");
 
             // flow control check
             if ( receiveBuffer.hasRemaining () )
@@ -575,7 +575,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
          final int SEND_BUFFER_LIMIT = 64000;
          int bufferLimit = buffer.limit ();
 
-         logger.finest (() -> "Sending " + bufferLimit + " bytes to " + socketAddress + ".");
+         logger.log( Level.FINEST,"Sending " + bufferLimit + " bytes to " + socketAddress + ".");
 
          // limit sending large buffers, split the into parts
          int parts = (buffer.limit () - 1) / SEND_BUFFER_LIMIT + 1;
@@ -584,8 +584,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
             if ( parts > 1 )
             {
                buffer.limit (Math.min (part * SEND_BUFFER_LIMIT, bufferLimit));
-               if ( logger.isLoggable (Level.FINEST) )
-                  logger.finest ("[Parted] Sending (part " + part + "/" + parts + ") " + (buffer.limit () - buffer.position ()) + " bytes to " + socketAddress + ".");
+               logger.log(Level.FINEST,"[Parted] Sending (part " + part + "/" + parts + ") " + (buffer.limit () - buffer.position ()) + " bytes to " + socketAddress + ".");
             }
 
             for ( int tries = 0; ; tries++ )
@@ -605,7 +604,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
                   final int WARNING_MESSAGE_TRIES = 10;
                   if ( tries >= WARNING_MESSAGE_TRIES )
                   {
-                     logger.warning (() -> "Failed to send message to " + socketAddress + " - buffer full, will retry.");
+                     logger.log( Level.WARNING,"Failed to send message to " + socketAddress + " - buffer full, will retry." );
 
                      //if (tries >= 2*TRIES)
                      //	throw new IOException("TCP send buffer persistently full, disconnecting!");
@@ -613,7 +612,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
                   }
 
                   // flush & wait for a while...
-                  logger.finest (() -> "Send buffer full for " + socketAddress + ", waiting...");
+                  logger.log( Level.FINEST,"Send buffer full for " + socketAddress + ", waiting...");
 
                   try
                   {

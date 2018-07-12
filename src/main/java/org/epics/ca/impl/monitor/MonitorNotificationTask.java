@@ -4,11 +4,13 @@ package org.epics.ca.impl.monitor;
 
 import net.jcip.annotations.Immutable;
 import org.apache.commons.lang3.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.epics.ca.impl.BroadcastTransport;
 
+import java.text.MessageFormat;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /*- Imported packages --------------------------------------------------------*/
 /*- Interface Declaration ----------------------------------------------------*/
@@ -27,7 +29,8 @@ class MonitorNotificationTask<T> implements Runnable
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private final Logger logger = LoggerFactory.getLogger( MonitorNotificationTask.class );
+   // Get Logger
+   private static final Logger logger = Logger.getLogger( MonitorNotificationTask.class.getName() );
 
    private final Supplier<? extends T> valueSupplier;
    private final Consumer<? super T> valueConsumer;
@@ -61,13 +64,13 @@ class MonitorNotificationTask<T> implements Runnable
       try
       {
          final T latestValue = valueSupplier.get();
-         logger.debug( "Notifying consumer {} with value: {}... ", valueConsumer, latestValue );
+         logger.log( Level.FINEST, "Notifying consumer '%s' with value: '%s'... ", new Object[] { valueConsumer, latestValue } );
          valueConsumer.accept(latestValue);
-         logger.debug( "Notification completed ok" );
+         logger.log( Level.FINEST, "Notification completed ok" );
       }
       catch ( RuntimeException ex )
       {
-         logger.warn( "Unexpected exception during transfer> Message was: {} ", ex.toString() );
+         logger.log( Level.WARNING,"Unexpected exception during transfer. Message was: '%s'", ex );
          ex.printStackTrace();
       }
    }

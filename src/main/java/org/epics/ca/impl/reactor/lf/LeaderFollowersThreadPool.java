@@ -13,7 +13,7 @@ public class LeaderFollowersThreadPool
 {
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger (LeaderFollowersThreadPool.class.getName ());
+   private static final Logger logger = Logger.getLogger( LeaderFollowersThreadPool.class.getName() );
 
    /**
     * Default thread pool size.
@@ -82,7 +82,7 @@ public class LeaderFollowersThreadPool
       catch ( Throwable th )
       {
          /* noop */
-         logger.log (Level.SEVERE, "Unexpected exception caught in one of the LF thread-pool thread.", th);
+         logger.log( Level.SEVERE, "Unexpected exception caught in one of the LF thread-pool thread.", th);
       }
    }
 

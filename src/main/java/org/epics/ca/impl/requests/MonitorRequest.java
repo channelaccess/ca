@@ -21,7 +21,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
 {
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger ( MonitorRequest.class.getName ());
+   private static final Logger logger = Logger.getLogger( MonitorRequest.class.getName() );
 
    /**
     * Context.
@@ -141,7 +141,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       Status status = Status.forStatusCode (errorCode);
       if ( status == null )
       {
-         logger.warning (() -> "Unknown CA status code received for monitor, code: " + errorCode + ", message: " + errorMessage);
+         logger.log( Level.WARNING ,"Unknown CA status code received for monitor, code: " + errorCode + ", message: " + errorMessage);
          return;
       }
 
@@ -152,7 +152,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       }
       else if ( status == Status.DISCONN )
       {
-         logger.finest( "Channel disconnected." );
+         logger.log( Level.FINEST, "Channel disconnected." );
          // The old Disruptor-based implementation pushes out a null here,
          // but only if there was room in the buffer. If there was no room
          // in the buffer the event was quietly dropped. Since this feature
@@ -162,7 +162,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       }
       else
       {
-         logger.warning (() -> "Exception with CA status " + status + " received for monitor, message: " + ((errorMessage != null) ? errorMessage : status.getMessage ()));
+         logger.log( Level.WARNING, "Exception with CA status " + status + " received for monitor, message: " + ((errorMessage != null) ? errorMessage : status.getMessage ()));
       }
    }
 
@@ -193,7 +193,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       }
       catch ( Throwable th )
       {
-         logger.log (Level.FINER, "Failed to send 'cancel subscription' message.", th);
+         logger.log( Level.FINER, "Failed to send 'cancel subscription' message.", th);
       }
    }
 

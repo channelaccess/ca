@@ -1,16 +1,16 @@
 package org.epics.ca;
 
 import org.epics.ca.data.*;
-
-import org.junit.jupiter.api.*;
+import org.epics.ca.impl.BroadcastTransport;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -19,6 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,6 +30,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ChannelTest
 {
+   // Get Logger
+   private static final Logger logger = Logger.getLogger( ChannelTest.class.getName () );
+
    private static final double DELTA = 1e-10;
 
    private Context context;
@@ -48,6 +53,13 @@ class ChannelTest
       server.runInSeparateThread ();
       context = new Context ( prop );
    }
+
+   @Test()
+   void logTest()
+   {
+      logger.log(Level.FINEST, "My msg is: %s", "abc" );
+   }
+
 
    @AfterEach
    void tearDown()
@@ -467,9 +479,6 @@ class ChannelTest
       internalTestGraphicEnum ("enum", short[].class, new short[] { 3, 4 }, alarm, labels, true);
    }
 
-   private final Logger logger = LoggerFactory.getLogger( ChannelTest.class);
-
-
    // Provides a possible method source to iterate test over all service implementations
    private static Stream<Arguments> getMonitorNotificationServiceImplementations()
    {
@@ -492,7 +501,7 @@ class ChannelTest
 
       try ( Channel<Integer> channel = mySpecialContext.createChannel ("adc01", Integer.class) )
       {
-         channel.addConnectionListener( (c,h) -> logger.info ( "Channel {}, new connection state is: {} ", c.getName(), c.getConnectionState() ) );
+         channel.addConnectionListener( (c,h) -> logger.log ( Level.INFO, String.format( "Channel '%s', new connection state is: '%s' ", c.getName(), c.getConnectionState() ) ) );
 
          // Connect to some channel and get the default value (= value on creation) for the test PV
          channel.connect();

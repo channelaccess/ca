@@ -45,7 +45,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Context logger.
     */
-   protected final Logger logger = Logger.getLogger (getClass ().getPackage ().getName ());
+   private static final Logger logger = Logger.getLogger( ContextImpl.class.getName() );
 
    /**
     * Debug level, turns on low-level debugging.
@@ -274,7 +274,7 @@ public class ContextImpl implements AutoCloseable, Constants
             return false;
          else
          {
-            logger.config (() -> "Failed to parse boolean value for property " + key + ": \"" + sValue + "\", \"YES\" or \"NO\" expected.");
+            logger.log( Level.CONFIG, "Failed to parse boolean value for property " + key + ": \"" + sValue + "\", \"YES\" or \"NO\" expected.");
             return defaultValue;
          }
       }
@@ -293,7 +293,7 @@ public class ContextImpl implements AutoCloseable, Constants
          }
          catch ( Throwable th )
          {
-            logger.config (() -> "Failed to parse float value for property " + key + ": \"" + sValue + "\".");
+            logger.log( Level.CONFIG, "Failed to parse float value for property " + key + ": \"" + sValue + "\".");
          }
       }
       return defaultValue;
@@ -310,7 +310,7 @@ public class ContextImpl implements AutoCloseable, Constants
          }
          catch ( Throwable th )
          {
-            logger.config (() -> "Failed to parse integer value for property " + key + ": \"" + sValue + "\".");
+            logger.log( Level.CONFIG, "Failed to parse integer value for property " + key + ": \"" + sValue + "\".");
          }
       }
       return defaultValue;
@@ -319,35 +319,35 @@ public class ContextImpl implements AutoCloseable, Constants
    protected void loadConfig( Properties properties )
    {
       // dump version
-      logger.config (() -> "Java CA v" + Version.getVersionString ());
+      logger.log( Level.CONFIG, "Java CA v" + Version.getVersionString ());
 
       addressList = readStringProperty (properties, Context.Configuration.EPICS_CA_ADDR_LIST.toString (), addressList);
-      logger.config (() -> Context.Configuration.EPICS_CA_ADDR_LIST.toString () + ": " + addressList);
+      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_ADDR_LIST.toString () + ": " + addressList);
 
       autoAddressList = readBooleanProperty (properties, Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString (), autoAddressList);
-      logger.config (() -> Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString () + ": " + autoAddressList);
+      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString () + ": " + autoAddressList);
 
       connectionTimeout = readFloatProperty (properties, Context.Configuration.EPICS_CA_CONN_TMO.toString (), connectionTimeout);
       connectionTimeout = Math.max (0.1f, connectionTimeout);
-      logger.config (() -> Context.Configuration.EPICS_CA_CONN_TMO.toString () + ": " + connectionTimeout);
+      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_CONN_TMO.toString () + ": " + connectionTimeout);
 
       beaconPeriod = readFloatProperty (properties, Context.Configuration.EPICS_CA_BEACON_PERIOD.toString (), beaconPeriod);
       beaconPeriod = Math.max (0.1f, beaconPeriod);
-      logger.config (() -> Context.Configuration.EPICS_CA_BEACON_PERIOD.toString () + ": " + beaconPeriod);
+      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_BEACON_PERIOD.toString () + ": " + beaconPeriod);
 
       repeaterPort = readIntegerProperty (properties, Context.Configuration.EPICS_CA_REPEATER_PORT.toString (), repeaterPort);
-      logger.config (() -> Context.Configuration.EPICS_CA_REPEATER_PORT.toString () + ": " + repeaterPort);
+      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_REPEATER_PORT.toString () + ": " + repeaterPort);
 
       serverPort = readIntegerProperty (properties, Context.Configuration.EPICS_CA_SERVER_PORT.toString (), serverPort);
-      logger.config (() -> Context.Configuration.EPICS_CA_SERVER_PORT.toString () + ": " + serverPort);
+      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_SERVER_PORT.toString () + ": " + serverPort);
 
       maxArrayBytes = readIntegerProperty (properties, Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString (), maxArrayBytes);
       if ( maxArrayBytes > 0 )
          maxArrayBytes = Math.max (1024, maxArrayBytes);
-      logger.config (() -> Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString () + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
+      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString () + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
 
       monitorNotifierConfig = readStringProperty( properties, CA_MONITOR_NOTIFIER, CA_MONITOR_NOTIFIER_DEFAULT );
-      logger.config(() -> "CA_MONITOR_NOTIFIER: " + monitorNotifierConfig );
+      logger.log( Level.CONFIG, "CA_MONITOR_NOTIFIER: " + monitorNotifierConfig );
    }
 
    /**
@@ -424,17 +424,17 @@ public class ContextImpl implements AutoCloseable, Constants
             broadcastAddressList = list;
       }
       else if ( autoAddressList == false )
-         logger.warning ("Empty broadcast search address list, all connects will fail.");
+         logger.log ( Level.WARNING, "Empty broadcast search address list, all connects will fail.");
       else
          broadcastAddressList = InetAddressUtil.getBroadcastAddresses (serverPort);
 
       if ( logger.isLoggable (Level.CONFIG) && broadcastAddressList != null )
          for ( int i = 0; i < broadcastAddressList.length; i++ )
-            logger.config ("Broadcast address #" + i + ": " + broadcastAddressList[ i ] + '.');
+            logger.log( Level.CONFIG, "Broadcast address #" + i + ": " + broadcastAddressList[ i ] + '.');
 
       // any address
       InetSocketAddress connectAddress = new InetSocketAddress (0);
-      logger.finer (() -> "Creating datagram socket to: " + connectAddress);
+      logger.log( Level.FINER, "Creating datagram socket to: " + connectAddress);
 
       DatagramChannel channel = null;
       try
@@ -751,7 +751,7 @@ public class ContextImpl implements AutoCloseable, Constants
       if ( channel == null )
          return;
 
-      logger.finer (() -> "Search response for channel " + channel.getName () + " received.");
+      logger.log ( Level.FINER, "Search response for channel " + channel.getName () + " received.");
 
       // check for multiple responses
       synchronized ( channel )
@@ -762,7 +762,7 @@ public class ContextImpl implements AutoCloseable, Constants
             // multiple defined PV or reconnect request (same server address)
             if ( !transport.getRemoteAddress ().equals (serverAddress) )
             {
-               logger.info (() -> "More than one PVs with name '" + channel.getName () +
+               logger.log( Level.INFO,"More than one PVs with name '" + channel.getName () +
                      "' detected, additional response from: " + serverAddress);
                return;
             }
@@ -799,7 +799,7 @@ public class ContextImpl implements AutoCloseable, Constants
       TCPTransport transport = (TCPTransport) transportRegistry.get (address, priority);
       if ( transport != null )
       {
-         logger.finer (() -> "Reusing existant connection to CA server: " + address);
+         logger.log ( Level.FINER,"Reusing existant connection to CA server: " + address);
          if ( transport.acquire (client) )
             return transport;
       }
@@ -813,12 +813,12 @@ public class ContextImpl implements AutoCloseable, Constants
             transport = (TCPTransport) transportRegistry.get (address, priority);
             if ( transport != null )
             {
-               logger.finer (() -> "Reusing existant connection to CA server: " + address);
+               logger.log ( Level.FINER,"Reusing existant connection to CA server: " + address);
                if ( transport.acquire (client) )
                   return transport;
             }
 
-            logger.finer (() -> "Connecting to CA server: " + address);
+            logger.log ( Level.FINER, "Connecting to CA server: " + address);
 
             socket = tryConnect (address, 3);
 
@@ -848,7 +848,7 @@ public class ContextImpl implements AutoCloseable, Constants
             Messages.hostNameMessage (transport, hostName);
             transport.flush ();
 
-            logger.finer (() -> "Connected to CA server: " + address);
+            logger.log ( Level.FINER, "Connected to CA server: " + address);
 
             return transport;
 
@@ -888,10 +888,8 @@ public class ContextImpl implements AutoCloseable, Constants
     * @return
     * @throws IOException
     */
-   private SocketChannel tryConnect( InetSocketAddress address, int tries )
-         throws IOException
+   private SocketChannel tryConnect( InetSocketAddress address, int tries ) throws IOException
    {
-
       IOException lastException = null;
 
       for ( int tryCount = 0; tryCount < tries; tryCount++ )
@@ -908,10 +906,7 @@ public class ContextImpl implements AutoCloseable, Constants
             {
             }
          }
-
-         if ( logger.isLoggable (Level.FINEST) )
-            logger.finest ("Openning socket to CA server " + address
-                                 + ", attempt " + (tryCount + 1) + ".");
+         logger.log( Level.FINEST,"Opening socket to CA server " + address + ", attempt " + (tryCount + 1) + "." );
 
          try
          {
@@ -929,7 +924,7 @@ public class ContextImpl implements AutoCloseable, Constants
 
    public void repeaterConfirm( InetSocketAddress responseFrom )
    {
-      logger.fine ("Repeater registration confirmed from: " + responseFrom);
+      logger.log( Level.FINE, "Repeater registration confirmed from: " + responseFrom );
 
       ScheduledFuture<?> sf = repeaterRegistrationFuture;
       if ( sf != null )

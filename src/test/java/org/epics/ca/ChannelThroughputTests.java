@@ -1,21 +1,23 @@
 package org.epics.ca;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.epics.ca.impl.BroadcastTransport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class ChannelThroughputTests
 {
-   private Logger logger = LoggerFactory.getLogger( ChannelThroughputTests.class );
+   // Get Logger
+   private static final Logger logger = Logger.getLogger( ChannelThroughputTests.class.getName() );
 
    private Context context;
    private CAJTestServer server;
@@ -44,7 +46,7 @@ class ChannelThroughputTests
    @Test
    void TestGet()
    {
-      logger.info( "Get throughput test..." );
+      logger.log(Level.INFO, "Get throughput test..." );
       final Channel<Double> channel = context.createChannel("adc01", Double.class);
       channel.connect();
 
@@ -71,7 +73,7 @@ class ChannelThroughputTests
 
       for ( int result : resultMap.keySet() )
       {
-         logger.info("- Synchronous Get from {} channels took {} ms. Average: {} us", result, resultMap.get(result), String.format(Locale.ROOT, "%3f", (float) resultMap.get(result) / result));
+         logger.log( Level.INFO, String.format( "- Synchronous Get from '%s' channels took '%s' ms. Average: '%3f' us", result, resultMap.get(result), (float) resultMap.get(result) / result) );
       }
 
    }
@@ -107,7 +109,7 @@ class ChannelThroughputTests
       logger.info( "RESULTS:" );
       for ( int result : resultMap.keySet() )
       {
-         logger.info("- Synchronous PutAndGet from {} channels took {} ms. Average: {} us", result, resultMap.get(result), String.format(Locale.ROOT, "%3f", (float) resultMap.get(result) / result));
+         logger.log( Level.INFO, String.format( "- Synchronous PuAndGet from '%s' channels took '%s' ms. Average: '%3f' us", result, resultMap.get (result ), (float) resultMap.get(result) / result) );
       }
    }
 
@@ -116,12 +118,12 @@ class ChannelThroughputTests
                              "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl",
                              "DisruptorMonitorNotificationServiceOldImpl",
                              "DisruptorMonitorNotificationServiceNewImpl" } )
-   void TestPutAndMonitor( String monitorNotifierServiceImpl )
+   void TestPutAndMonitor( String monitorNotificationServiceImpl )
    {
-      logger.info( "Starting PutAndMonitor throughput test using impl: '{}'...", monitorNotifierServiceImpl );
+      logger.log( Level.INFO, String.format("Starting PutAndMonitor throughput test using impl: '%s'...", monitorNotificationServiceImpl ) );
 
       final Properties contextProperties = new Properties();
-      contextProperties.setProperty( "CA_MONITOR_NOTIFIER", monitorNotifierServiceImpl );
+      contextProperties.setProperty( "CA_MONITOR_NOTIFIER", monitorNotificationServiceImpl );
       final Context mySpecialContext = new Context( contextProperties );
 
       final List<Integer> samplePoints = Arrays.asList(1, 10, 100, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000);
@@ -166,8 +168,7 @@ class ChannelThroughputTests
       for ( int result : resultMap1.keySet() )
       {
          long latency = ( resultMap1.containsKey( result ) && resultMap2.containsKey( result ) ) ? resultMap2.get( result) - resultMap1.get( result ) : 0L;
-
-         logger.info("- Synchronous PutAndMonitor from {} channels took {} ms. Average: {} us. Latency {} us", result, resultMap1.get(result), String.format(Locale.ROOT, "%3f", (float) resultMap1.get(result) / result), latency );
+         logger.log( Level.INFO, String.format( "- Synchronous PutAndMonitor from '%s' channels took '%s' ms. Average: '%3f' us. Latency '%s' us", result, resultMap1.get( result), (float) resultMap1.get( result ) / result, latency ) );
       }
    }
 
@@ -176,12 +177,12 @@ class ChannelThroughputTests
                              "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl",
                              "DisruptorMonitorNotificationServiceOldImpl",
                              "DisruptorMonitorNotificationServiceNewImpl" } )
-   void TestFastCounterMonitor( String monitorNotifierServiceImpl ) throws InterruptedException
+   void TestFastCounterMonitor( String monitorNotificationServiceImpl ) throws InterruptedException
    {
-      logger.info( "Starting TestFastCounterMonitor throughput test using impl: '{}'...", monitorNotifierServiceImpl );
+      logger.log( Level.INFO, String.format( "Starting TestFastCounterMonitor throughput test using impl: '%s'...", monitorNotificationServiceImpl ) );
 
       final Properties contextProperties = new Properties();
-      contextProperties.setProperty( "CA_MONITOR_NOTIFIER", monitorNotifierServiceImpl );
+      contextProperties.setProperty( "CA_MONITOR_NOTIFIER", monitorNotificationServiceImpl );
       final Context mySpecialContext = new Context( contextProperties );
 
       final List<Integer> samplePoints = Arrays.asList( 100, 200, 500, 1_000, 5_000, 10_000 );
@@ -217,7 +218,7 @@ class ChannelThroughputTests
       logger.info( "RESULTS:" );
       for ( int result : resultMap.keySet() )
       {
-         logger.info("- TestFastCounterMonitor from {} channels took {} ms. Average: {} ms", result, resultMap.get(result), String.format(Locale.ROOT, "%3f", (float) resultMap.get(result) / result));
+         logger.log( Level.INFO, String.format( "- TestFastCounterMonitor from '%s' channels took '%s' ms. Average: '%3f' ms", result, resultMap.get(result),(float) resultMap.get(result) / result ) );
       }
    }
 

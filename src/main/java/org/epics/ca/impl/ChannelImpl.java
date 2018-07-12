@@ -28,7 +28,7 @@ import java.util.logging.Logger;
 public class ChannelImpl<T> implements Channel<T>, TransportClient
 {
    // Get Logger
-   private static final Logger logger = Logger.getLogger (ChannelImpl.class.getName ());
+   private static final Logger logger = Logger.getLogger( ChannelImpl.class.getName() );
 
    protected final ContextImpl context;
    protected final String name;
@@ -595,7 +595,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
             }
             catch ( Throwable th )
             {
-               logger.log (Level.WARNING, "Unexpected exception caught when dispatching access rights listener event.", th);
+               logger.log( Level.WARNING, "Unexpected exception caught when dispatching access rights listener event.", th);
             }
          }
       }
@@ -639,7 +639,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
             }
             catch ( Throwable th )
             {
-               logger.log (Level.WARNING, "Unexpected exception caught when dispatching connection listener event.", th);
+               logger.log( Level.WARNING, "Unexpected exception caught when dispatching connection listener event.", th);
             }
          }
       }
@@ -690,7 +690,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
          }
          catch ( Throwable th )
          {
-            logger.log (Level.WARNING, "Unexpected exception caught during resubscription notification.", th);
+            logger.log( Level.WARNING, "Unexpected exception caught during resubscription notification.", th );
          }
       }
    }
@@ -730,7 +730,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
          TypeSupport<?> nativeTypeSupport = TypeSupports.getTypeSupport (typeCode, elementCount);
          if ( nativeTypeSupport == null )
          {
-            logger.severe (() -> "type support for typeCode=" + typeCode + ", elementCount=" + elementCount + " is not supported, switching to String/String[]");
+            logger.log( Level.SEVERE, "Type support for typeCode=" + typeCode + ", elementCount=" + elementCount + " is not supported, switching to String/String[]");
             if ( elementCount > 1 )
                nativeTypeSupport = TypeSupports.getTypeSupport (String[].class);
             else
@@ -831,7 +831,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
          }
          catch ( Throwable th )
          {
-            logger.log (Level.WARNING, "Unexpected exception caught during disconnect/destroy notification.", th);
+            logger.log( Level.WARNING, "Unexpected exception caught during disconnect/destroy notification.", th);
          }
       }
    }
