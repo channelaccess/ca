@@ -21,8 +21,8 @@ public class MonitorNotificationServiceFactory
    {
       SingleWorkerBlockingQueueMonitorNotificationServiceImpl,
       MultipleWorkerBlockingQueueMonitorNotificationServiceImpl,
-      DisruptorMonitorNotificationServiceImpl,
-      DisruptorMonitorNotificationServiceImpl2
+      DisruptorMonitorNotificationServiceOldImpl,
+      DisruptorMonitorNotificationServiceNewImpl
    }
 
 /*- Private attributes -------------------------------------------------------*/
@@ -44,7 +44,7 @@ public class MonitorNotificationServiceFactory
     * <ul>
     * <li> SingleWorkerBlockingQueueMonitorNotificationServiceImpl</li>
     * <li> MultipleWorkerBlockingQueueMonitorNotificationServiceImpl</li>
-    * <li> DisruptorMonitorNotificationServiceImpl</li>
+    * <li> DisruptorMonitorNotificationServiceNewImpl</li>
     * </ul>
     *
     * @param serviceImplConfiguration specifies the properties of the service
@@ -65,14 +65,14 @@ public class MonitorNotificationServiceFactory
       {
          case SingleWorkerBlockingQueueMonitorNotificationServiceImpl:
          {
-            executor = new ThreadPoolExecutor( SINGLE_WORKER_THREADS, SINGLE_WORKER_THREADS, Long.MAX_VALUE, TimeUnit.DAYS,  new LinkedBlockingQueue<>(), new MyThreadFactory( "SingleWorker" ) );
+            executor = new ThreadPoolExecutor( SINGLE_WORKER_THREADS, SINGLE_WORKER_THREADS, Long.MAX_VALUE, TimeUnit.DAYS, new LinkedBlockingQueue<>(), new MyThreadFactory( "SingleWorker" ) );
             executor.prestartAllCoreThreads();
          }
          break;
 
          case MultipleWorkerBlockingQueueMonitorNotificationServiceImpl:
          {
-            executor = new ThreadPoolExecutor( MULTIPLE_WORKER_THREADS, MULTIPLE_WORKER_THREADS, Long.MAX_VALUE, TimeUnit.DAYS,  new LinkedBlockingQueue<>(), new MyThreadFactory( "MultipleWorker" ) );
+            executor = new ThreadPoolExecutor( MULTIPLE_WORKER_THREADS, MULTIPLE_WORKER_THREADS, Long.MAX_VALUE, TimeUnit.DAYS, new LinkedBlockingQueue<>(), new MyThreadFactory( "MultipleWorker" ) );
             executor.prestartAllCoreThreads();
          }
          break;
@@ -93,7 +93,7 @@ public class MonitorNotificationServiceFactory
     *
     * @return the service instance.
     */
-   public <T> MonitorNotificationService<? super T> getServiceForConsumer( Consumer<? super T> consumer )
+   public <T> MonitorNotificationService<T> getServiceForConsumer( Consumer<? super T> consumer )
    {
       Validate.notNull( consumer );
 
@@ -102,20 +102,21 @@ public class MonitorNotificationServiceFactory
          case SingleWorkerBlockingQueueMonitorNotificationServiceImpl:
          case MultipleWorkerBlockingQueueMonitorNotificationServiceImpl:
          {
-            final MonitorNotificationService<? super T> instance = new BlockingQueueMonitorNotificationServiceImpl<>( executor, consumer );
+            final MonitorNotificationService<T> instance = new BlockingQueueMonitorNotificationServiceImpl<>( executor, consumer );
             instance.start();
             return instance;
          }
 
-         case DisruptorMonitorNotificationServiceImpl:
+         case DisruptorMonitorNotificationServiceNewImpl:
          {
-            final MonitorNotificationService<? super T> instance = new DisruptorMonitorNotificationServiceImpl<>( consumer );
+            final MonitorNotificationService<T> instance = new DisruptorMonitorNotificationServiceNewImpl<>(consumer );
             instance.start();
             return instance;
          }
-         case DisruptorMonitorNotificationServiceImpl2:
+
+         case DisruptorMonitorNotificationServiceOldImpl:
          {
-            final MonitorNotificationService<? super T> instance = new DisruptorMonitorNotificationServiceImpl2<>( consumer );
+            final MonitorNotificationService<T> instance = new DisruptorMonitorNotificationServiceOldImpl<>(consumer );
             instance.start();
             return instance;
          }
@@ -143,7 +144,7 @@ public class MonitorNotificationServiceFactory
       {
          return new Thread(r, prefix + "BlockingQueueMonitorNotificationThread-" + String.valueOf( id++ ) );
       }
-   };
+   }
 
 
 }

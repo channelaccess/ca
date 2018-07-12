@@ -13,35 +13,30 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang3.Validate;
-import org.epics.ca.Channel;
-import org.epics.ca.impl.ChannelImpl;
-import org.epics.ca.impl.ContextImpl;
+import org.epics.ca.impl.TypeSupports.TypeSupport;
 import org.epics.ca.impl.disruptor.ConnectionInterruptable;
 import org.epics.ca.impl.disruptor.MonitorBatchEventProcessor;
 import org.epics.ca.util.Holder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 
 @ThreadSafe
-class DisruptorMonitorNotificationServiceImpl2<T> implements MonitorNotificationService<T>
+class DisruptorMonitorNotificationServiceOldImpl<T> implements MonitorNotificationService<T>
 {
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LoggerFactory.getLogger( DisruptorMonitorNotificationServiceImpl2.class);
+   private static final Logger logger = LoggerFactory.getLogger( DisruptorMonitorNotificationServiceOldImpl.class);
 
-   private final ThreadFactory myThreadFactory;
    private final Disruptor<Holder<T>> disruptor;
-   private final RingBuffer<Holder<T>> ringBuffer;
 
    private T overrunValue;
    private Holder<T> lastValue;
-
-
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -51,34 +46,96 @@ class DisruptorMonitorNotificationServiceImpl2<T> implements MonitorNotification
     *
     * @param consumer the consumer to whom publish evenbts will be sent.
     */
-   DisruptorMonitorNotificationServiceImpl2( Consumer<T> consumer )
+   DisruptorMonitorNotificationServiceOldImpl( Consumer<? super T> consumer )
    {
       Validate.notNull( consumer );
 
       // The factory for the thread
-      myThreadFactory = new MyThreadFactory();
+      final ThreadFactory myThreadFactory = new MyThreadFactory();
 
       // Specify the size of the ring buffer, must be power of 2.
       final int bufferSize = 2;
 
       // Construct the Disruptor
-      disruptor = new Disruptor(Holder::new, bufferSize, myThreadFactory);
+      disruptor = new Disruptor<>(Holder::new, bufferSize, myThreadFactory);
 
       disruptor.handleEventsWith (
          ( ringBuffer, barrierSequences ) ->
-            new MonitorBatchEventProcessor<Holder<T>> (
+            new MonitorBatchEventProcessor<> (
                new MyAlwaysOnlineConnectionInterruptable(),
-               new Holder<T> (),
+               new Holder<> (),
                (value) -> (value.value == null),
                disruptor.getRingBuffer(),
-               ringBuffer.newBarrier (barrierSequences),
-               (e, s, eob) -> new MySpecialEventHandler( consumer ).onEvent( e, s, eob ) ) );
-
-      // Get the ring buffer from the Disruptor to be used for publishing.
-      ringBuffer = disruptor.getRingBuffer();
+               ringBuffer.newBarrier( barrierSequences ),
+               (e, s, eob) -> new MySpecialEventHandler<>( consumer ).onEvent( e, s, eob ) ) );
    }
 
 /*- Public methods -----------------------------------------------------------*/
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void publish( ByteBuffer dataBuffer, TypeSupport<T> typeSupport, int dataCount )
+   {
+      Validate.notNull( dataBuffer );
+      Validate.notNull( typeSupport );
+
+      final RingBuffer<Holder<T>> ringBuffer = disruptor.getRingBuffer ();
+
+      // Note: this is OK only for single producer
+      if ( ringBuffer.hasAvailableCapacity (1) )
+      {
+         long next = ringBuffer.next ();
+         try
+         {
+            lastValue = ringBuffer.get (next);
+            lastValue.value = typeSupport.deserialize (dataBuffer, lastValue.value, dataCount);
+         }
+         finally
+         {
+            ringBuffer.publish (next);
+         }
+      }
+      else
+      {
+         overrunValue = typeSupport.deserialize ( dataBuffer, overrunValue, dataCount);
+
+         // nasty trick, swap the reference of the last value with overrunValue
+         T tmp = lastValue.value;
+         lastValue.value = overrunValue;
+         overrunValue = tmp;
+      }
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void publish( T value )
+   {
+      final RingBuffer<Holder<T>> ringBuffer = disruptor.getRingBuffer ();
+
+      // Note: this is OK only for single producer
+      if ( ringBuffer.hasAvailableCapacity (1) )
+      {
+         long next = ringBuffer.next ();
+         try
+         {
+            lastValue = ringBuffer.get( next );
+            lastValue.value = value;
+         }
+         finally
+         {
+            ringBuffer.publish( next );
+         }
+      }
+      else
+      {
+         // nasty trick, swap the reference of the last value with the new value
+         lastValue.value = value;
+      }
+   }
 
    /**
     * {@inheritDoc}
@@ -94,8 +151,6 @@ class DisruptorMonitorNotificationServiceImpl2<T> implements MonitorNotification
 
    /**
     * {@inheritDoc}
-    *
-    * The implementation here waits for all events to be processed
     */
    @Override
    public void dispose()
@@ -103,43 +158,12 @@ class DisruptorMonitorNotificationServiceImpl2<T> implements MonitorNotification
       disruptor.shutdown();
    }
 
-   @Override
-   public void disposeAllResources()
-   {
-
-   }
-
    /**
-    * @param value the new value.
+    * {@inheritDoc}
     */
    @Override
-   public void publish( T value )
-   {
-      RingBuffer<Holder<T>> ringBuffer = disruptor.getRingBuffer ();
-      // this is OK only for single producer
-      if ( ringBuffer.hasAvailableCapacity (1) )
-      {
-         long next = ringBuffer.next ();
-         try
-         {
-            lastValue = ringBuffer.get (next);
-            lastValue.value = value;
-         }
-         finally
-         {
-            ringBuffer.publish (next);
-         }
-      }
-      else
-      {
-         overrunValue = value;
+   public void disposeAllResources() { }
 
-         // nasty trick, swap the reference of the last value with overrunValue
-         T tmp = lastValue.value;
-         lastValue.value = overrunValue;
-         overrunValue = tmp;
-      }
-   }
 
 
 /*- Private methods ----------------------------------------------------------*/
@@ -155,34 +179,33 @@ class DisruptorMonitorNotificationServiceImpl2<T> implements MonitorNotification
       {
          return new Thread(r, "DisruptorThread-" + String.valueOf( id++ ) );
       }
-   };
+   }
 
-
-   static class MySpecialEventHandler<T> implements EventHandler<Holder<T>>, LifecycleAware
+   static class MySpecialEventHandler<T> implements EventHandler<Holder<? extends T>>, LifecycleAware
    {
-      private final Consumer<T> consumer;
+      private final Consumer<? super T> consumer;
 
-      public MySpecialEventHandler( Consumer<T> consumer )
+      MySpecialEventHandler( Consumer<? super T> consumer )
       {
          this.consumer = consumer;
       }
 
-      public void onEvent( Holder<T> event, long sequence, boolean endOfBatch) throws InterruptedException
+      public void onEvent( Holder<? extends T> event, long sequence, boolean endOfBatch)
       {
-         //logger.info( "MySpecialEventHandler is digesting Event " + event.value + " on Thread: " + Thread.currentThread() + "... " );
+         logger.debug( "MySpecialEventHandler is digesting Event " + event.value + " on Thread: " + Thread.currentThread() + "... " );
          consumer.accept( event.value );
       }
 
       @Override
       public void onStart()
       {
-         logger.info( "MySpecialEventHandler started on Thread: " + Thread.currentThread() + "... " );
+         logger.debug( "MySpecialEventHandler started on Thread: " + Thread.currentThread() + "... " );
       }
 
       @Override
       public void onShutdown()
       {
-         logger.info( "MySpecialEventHandler shutdown on Thread: " + Thread.currentThread() + "... " );
+         logger.debug( "MySpecialEventHandler shutdown on Thread: " + Thread.currentThread() + "... " );
       }
    }
 
