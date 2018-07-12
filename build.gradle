@@ -59,10 +59,6 @@ dependencies {
     // that is used in testing).
     compile 'org.apache.commons:commons-lang3:3.7'
 
-    // Support for improved logging
-    compile 'org.slf4j:slf4j-api:1.7.25'
-    compile 'org.slf4j:slf4j-jdk14:1.7.25'
-
     // Supports for documenting Thread-Safety
     compile 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
 
