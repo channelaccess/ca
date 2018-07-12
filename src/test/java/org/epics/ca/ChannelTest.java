@@ -1,23 +1,17 @@
-/**
- *
- */
 package org.epics.ca;
 
 import org.epics.ca.data.*;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
@@ -32,9 +26,9 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * @author msekoranja
  */
-public class ChannelTest
+class ChannelTest
 {
-   static final double DELTA = 1e-10;
+   private static final double DELTA = 1e-10;
 
    private Context context;
    private CAJTestServer server;
@@ -47,23 +41,23 @@ public class ChannelTest
    }
 
    @BeforeEach
-   protected void setUp() throws Exception
+   void setUp()
    {
-      Properties prop = new Properties();;
+      Properties prop = new Properties();
       server = new CAJTestServer ();
       server.runInSeparateThread ();
       context = new Context ( prop );
    }
 
    @AfterEach
-   protected void tearDown() throws Exception
+   void tearDown()
    {
       context.close ();
       server.destroy ();
    }
 
    @Test
-   public void testConnect() throws Throwable
+   void testConnect() throws Throwable
    {
 
       try ( Channel<Double> channel = context.createChannel ("no_such_channel_test", Double.class) )
@@ -109,7 +103,7 @@ public class ChannelTest
    }
 
    @Test
-   public void testConnectionListener() throws Throwable
+   void testConnectionListener() throws Throwable
    {
 
       try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
@@ -125,7 +119,7 @@ public class ChannelTest
          Listener cl = channel.addConnectionListener (( c, connected ) -> {
             if ( c == channel )
             {
-               if ( connected.booleanValue () )
+               if ( connected )
                   connectedCount.incrementAndGet ();
                else
                   disconnectedCount.incrementAndGet ();
@@ -163,7 +157,7 @@ public class ChannelTest
    }
 
    @Test
-   public void testAccessRightsListener() throws Throwable
+   void testAccessRightsListener() throws Throwable
    {
 
       try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
@@ -206,11 +200,10 @@ public class ChannelTest
 
          assertEquals (0, unregsiteredEventCount.get ());
       }
-      ;
    }
 
    @Test
-   public void testProperties() throws Throwable
+   void testProperties() throws Throwable
    {
 
       try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
@@ -219,22 +212,20 @@ public class ChannelTest
 
          Map<String, Object> props = channel.getProperties ();
          Object nativeTypeCode = props.get (Constants.ChannelProperties.nativeTypeCode.name ());
-         assertNotNull (nativeTypeCode);
-         assertEquals (Short.valueOf ((short) 6), (Short) nativeTypeCode);
+         assertNotNull( nativeTypeCode);
+         assertEquals( (short) 6, nativeTypeCode);
 
          Object nativeElementCount = props.get (Constants.ChannelProperties.nativeElementCount.name ());
-         assertNotNull (nativeElementCount);
-         assertEquals (Integer.valueOf (2), (Integer) nativeElementCount);
+         assertNotNull( nativeElementCount);
+         assertEquals(2, nativeElementCount);
 
          Object nativeType = props.get (Constants.ChannelProperties.nativeType.name ());
-         assertNotNull (nativeType);
-         assertEquals (Double.class, (Class<?>) nativeType);
+         assertNotNull( nativeType);
+         assertEquals(Double.class, nativeType);
       }
-      ;
    }
 
-   @Test
-   public static <T> boolean arrayEquals( T arr1, T arr2 ) throws Exception
+   private static <T> boolean arrayEquals( T arr1, T arr2 ) throws Exception
    {
       Class<?> c = arr1.getClass ();
       if ( !c.getComponentType ().isPrimitive () )
@@ -256,7 +247,9 @@ public class ChannelTest
             assertTrue (status.isSuccessful ());
          }
          else
-            channel.putNoWait (expectedValue);
+         {
+            channel.putNoWait(expectedValue);
+         }
 
          T value;
          if ( async )
@@ -265,24 +258,34 @@ public class ChannelTest
             assertNotNull (value);
          }
          else
-            value = channel.get ();
+         {
+            value = channel.get();
+         }
 
          if ( clazz.isArray () )
-            arrayEquals (expectedValue, value);
+         {
+            // Surely the assertion below is a bug and should instead be as follows:
+            // assertTrue( arrayEquals(expectedValue, value)); ..?
+            // The asserion below does not look at the result of the check.
+            arrayEquals(expectedValue, value);
+         }
          else
-            assertEquals (expectedValue, value);
+         {
+            assertEquals(expectedValue, value);
+         }
       }
    }
 
-   @Test
-   private void internalTestValuePutAndGet( boolean async ) throws Throwable
+   private void internalTestValuePutAndGet( String asyncFlag ) throws Throwable
    {
+      boolean async = Boolean.valueOf( asyncFlag  );
+
       internalTestPutAndGet ("adc01", String.class, "12.346", async);   // precision == 3
-      internalTestPutAndGet ("adc01", Short.class, Short.valueOf ((short) 123), async);
-      internalTestPutAndGet ("adc01", Float.class, Float.valueOf (-123.4f), async);
-      internalTestPutAndGet ("adc01", Byte.class, Byte.valueOf ((byte) 100), async);
-      internalTestPutAndGet ("adc01", Integer.class, Integer.valueOf (123456), async);
-      internalTestPutAndGet ("adc01", Double.class, Double.valueOf (12.3456), async);
+      internalTestPutAndGet ("adc01", Short.class, (short) 123, async);
+      internalTestPutAndGet ("adc01", Float.class, -123.4f, async);
+      internalTestPutAndGet ("adc01", Byte.class, (byte) 100, async);
+      internalTestPutAndGet ("adc01", Integer.class, 123456, async);
+      internalTestPutAndGet ("adc01", Double.class, 12.3456, async);
 
       internalTestPutAndGet ("adc01", String[].class, new String[] { "12.356", "3.112" }, async);   // precision == 3
       internalTestPutAndGet ("adc01", short[].class, new short[] { (short) 123, (short) -321 }, async);
@@ -290,18 +293,6 @@ public class ChannelTest
       internalTestPutAndGet ("adc01", byte[].class, new byte[] { (byte) 120, (byte) -120 }, async);
       internalTestPutAndGet ("adc01", int[].class, new int[] { 123456, 654321 }, async);
       internalTestPutAndGet ("adc01", double[].class, new double[] { 12.82, 3.112 }, async);
-   }
-
-   @Test
-   public void testValuePutAndGetSync() throws Throwable
-   {
-      internalTestValuePutAndGet (false);
-   }
-
-   @Test
-   public void testValuePutAndGetAsync() throws Throwable
-   {
-      internalTestValuePutAndGet (true);
    }
 
    @SuppressWarnings( { "unchecked", "rawtypes" } )
@@ -341,7 +332,6 @@ public class ChannelTest
             long dt = System.currentTimeMillis () - v.getMillis ();
             assertTrue (dt < (TIMEOUT_SEC * 1000));
          }
-
 
          if ( Graphic.class.isAssignableFrom (meta) )
          {
@@ -384,30 +374,32 @@ public class ChannelTest
       }
    }
 
-   private void internalTestMetaPutAndGet( boolean async ) throws Throwable
+   private void internalTestMetaPutAndGet( String asyncFlag ) throws Throwable
    {
-      Alarm<Double> alarm = new Alarm<Double> ();
+      boolean async = Boolean.valueOf( asyncFlag  );
+
+      Alarm<Double> alarm = new Alarm<> ();
       alarm.setAlarmStatus (AlarmStatus.UDF_ALARM);
       alarm.setAlarmSeverity (AlarmSeverity.INVALID_ALARM);
 
-      Control<Double, Double> meta = new Control<Double, Double> ();
-      meta.setUpperDisplay (new Double (10));
-      meta.setLowerDisplay (new Double (-10));
-      meta.setUpperAlarm (new Double (9));
-      meta.setLowerAlarm (new Double (-9));
-      meta.setUpperControl (new Double (8));
-      meta.setLowerControl (new Double (-8));
-      meta.setUpperWarning (new Double (7));
-      meta.setLowerWarning (new Double (-7));
+      Control<Double, Double> meta = new Control<> ();
+      meta.setUpperDisplay( 10d );
+      meta.setLowerDisplay( -10.0 );
+      meta.setUpperAlarm( 9.0 );
+      meta.setLowerAlarm( -9.0 );
+      meta.setUpperControl( 8d );
+      meta.setLowerControl( -8.0 );
+      meta.setUpperWarning( 7d );
+      meta.setLowerWarning( -7.0 );
       meta.setUnits ("units");
-      meta.setPrecision ((short) 3);
+      meta.setPrecision( (short) 3);
 
       internalTestMetaPutAndGet ("adc01", String.class, String.class, "12.346", alarm, meta, async);   // precision == 3
-      internalTestMetaPutAndGet ("adc01", Short.class, Short.class, Short.valueOf ((short) 123), alarm, meta, async);
-      internalTestMetaPutAndGet ("adc01", Float.class, Float.class, Float.valueOf (-123.4f), alarm, meta, async);
-      internalTestMetaPutAndGet ("adc01", Byte.class, Byte.class, Byte.valueOf ((byte) 100), alarm, meta, async);
-      internalTestMetaPutAndGet ("adc01", Integer.class, Integer.class, Integer.valueOf (123456), alarm, meta, async);
-      internalTestMetaPutAndGet ("adc01", Double.class, Double.class, Double.valueOf (12.3456), alarm, meta, async);
+      internalTestMetaPutAndGet ("adc01", Short.class, Short.class, (short) 123, alarm, meta, async);
+      internalTestMetaPutAndGet ("adc01", Float.class, Float.class, -123.4f, alarm, meta, async);
+      internalTestMetaPutAndGet ("adc01", Byte.class, Byte.class, (byte) 100, alarm, meta, async);
+      internalTestMetaPutAndGet ("adc01", Integer.class, Integer.class, 123456, alarm, meta, async);
+      internalTestMetaPutAndGet ("adc01", Double.class, Double.class, 12.3456, alarm, meta, async);
 
       internalTestMetaPutAndGet ("adc01", String[].class, String.class, new String[] { "12.356", "3.112" }, alarm, meta, async);   // precision == 3
       internalTestMetaPutAndGet ("adc01", short[].class, Short.class, new short[] { (short) 123, (short) -321 }, alarm, meta, async);
@@ -417,23 +409,10 @@ public class ChannelTest
       internalTestMetaPutAndGet ("adc01", double[].class, Double.class, new double[] { 12.82, 3.112 }, alarm, meta, async);
    }
 
-   @Test
-   public void testMetaPutAndGetSync() throws Throwable
-   {
-      internalTestMetaPutAndGet (false);
-   }
-
-   @Test
-   public void testMetaPutAndGetAsync() throws Throwable
-   {
-      internalTestMetaPutAndGet (true);
-   }
-
-
    private <T> void internalTestGraphicEnum( String channelName, Class<T> clazz, T expectedValue, Alarm<?> expectedAlarm, String[] expectedLabels, boolean async ) throws Throwable
    {
       // put
-      try ( Channel<T> channel = context.createChannel (channelName, clazz) )
+      try ( Channel<T> channel = context.createChannel( channelName, clazz ) )
       {
          channel.connect ();
 
@@ -455,7 +434,7 @@ public class ChannelTest
          }
          else
          {
-            value = (Alarm<T>) channel.get (gec);
+            value = channel.get (gec);
          }
 
          if ( clazz.isArray () )
@@ -472,9 +451,9 @@ public class ChannelTest
    }
 
    @Test
-   public void testGraphicEnum() throws Throwable
+   void testGraphicEnum() throws Throwable
    {
-      Alarm<Double> alarm = new Alarm<Double> ();
+      Alarm<Double> alarm = new Alarm<>();
       alarm.setAlarmStatus (AlarmStatus.UDF_ALARM);
       alarm.setAlarmSeverity (AlarmSeverity.INVALID_ALARM);
 
@@ -496,12 +475,16 @@ public class ChannelTest
    {
       return Stream.of(Arguments.of("SingleWorkerBlockingQueueMonitorNotificationServiceImpl"),
                        Arguments.of("MultipleWorkerBlockingQueueMonitorNotificationServiceImpl"),
-                       Arguments.of("DisruptorMonitorNotificationServiceImpl"),
-                       Arguments.of("DisruptorMonitorNotificationServiceImpl2"));
+                       Arguments.of("DisruptorMonitorNotificationServiceOldImpl"),
+                       Arguments.of("DisruptorMonitorNotificationServiceNewImpl"));
    }
+
+   // Note: this definition exists only to workround the Mockito uncast warning in the test below
+   interface GenericIntegerConsumer extends Consumer<Integer> {}
+
    @MethodSource( "getMonitorNotificationServiceImplementations" )
    @ParameterizedTest
-   public void testMonitorDisconnectionBehaviour( String monitorNotificationServiceImpl ) throws InterruptedException
+   void testMonitorDisconnectionBehaviour( String monitorNotificationServiceImpl ) throws InterruptedException
    {
       final Properties contextProperties = new Properties();
       contextProperties.setProperty( "CA_MONITOR_NOTIFIER", monitorNotificationServiceImpl );
@@ -516,11 +499,11 @@ public class ChannelTest
          final int defautAdcValue = channel.get();
 
          // Change the PV value to something else, allow the change to propagate
-         // then verify that the expected value was receved.
+         // then verify that the expected value was received.
          final int testValue = 99;
          channel.put( testValue );
-         final Consumer<Integer> consumer = Mockito.mock( Consumer.class );
-         final Monitor<Integer> monitor = channel.addValueMonitor( consumer );
+         final Consumer<Integer> consumer = Mockito.mock( GenericIntegerConsumer.class );
+         channel.addValueMonitor( consumer );
          Thread.sleep( 1_000 );
          Mockito.verify( consumer, Mockito.times( 1) ).accept( testValue );
 
@@ -539,9 +522,8 @@ public class ChannelTest
       }
    }
 
-
    @Test
-   public void testMonitors() throws Throwable
+   void testMonitors() throws Throwable
    {
 
       try ( Channel<Integer> channel = context.createChannel ("counter", Integer.class) )
@@ -591,26 +573,23 @@ public class ChannelTest
       }
    }
 
-   @Test
-   public void testGenericChannel() throws Throwable
+   @ParameterizedTest
+   @ValueSource( strings = { "true", "false" } )
+   void testGenericChannel( String asyncFlag ) throws Throwable
    {
-
       try ( Channel<Object> channel = context.createChannel ("adc01", Object.class) )
       {
-         assertNotNull (channel);
+         assertNotNull( channel );
 
          channel.connect ();
 
-         internalTestValuePutAndGet (false);
-         internalTestValuePutAndGet (true);
-
-         internalTestMetaPutAndGet (false);
-         internalTestMetaPutAndGet (true);
+         internalTestValuePutAndGet( asyncFlag );
+         internalTestMetaPutAndGet( asyncFlag );
       }
    }
 
    @Test
-   public void testLargeArray() throws Throwable
+   void testLargeArray() throws Throwable
    {
 
       tearDown ();
