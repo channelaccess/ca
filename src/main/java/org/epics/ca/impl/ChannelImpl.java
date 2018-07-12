@@ -447,9 +447,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       final TCPTransport transport = connectionRequiredCheck ();
 
       final MonitorNotificationServiceFactory notifierFactory = context.getMonitorNotificationFactory();
-      final MonitorNotificationService<? super T> notifier  = notifierFactory.getServiceForConsumer(handler );
+      final MonitorNotificationService<T> notifier = notifierFactory.<T> getServiceForConsumer( handler );
 
-      return new MonitorRequest<T> (this, transport, typeSupport, mask, notifier, handler );
+      return new MonitorRequest<T>(this, transport, typeSupport, mask, notifier, handler );
    }
 
    @SuppressWarnings( "rawtypes" )
@@ -466,7 +466,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       @SuppressWarnings( "unchecked" )
       final TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>) getTypeSupport (clazz, channelType);
       final MonitorNotificationServiceFactory notifierFactory = context.getMonitorNotificationFactory();
-      final MonitorNotificationService<? super MT> notifier  = notifierFactory.getServiceForConsumer(handler );
+      final MonitorNotificationService<MT> notifier  = notifierFactory.<MT>getServiceForConsumer( handler );
 
       return new MonitorRequest<MT> (this, transport, metaTypeSupport, mask, notifier, handler );
    }
