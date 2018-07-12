@@ -9,9 +9,11 @@ package org.epics.ca.impl.monitor;
 
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.impl.TypeSupports;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,9 +30,10 @@ class BlockingQueueMonitorNotificationServiceImpl<T> implements MonitorNotificat
    private final Logger logger = LoggerFactory.getLogger( BlockingQueueMonitorNotificationServiceImpl.class);
 
    private final ThreadPoolExecutor executor;
-   private final Consumer<T> consumer;
-   private final AtomicReference<Holder<T>> latestValue = new AtomicReference<>();
+   private final Consumer<? super T> consumer;
 
+   private final AtomicReference<Holder<T>> latestValue = new AtomicReference<>();
+   private T deserializedValue;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -50,42 +53,50 @@ class BlockingQueueMonitorNotificationServiceImpl<T> implements MonitorNotificat
     * @throws NullPointerException if the executor was null.
     * @throws NullPointerException if the consumer was null.
     */
-   BlockingQueueMonitorNotificationServiceImpl( ThreadPoolExecutor executor, Consumer<T> consumer  )
+   BlockingQueueMonitorNotificationServiceImpl( ThreadPoolExecutor executor, Consumer<? super T> consumer  )
    {
       this.executor = Validate.notNull( executor );
       this.consumer = Validate.notNull( consumer );
+      this.deserializedValue = null;
    }
 
 /*- Public methods -----------------------------------------------------------*/
 
    /**
     * {@inheritDoc}
-    *
-    * @param value the new value.
+    */
+   @Override
+   public void publish( ByteBuffer dataBuffer, TypeSupports.TypeSupport<T> typeSupport, int dataCount )
+   {
+      // The deserializer is optimised to reuse the same data structure thus
+      // avoiding the cost of object creation
+      deserializedValue = typeSupport.deserialize( dataBuffer, deserializedValue , dataCount );
+      publish( deserializedValue );
+   }
+
+   /**
+    * {@inheritDoc}
     */
    @Override
    public void publish( T value )
    {
-      //Validate.notNull( value );
+      // This may or may not be appropriate depending on the contract
+      // Validate.notNull( value );
 
-      if ( latestValue.getAndSet( new Holder( value ) ) == null )
+      if ( latestValue.getAndSet( new Holder<>( value ) ) == null )
       {
-         //logger.info( "notifyConsumer: Queueing Task for consumer '{}' on work queue '{}'. Latest value is: {}", consumer, executor.getQueue().hashCode(), value );
-         final MonitorNotificationTask<T> task = new MonitorNotificationTask<>(consumer, this );
+         logger.debug( "notifyConsumer: Queueing Task for consumer '{}' on work queue '{}'. Latest value is: {}", consumer, executor.getQueue().hashCode(), value );
+         final MonitorNotificationTask<T> task = new MonitorNotificationTask<>( consumer, this );
          executor.submit( task );
       }
       else
       {
-         //logger.info( "notifyConsumer: Update Task is already pending - latest value now set to {}", value );
+         logger.debug( "notifyConsumer: Update Task is already pending - latest value now set to {}", value );
       }
    }
 
    /**
     * {@inheritDoc}
-    * <p>
-    * The implementation here returns the latest published value.
-    *
-    * @return
     */
    @Override
    public T get()
@@ -110,19 +121,24 @@ class BlockingQueueMonitorNotificationServiceImpl<T> implements MonitorNotificat
     * this object's lifetime.
     */
    @Override
-   public void dispose() {}
-
-
-   @Override
-   public void disposeAllResources()
+   public void dispose()
    {
 
    }
 
    /**
-    *
+    * {@inheritDoc}
     */
-   public void shutdownAll()
+   @Override
+   public void disposeAllResources()
+   {
+      shutdownAll();
+   }
+
+
+/*- Private methods ----------------------------------------------------------*/
+
+   private void shutdownAll()
    {
       logger.info ("Shutting down this executor" );
       executor.shutdown();
@@ -136,14 +152,13 @@ class BlockingQueueMonitorNotificationServiceImpl<T> implements MonitorNotificat
       }
    }
 
-
-
-/*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/
 
+   // Note: this class is only needed if the service needs the ability to
+   // publish null values.
    static class Holder<T>
    {
-      T value;
+      final T value;
 
       Holder( T value )
       {
