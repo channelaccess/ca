@@ -28,8 +28,7 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -540,22 +539,23 @@ class TCPTransportTest
    private static Stream<Arguments> getArgumentsForCaLatencyTest()
    {
       return Stream.of ( Arguments.of( Level.FINEST, 100 ),
-                         Arguments.of( Level.INFO, 5 ),
-                         Arguments.of( Level.INFO, 5 ),
-                         Arguments.of( Level.INFO, 5 ),
-                         Arguments.of( Level.INFO, 5 ),
-                         Arguments.of( Level.INFO, 5 ),
-                         Arguments.of( Level.INFO, 5 ) );
+                         Arguments.of( Level.INFO, 1 ),
+                         Arguments.of( Level.INFO, 1 ),
+                         Arguments.of( Level.INFO, 1 ),
+                         Arguments.of( Level.INFO, 1 ),
+                         Arguments.of( Level.INFO, 1 ),
+                         Arguments.of( Level.INFO, 1 ) );
    }
    @MethodSource( "getArgumentsForCaLatencyTest" )
    @ParameterizedTest
-   void testCaReadLatency( Level debugLevel, int timeoutInMilliseconds )
+   void testCaReadLatency( Level debugLevel, int maximumExecutionTimeInMilliseconds )
    {
       // Set the required debug level
       setGlobalLoggingLevel( debugLevel );
 
-      // IF this test takes more than 50ms then something has gone very wrong with the processing !
-      assertTimeoutPreemptively( Duration.ofMillis( timeoutInMilliseconds ), () ->
+      // If this test takes more than ten times longer than the expected execution time
+      // then kill the job
+      long executionTimeInMicroseconds = assertTimeoutPreemptively( Duration.ofMillis( 10 * maximumExecutionTimeInMilliseconds ), () ->
       {
          // We will use CA_PROTO_READ_NOTIFY with an element count of 1 and a long payload as an example
          final short cmdVersion = 0x000F;
@@ -603,8 +603,8 @@ class TCPTransportTest
          // Go ahead and trigger the processing which reads data from the socket.
          final StopWatch s = StopWatch.createStarted();
          transport.handleEvent( selectionKey );
-         final long elapsedTime = s.getTime(TimeUnit.MICROSECONDS);
-         logger.log( Level.INFO,String.format( "Transport latency time was '%.3f' ", (float) elapsedTime / 1000) + "ms" );
+         final long elapsedTimeInMicroseconds = s.getTime(TimeUnit.MICROSECONDS);
+         logger.log( Level.INFO,String.format( "Transport latency time was '%.3f' ", (float) elapsedTimeInMicroseconds / 1000) + "ms" );
 
          verify( handler ).handleResponse( captor1.capture(), captor2.capture(), captor3.capture(), captor4.capture() );
 
@@ -633,7 +633,15 @@ class TCPTransportTest
 
          // Verify no further interactions take place
          verifyNoMoreInteractions(handler);
+
+         // Return the execution time
+         return elapsedTimeInMicroseconds;
       } );
+
+      final int maximumExecutionTimeInMicroseconds = maximumExecutionTimeInMilliseconds * 1000;
+      assertTrue(executionTimeInMicroseconds < maximumExecutionTimeInMicroseconds,
+                 "Actual Execution Time was: "  + String.valueOf( executionTimeInMicroseconds ) + "us. " +
+                          "Maximum Execution Time was: " + String.valueOf( maximumExecutionTimeInMicroseconds ) + "us" );
    }
 
    private void setGlobalLoggingLevel( Level level )
