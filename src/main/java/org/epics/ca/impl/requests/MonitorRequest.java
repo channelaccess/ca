@@ -14,23 +14,24 @@ import org.epics.ca.impl.TypeSupports.TypeSupport;
 import org.epics.ca.impl.monitor.MonitorNotificationService;
 
 /**
- * CA monitor.
+ * CA monitor for Type T.
+ * @param <T> the type of data which the monitor will transport.
  */
 public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
 {
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger (MonitorRequest.class.getName ());
+   private static final Logger logger = Logger.getLogger ( MonitorRequest.class.getName ());
 
    /**
     * Context.
     */
-   protected final ContextImpl context;
+   private final ContextImpl context;
 
    /**
     * I/O ID given by the context when registered.
     */
-   protected final int ioid;
+   private final int ioid;
 
    /**
     * Channel.
@@ -40,17 +41,17 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
    /**
     * Type support.
     */
-   protected final TypeSupport<T> typeSupport;
+   private final TypeSupport<T> typeSupport;
 
    /**
     * Monitor mask.
     */
-   protected final int mask;
+   private final int mask;
 
    /**
     * Reference to an object which will push out notifications to the Consumer.
     */
-   protected MonitorNotificationService notifier;
+   private MonitorNotificationService<T> notifier;
 
    /**
     * Reference to an object which will consume monitor update events.
@@ -70,13 +71,13 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
     * @param notifier the monitor notification service.
     * @param consumer the consumer to be informed of monitor update events.
     */
-   public MonitorRequest( ChannelImpl<?> channel, Transport transport, TypeSupport<T> typeSupport, int mask, MonitorNotificationService notifier, Consumer<? super T> consumer  )
+   public MonitorRequest( ChannelImpl<?> channel, Transport transport, TypeSupport<T> typeSupport, int mask, MonitorNotificationService<T> notifier, Consumer<? super T> consumer  )
    {
       this.channel = Validate.notNull( channel );
       this.typeSupport = Validate.notNull(typeSupport );
       this.mask = mask;
-      this.notifier = Validate.notNull(notifier );
-      this.consumer = Validate.notNull(consumer );
+      this.notifier = Validate.notNull( notifier );
+      this.consumer = Validate.notNull( consumer );
 
       context = transport.getContext ();
       ioid = context.registerResponseRequest (this);
@@ -95,14 +96,12 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
    public void response( int status, short dataType, int dataCount, ByteBuffer dataPayloadBuffer )
    {
       Validate.notNull( dataPayloadBuffer );
+
       Status caStatus = Status.forStatusCode (status);
       if ( caStatus == Status.NORMAL )
       {
-         T value = typeSupport.deserialize (dataPayloadBuffer, null, dataCount);
-
-         // Publish the new value to the consumer. Or simply update the value that will
-         // be sent if a notification is already scheduled.
-         notifier.publish( value );
+         // Publish the new value to the consumer.
+         notifier.publish( dataPayloadBuffer, typeSupport, dataCount );
       }
       else
       {
@@ -153,9 +152,12 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       }
       else if ( status == Status.DISCONN )
       {
+         logger.finest( "Channel disconnected." );
          // The old Disruptor-based implementation pushes out a null here,
-         // but only if there is room in the buffer. If there is no room
-         // in the buffer the event was quietly dropped.
+         // but only if there was room in the buffer. If there was no room
+         // in the buffer the event was quietly dropped. Since this feature
+         // was not documented and this behaviour is somewhat unintuitive
+         // for the moment the feature has been dropped.
          // notifier.publish( null );
       }
       else
