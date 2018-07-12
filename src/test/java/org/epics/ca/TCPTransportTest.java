@@ -2,6 +2,7 @@ package org.epics.ca;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.impl.*;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -17,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +44,16 @@ class TCPTransportTest
 
    private static Stream<Arguments> getDefaultDebugLevelForTests()
    {
-      // Change thge setting below for the required debug level.
+      // Change the setting below for the required debug level.
       // This will be used for all tests except the CA Latency Test
       return Stream.of ( Arguments.of( Level.INFO ) );
+   }
+
+   @BeforeAll
+   static void beforeAll()
+   {
+      System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s %5$s%6$s%n");
+      Locale.setDefault( Locale.ROOT );
    }
 
    @BeforeEach
@@ -530,7 +539,7 @@ class TCPTransportTest
    // Also the first test always runs slower
    private static Stream<Arguments> getArgumentsForCaLatencyTest()
    {
-      return Stream.of ( Arguments.of( Level.INFO, 50 ),
+      return Stream.of ( Arguments.of( Level.FINEST, 100 ),
                          Arguments.of( Level.INFO, 5 ),
                          Arguments.of( Level.INFO, 5 ),
                          Arguments.of( Level.INFO, 5 ),
@@ -595,7 +604,7 @@ class TCPTransportTest
          final StopWatch s = StopWatch.createStarted();
          transport.handleEvent( selectionKey );
          final long elapsedTime = s.getTime(TimeUnit.MICROSECONDS);
-         logger.log( Level.INFO, String.format( "Transport latency time was '%.3f' ", (float) elapsedTime / 1000) + " ms");
+         logger.log( Level.INFO,String.format( "Transport latency time was '%.3f' ", (float) elapsedTime / 1000) + "ms" );
 
          verify( handler ).handleResponse( captor1.capture(), captor2.capture(), captor3.capture(), captor4.capture() );
 
@@ -633,7 +642,7 @@ class TCPTransportTest
       rootLogger.setLevel( level );
       for ( Handler h : rootLogger.getHandlers () )
       {
-         h.setLevel (level);
+         h.setLevel( level );
       }
    }
 }
