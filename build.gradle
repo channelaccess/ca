@@ -6,14 +6,22 @@ apply plugin: 'signing'
 group = 'org.epics'
 archivesBaseName = 'ca'
 sourceCompatibility = 10
+targetCompatibility = 10
+
 version = '1.1.0-SNAPSHOT'
 
-ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+ext.isReleaseVersion = ! version.endsWith("SNAPSHOT")
+
+compileJava {
+    // The following options can be enabled for deeper introspection into the codebase...
+    //options.compilerArgs << '-Xlint:unchecked'
+    //options.compilerArgs << '-Xlint:deprecation'
+}
 
 jar {
     manifest {
         attributes 'Implementation-Title': 'Java EPICS CA',
-                'Implementation-Version': version
+                   'Implementation-Version': version
     }
 }
 
@@ -45,7 +53,7 @@ dependencies {
     compile 'com.lmax:disruptor:3.4.2'
     compile 'com.lmax:disruptor:3.4.2:javadoc'
 
-    // Needed for parameter validation (als0 the stopwatch timing class
+    // Needed for parameter validation (also the stopwatch timing class
     // that is used in testing).
     compile 'org.apache.commons:commons-lang3:3.7'
 
@@ -91,9 +99,8 @@ task sourcesJar(type: Jar) {
     from sourceSets.main.allSource
 }
 
-
 task fatJar(type: Jar) {
-    classifier 'all'
+    classifier = 'all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
@@ -128,31 +135,31 @@ uploadArchives {
             }
 
             pom.project {
-                name 'Example Application'
-                packaging 'jar'
+                name = 'Example Application'
+                packaging = 'jar'
                 // optionally artifactId can be defined here
-                description 'Java CA client implementation using a new API (not using JCA).'
+                description = 'Java CA client implementation using a new API (not using JCA).'
                 url = 'https://github.com/channelaccess/ca'
                 licenses {
                     license {
-                        name 'GNU General Public License 3.0'
-                        url ='http://www.gnu.org/licenses/gpl.txt'
-                        distribution 'repo'
+                        name = 'GNU General Public License 3.0'
+                        url = 'http://www.gnu.org/licenses/gpl.txt'
+                        distribution = 'repo'
                     }
                 }
 
                 developers {
                     developer {
-                        name 'Simon Ebner'
-                        email 'daq@psi.ch'
-                        organization 'Paul Scherrer Institute'
+                        name = 'Simon Ebner'
+                        email = 'daq@psi.ch'
+                        organization = 'Paul Scherrer Institute'
                     }
                 }
 
                 scm {
-                    connection 'scm:git:https://github.com/channelaccess/ca.git'
-                    developerConnection 'scm:git:https://github.com/channelaccess/ca.git'
-                    url 'https://github.com/channelaccess/ca'
+                    connection = 'scm:git:https://github.com/channelaccess/ca.git'
+                    developerConnection = 'scm:git:https://github.com/channelaccess/ca.git'
+                    url = 'https://github.com/channelaccess/ca'
                 }
             }
         }
