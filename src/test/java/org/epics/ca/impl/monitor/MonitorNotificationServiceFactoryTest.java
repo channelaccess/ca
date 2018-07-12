@@ -13,11 +13,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class MonitorNotificationServiceFactoryTest
 {
    // Provides a possible method source to iterate test over all service implementations
-   static Stream<Arguments> getMonitorNotificationServiceImplementations()
+   private static Stream<Arguments> getMonitorNotificationServiceImplementations()
    {
       return Stream.of ( Arguments.of( "SingleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
                          Arguments.of( "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl" ),
-                         Arguments.of( "DisruptorMonitorNotificationServiceImpl" ) );
+                         Arguments.of( "DisruptorMonitorNotificationServiceOldImpl" ),
+                         Arguments.of( "DisruptorMonitorNotificationServiceNewImpl" ) );
    }
 
    @Test
