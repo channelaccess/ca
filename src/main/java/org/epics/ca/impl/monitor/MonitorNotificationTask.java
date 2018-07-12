@@ -18,7 +18,7 @@ import java.util.function.Supplier;
  * Runnable for transferring a monitor notification from a supplier to a consumer.
  *
  * @param <T> the type of the object to transfer. May sometimes refer to
- *  monitor metadata or simply the most recent monitor value.
+ *           monitor metadata or simply the most recent monitor value.
  */
 @Immutable
 class MonitorNotificationTask<T> implements Runnable
@@ -29,8 +29,8 @@ class MonitorNotificationTask<T> implements Runnable
 
    private final Logger logger = LoggerFactory.getLogger( MonitorNotificationTask.class );
 
-   private final Supplier<T> valueSupplier;
-   private final Consumer<T> valueConsumer;
+   private final Supplier<? extends T> valueSupplier;
+   private final Consumer<? super T> valueConsumer;
 
 
 /*- Main ---------------------------------------------------------------------*/
@@ -38,12 +38,12 @@ class MonitorNotificationTask<T> implements Runnable
 
    /**
     * Constructs a new instance which when run will transfer a single value
-    * object of type T from the supplier to the consumer.
+    * object of type T from the Supplier to the Consumer.
     *
     * @param valueConsumer the consumer.
     * @param valueSupplier  the supplier.
     */
-    MonitorNotificationTask( Consumer<T> valueConsumer, Supplier<T> valueSupplier )
+    MonitorNotificationTask( Consumer<? super T> valueConsumer, Supplier<? extends T> valueSupplier )
     {
        this.valueConsumer = Validate.notNull( valueConsumer );
        this.valueSupplier = Validate.notNull( valueSupplier );
@@ -61,13 +61,13 @@ class MonitorNotificationTask<T> implements Runnable
       try
       {
          final T latestValue = valueSupplier.get();
-         //logger.info( "Notifying consumer {} with value: {}... ", valueConsumer, latestValue );
+         logger.debug( "Notifying consumer {} with value: {}... ", valueConsumer, latestValue );
          valueConsumer.accept(latestValue);
-         //logger.info( "Notification completed ok" );
+         logger.debug( "Notification completed ok" );
       }
       catch ( RuntimeException ex )
       {
-         logger.info( "Unexpected exception during transfer> Message was: {} ", ex.toString() );
+         logger.warn( "Unexpected exception during transfer> Message was: {} ", ex.toString() );
          ex.printStackTrace();
       }
    }
