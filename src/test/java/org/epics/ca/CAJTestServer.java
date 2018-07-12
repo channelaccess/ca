@@ -46,7 +46,7 @@ public class CAJTestServer
    /**
     * Register process variables.
     *
-    * @param server
+    * @param server the server.
     */
    private void registerProcessVariables( DefaultServerImpl server )
    {
@@ -57,17 +57,17 @@ public class CAJTestServer
       // PV supporting all GR/CTRL info
       MemoryProcessVariable mpv = new MemoryProcessVariable ("adc01", null, DBR_Double.TYPE, new double[] { 12.08, 3.11 });
 
-      mpv.setUpperDispLimit (new Double (10));
-      mpv.setLowerDispLimit (new Double (-10));
+      mpv.setUpperDispLimit( 10d );
+      mpv.setLowerDispLimit( -10d );
 
-      mpv.setUpperAlarmLimit (new Double (9));
-      mpv.setLowerAlarmLimit (new Double (-9));
+      mpv.setUpperAlarmLimit( 9d );
+      mpv.setLowerAlarmLimit( -9d );
 
-      mpv.setUpperCtrlLimit (new Double (8));
-      mpv.setLowerCtrlLimit (new Double (-8));
+      mpv.setUpperCtrlLimit( 8d );
+      mpv.setLowerCtrlLimit( -8d );
 
-      mpv.setUpperWarningLimit (new Double (7));
-      mpv.setLowerWarningLimit (new Double (-7));
+      mpv.setUpperWarningLimit( 7d );
+      mpv.setLowerWarningLimit( -7d );
 
       mpv.setUnits ("units");
       mpv.setPrecision ((short) 3);
@@ -109,7 +109,7 @@ public class CAJTestServer
    /**
     * Destroy JCA server  context.
     */
-   public void destroy()
+   void destroy()
    {
 
       try
@@ -127,12 +127,10 @@ public class CAJTestServer
    }
 
 
-   void execute()
+   private void execute()
    {
-
       try
       {
-
          // initialize context
          initialize ();
 
@@ -161,7 +159,7 @@ public class CAJTestServer
 
    }
 
-   public void runInSeparateThread()
+   void runInSeparateThread()
    {
       try
       {
