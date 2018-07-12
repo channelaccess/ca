@@ -353,7 +353,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Initialize context logger.
     *
-    * @param properties the properties to be used for the logger.
+    * @param properties the properties to be used for the logger.logge
     */
    protected void initializeLogger( Properties properties )
    {
