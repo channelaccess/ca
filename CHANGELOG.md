@@ -5,7 +5,8 @@ This log describes the functionality of tagged versions within the repository.
 # Tags  
 * [1.1.0-RELEASE](https://github.com/channelaccess/ca/releases/tag/1.1.0)
   ###### Overview:
-  - This release fixes the scalability bottleneck which prevented the use of more than ~4000 monitors.
+  - This release provides an initial fix for the scalability bottleneck which prevented the use of more than ~4000 monitors
+    in the Disruptor implementation. 
   - Additionally, various cleanups have been made with the intention of making this product more maintainable in the future.
   ###### Change List: 
   - [Issue #23](https://github.com/channelaccess/ca/issues/23) Documentation Improvements.
@@ -34,4 +35,5 @@ This log describes the functionality of tagged versions within the repository.
   - [Issue #32](https://github.com/channelaccess/ca/issues/32) Add support for uploading builds to PSI artifactory.
   - [Issue #33](https://github.com/channelaccess/ca/issues/33) Cleanup warnings detected by IntelliJ.
   - [Issue #34](https://github.com/channelaccess/ca/issues/34) Provide direct access to socket ByteBuffer through MonitorNotifcationService interface.
- 
+  - [Issue #35](https://github.com/channelaccess/ca/issues/35) Revert Java buildCompatibility target to Java 8.
+  - [Issue #36](https://github.com/channelaccess/ca/issues/35) Revert to java.util.logging throughout.
