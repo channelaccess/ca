@@ -12,6 +12,8 @@ version = '1.1.0-SNAPSHOT'
 
 ext.isReleaseVersion = ! version.endsWith("SNAPSHOT")
 
+ext.deployPSI = 'false'
+
 compileJava {
     // The following options can be enabled for deeper introspection into the codebase...
     //options.compilerArgs << '-Xlint:unchecked'
@@ -126,12 +128,16 @@ uploadArchives {
             snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
                 authentication(userName: ossrhUsername, password: ossrhPassword)
             }
-            repository(        url: "https://artifacts.psi.ch/artifactory/libs-releases-local") {
-                authentication(userName: mavenUser, password: mavenPassword)
-            }
 
-            snapshotRepository(url: "https://artifacts.psi.ch/artifactory/libs-snapshots-local") {
-                authentication(userName: mavenUser, password: mavenPassword)
+            if (project.hasProperty( "deployPSI ")) {
+
+                repository(url: "https://artifacts.psi.ch/artifactory/libs-releases-local") {
+                    authentication(userName: mavenUser, password: mavenPassword)
+                }
+
+                snapshotRepository(url: "https://artifacts.psi.ch/artifactory/libs-snapshots-local") {
+                    authentication(userName: mavenUser, password: mavenPassword)
+                }
             }
 
             pom.project {
