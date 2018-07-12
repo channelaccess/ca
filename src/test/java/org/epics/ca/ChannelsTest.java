@@ -1,5 +1,10 @@
 package org.epics.ca;
 
+import org.epics.ca.annotation.CaChannel;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,30 +12,17 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-
-import org.epics.ca.Channel;
-import org.epics.ca.ChannelDescriptor;
-import org.epics.ca.Channels;
-import org.epics.ca.ConnectionState;
-import org.epics.ca.Context;
-import org.epics.ca.annotation.CaChannel;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-public class ChannelsTest
+class ChannelsTest
 {
-   static final double DELTA = 1e-10;
-
    private Context context;
    private CAJTestServer server;
 
    @BeforeEach
-   protected void setUp() throws Exception
+   void setUp()
    {
       server = new CAJTestServer ();
       server.runInSeparateThread ();
@@ -38,14 +30,14 @@ public class ChannelsTest
    }
 
    @AfterEach
-   protected void tearDown() throws Exception
+   void tearDown()
    {
       context.close ();
       server.destroy ();
    }
 
    @Test
-   public void testWait()
+   void testWait()
    {
       try ( Channel<Integer> channel1 = context.createChannel ("simple", Integer.class) )
       {
@@ -72,17 +64,17 @@ public class ChannelsTest
    }
 
    @Test
-   public void testCreateChannels()
+   void testCreateChannels()
    {
       List<ChannelDescriptor<?>> descriptors = new ArrayList<> ();
-      descriptors.add (new ChannelDescriptor<String> ("simple", String.class));
-      descriptors.add (new ChannelDescriptor<Double> ("adc01", Double.class));
+      descriptors.add (new ChannelDescriptor<> ("simple", String.class));
+      descriptors.add (new ChannelDescriptor<> ("adc01", Double.class));
       List<Channel<?>> channels = Channels.create (context, descriptors);
-      assertTrue (channels.size () == 2);
+      assertEquals (2, channels.size () );
    }
 
    @Test
-   public void testAnnotations()
+   void testAnnotations()
    {
       AnnotatedClass test = new AnnotatedClass ();
 
@@ -92,16 +84,15 @@ public class ChannelsTest
       test.getDoubleChannel ().put (1.0);
       test.getDoubleChannel ().put (10.0);
       // Use of startsWith as it is a double channel and will return something like 10.0 or 10.000 depending on the precision
-      assertTrue (test.getStringChannel ().get ().startsWith ("10"));
-
-      assertTrue (test.getStringChannels ().size () == 2);
+      assertTrue( test.getStringChannel ().get ().startsWith ("10") );
+      assertEquals(2, test.getStringChannels ().size () );
 
       // Close annotated channels
       Channels.close (test);
    }
 
    @Test
-   public void testAnnotationsMacro()
+   void testAnnotationsMacro()
    {
       Map<String, String> macros = new HashMap<> ();
       macros.put ("MACRO1", "01");
@@ -129,17 +120,17 @@ public class ChannelsTest
       @CaChannel( name = { "adc01", "simple" }, type = String.class )
       private List<Channel<String>> stringChannels;
 
-      public Channel<Double> getDoubleChannel()
+      Channel<Double> getDoubleChannel()
       {
          return doubleChannel;
       }
 
-      public Channel<String> getStringChannel()
+      Channel<String> getStringChannel()
       {
          return stringChannel;
       }
 
-      public List<Channel<String>> getStringChannels()
+      List<Channel<String>> getStringChannels()
       {
          return stringChannels;
       }
@@ -151,7 +142,7 @@ public class ChannelsTest
       @CaChannel( name = "adc${MACRO1}", type = Double.class )
       private Channel<Double> doubleChannel;
 
-      public Channel<Double> getDoubleChannel()
+      Channel<Double> getDoubleChannel()
       {
          return doubleChannel;
       }
