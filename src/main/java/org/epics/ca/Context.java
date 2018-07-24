@@ -14,28 +14,26 @@ public class Context implements AutoCloseable
       EPICS_CA_MAX_ARRAY_BYTES
    }
 
-   ;
-
    private final ContextImpl delegate;
 
    public Context()
    {
-      this (System.getProperties ());
+      this (System.getProperties() );
    }
 
    public Context( Properties properties )
    {
-      delegate = new ContextImpl (properties);
+      delegate = new ContextImpl( properties );
    }
 
    public <T> Channel<T> createChannel( String channelName, Class<T> channelType )
    {
-      return delegate.createChannel (channelName, channelType, Constants.CHANNEL_PRIORITY_DEFAULT);
+      return delegate.createChannel( channelName, channelType, Constants.CHANNEL_PRIORITY_DEFAULT);
    }
 
    public <T> Channel<T> createChannel( String channelName, Class<T> channelType, int priority )
    {
-      return delegate.createChannel (channelName, channelType, priority);
+      return delegate.createChannel( channelName, channelType, priority);
    }
 
    @Override
