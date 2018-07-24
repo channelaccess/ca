@@ -1,7 +1,10 @@
+/*- Package Declaration ------------------------------------------------------*/
 package org.epics.ca;
 
+/*- Imported packages --------------------------------------------------------*/
+
 import org.epics.ca.data.*;
-import org.epics.ca.impl.BroadcastTransport;
+import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,10 +15,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,11 +26,18 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
+
 /**
  * @author msekoranja
  */
 class ChannelTest
 {
+
+/*- Public attributes --------------------------------------------------------*/
+/*- Private attributes -------------------------------------------------------*/
+
    // Get Logger
    private static final Logger logger = Logger.getLogger( ChannelTest.class.getName () );
 
@@ -39,6 +46,10 @@ class ChannelTest
    private Context context;
    private CAJTestServer server;
    private static final int TIMEOUT_SEC = 5;
+
+/*- Main ---------------------------------------------------------------------*/
+/*- Constructor --------------------------------------------------------------*/
+/*- Public methods -----------------------------------------------------------*/
 
    @BeforeAll
    static void beforeAll()
@@ -56,13 +67,6 @@ class ChannelTest
       context = new Context ( prop );
    }
 
-   @Test()
-   void logTest()
-   {
-      logger.log(Level.FINEST, "My msg is: %s", "abc" );
-   }
-
-
    @AfterEach
    void tearDown()
    {
@@ -70,10 +74,16 @@ class ChannelTest
       server.destroy ();
    }
 
+   @Test()
+   void logTest()
+   {
+      logger.log(Level.FINEST, "My msg is: %s", "abc" );
+   }
+
+
    @Test
    void testConnect() throws Throwable
    {
-
       try ( Channel<Double> channel = context.createChannel ("no_such_channel_test", Double.class) )
       {
          assertNotNull (channel);
@@ -113,13 +123,11 @@ class ChannelTest
          channel.connectAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
          assertEquals (ConnectionState.CONNECTED, channel.getConnectionState ());
       }
-
    }
 
    @Test
    void testConnectionListener() throws Throwable
    {
-
       try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
       {
          assertNotNull (channel);
@@ -154,7 +162,6 @@ class ChannelTest
 
          assertEquals (1, connectedCount.get ());
          assertEquals (0, disconnectedCount.get ());
-
          assertEquals (0, unregisteredEventCount.get ());
 
          channel.close ();
@@ -173,7 +180,6 @@ class ChannelTest
    @Test
    void testAccessRightsListener() throws Throwable
    {
-
       try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
       {
          assertNotNull (channel);
@@ -202,16 +208,13 @@ class ChannelTest
          Thread.sleep (TIMEOUT_SEC * 1000);
 
          assertEquals (1, aclCount.get ());
-
          assertEquals (0, unregsiteredEventCount.get ());
-
          channel.close ();
 
          // we need to sleep here to catch any possible multiple/invalid events
          Thread.sleep (TIMEOUT_SEC * 1000);
 
          assertEquals (1, aclCount.get ());
-
          assertEquals (0, unregsiteredEventCount.get ());
       }
    }
@@ -219,7 +222,6 @@ class ChannelTest
    @Test
    void testProperties() throws Throwable
    {
-
       try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
       {
          channel.connectAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
@@ -237,6 +239,184 @@ class ChannelTest
          assertNotNull( nativeType);
          assertEquals(Double.class, nativeType);
       }
+   }
+
+   // Note: this definition exists only to workaround the Mockito uncast warning in the test below
+   interface GenericIntegerConsumer extends Consumer<Integer> {}
+
+   @MethodSource( "getArgumentsForTestMonitorNotificationServiceImplementations" )
+   @ParameterizedTest
+   void testMonitorDisconnectionBehaviour( String monitorNotificationServiceImpl ) throws InterruptedException
+   {
+      final Properties contextProperties = new Properties();
+      contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", monitorNotificationServiceImpl );
+      final Context mySpecialContext = new Context( contextProperties );
+
+      try ( Channel<Integer> channel = mySpecialContext.createChannel ("adc01", Integer.class) )
+      {
+         channel.addConnectionListener( (c,h) -> logger.log ( Level.INFO, String.format( "Channel '%s', new connection state is: '%s' ", c.getName(), c.getConnectionState() ) ) );
+
+         // Connect to some channel and get the default value (= value on creation) for the test PV
+         channel.connect();
+         final int defautAdcValue = channel.get();
+
+         // Change the PV value to something else, allow the change to propagate
+         // then verify that the expected value was received.
+         final int testValue = 99;
+         channel.put( testValue );
+         final Consumer<Integer> consumer = Mockito.mock( GenericIntegerConsumer.class );
+         channel.addValueMonitor( consumer );
+         Thread.sleep( 1_000 );
+         Mockito.verify( consumer, Mockito.times( 1) ).accept( testValue );
+
+         // Destroy the test server which will create a channel disconnection event.
+         // Verify that the monitor did not receive a new update
+         server.destroy();
+         Thread.sleep( 1_000 );
+         Mockito.verifyNoMoreInteractions( consumer );
+
+         // Now recreate the server and check that the monitor received an update with the default value
+         // for this PV
+         server = new CAJTestServer ();
+         server.runInSeparateThread ();
+         Thread.sleep( 1_000 );
+         Mockito.verify( consumer, Mockito.times( 1 ) ).accept( defautAdcValue );
+      }
+   }
+
+   @Test
+   void testMonitors() throws Throwable
+   {
+      try ( Channel<Integer> channel = context.createChannel ("counter", Integer.class) )
+      {
+         channel.connect ();
+         try
+         {
+            channel.addValueMonitor (null);
+            fail ("null handler accepted");
+         }
+         catch ( NullPointerException iae )
+         {
+            // ok
+         }
+
+         try
+         {
+            channel.addValueMonitor (( value ) -> {
+            }, 0);
+            fail ("empty mask accepted");
+         }
+         catch ( IllegalArgumentException iae )
+         {
+            // ok
+         }
+
+         // note: we accept currently non-valid masks to allow future/unstandard extensions
+         try ( Monitor<Integer> m = channel.addValueMonitor (( value ) -> {
+         }, Monitor.VALUE_MASK)
+         )
+         {
+            assertNotNull (m);
+         }
+
+         AtomicInteger monitorCount = new AtomicInteger ();
+         Monitor<Integer> m = channel.addValueMonitor (( value ) -> monitorCount.incrementAndGet (), Monitor.VALUE_MASK);
+         assertNotNull (m);
+         Thread.sleep (TIMEOUT_SEC * 1000);
+         m.close ();
+         m.close ();
+         int monitors = monitorCount.get ();
+         assertTrue (monitors >= TIMEOUT_SEC); // 1 + TIMEOUT_SEC (where one can be missed)
+         Thread.sleep (TIMEOUT_SEC * 1000);
+         assertEquals (monitors, monitorCount.get ());
+      }
+   }
+
+   @ParameterizedTest
+   @ValueSource( strings = { "true", "false" } )
+   void testGenericChannel( String asyncFlag ) throws Throwable
+   {
+      try ( Channel<Object> channel = context.createChannel ("adc01", Object.class) )
+      {
+         assertNotNull( channel );
+
+         channel.connect ();
+
+         internalTestValuePutAndGet( asyncFlag );
+         internalTestMetaPutAndGet( asyncFlag );
+      }
+   }
+
+   @Test
+   void testLargeArray() throws Throwable
+   {
+      tearDown ();
+
+      final String propName = com.cosylab.epics.caj.cas.CAJServerContext.class.getName () + ".max_array_bytes";
+      String oldValue = System.getProperty (propName);
+      System.setProperty (propName, String.valueOf (4 * 1024 * 1024 + 1024 + 32));
+      try
+      {
+         setUp ();
+
+         try ( Channel<int[]> channel = context.createChannel ("large", int[].class) )
+         {
+            channel.connect ();
+
+            int[] value = channel.getAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
+            assertNotNull (value);
+
+            final int LARGE_PRIME = 15485863;
+            for ( int i = 0; i < value.length; i++ )
+            {
+               assertEquals (i, value[ i ]);
+               value[ i ] += LARGE_PRIME;
+            }
+
+            Status putStatus = channel.putAsync (value).get (TIMEOUT_SEC, TimeUnit.SECONDS);
+            assertEquals (Status.NORMAL, putStatus);
+
+            value = channel.getAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
+            assertNotNull (value);
+
+            for ( int i = 0; i < value.length; i++ )
+               assertEquals (i + LARGE_PRIME, value[ i ]);
+         }
+      }
+      finally
+      {
+         // restore value
+         if ( oldValue == null )
+            System.clearProperty (propName);
+         else
+            System.setProperty (propName, oldValue);
+      }
+   }
+
+   @Test
+   void testGraphicEnum() throws Throwable
+   {
+      Alarm<Double> alarm = new Alarm<>();
+      alarm.setAlarmStatus (AlarmStatus.UDF_ALARM);
+      alarm.setAlarmSeverity (AlarmSeverity.INVALID_ALARM);
+
+      final String[] labels =
+            { "zero", "one", "two", "three", "four", "five", "six", "seven" };
+
+      internalTestGraphicEnum ("enum", Short.class, (short) 2, alarm, labels, false);
+      internalTestGraphicEnum ("enum", Short.class, (short) 3, alarm, labels, true);
+
+      internalTestGraphicEnum ("enum", short[].class, new short[] { 1, 2 }, alarm, labels, false);
+      internalTestGraphicEnum ("enum", short[].class, new short[] { 3, 4 }, alarm, labels, true);
+   }
+
+
+/*- Private methods ----------------------------------------------------------*/
+
+   private static Stream<Arguments> getArgumentsForTestMonitorNotificationServiceImplementations()
+   {
+      final List<String> serviceImpls = MonitorNotificationServiceFactory.getAllServiceImplementations();
+      return serviceImpls.stream().map(Arguments::of);
    }
 
    private static <T> boolean arrayEquals( T arr1, T arr2 ) throws Exception
@@ -464,188 +644,6 @@ class ChannelTest
       }
    }
 
-   @Test
-   void testGraphicEnum() throws Throwable
-   {
-      Alarm<Double> alarm = new Alarm<>();
-      alarm.setAlarmStatus (AlarmStatus.UDF_ALARM);
-      alarm.setAlarmSeverity (AlarmSeverity.INVALID_ALARM);
-
-      final String[] labels =
-            { "zero", "one", "two", "three", "four", "five", "six", "seven" };
-
-      internalTestGraphicEnum ("enum", Short.class, (short) 2, alarm, labels, false);
-      internalTestGraphicEnum ("enum", Short.class, (short) 3, alarm, labels, true);
-
-      internalTestGraphicEnum ("enum", short[].class, new short[] { 1, 2 }, alarm, labels, false);
-      internalTestGraphicEnum ("enum", short[].class, new short[] { 3, 4 }, alarm, labels, true);
-   }
-
-   // Provides a possible method source to iterate test over all service implementations
-   private static Stream<Arguments> getMonitorNotificationServiceImplementations()
-   {
-      return Stream.of(Arguments.of("SingleWorkerBlockingQueueMonitorNotificationServiceImpl"),
-                       Arguments.of("MultipleWorkerBlockingQueueMonitorNotificationServiceImpl"),
-                       Arguments.of("DisruptorMonitorNotificationServiceOldImpl"),
-                       Arguments.of("DisruptorMonitorNotificationServiceNewImpl"));
-   }
-
-   // Note: this definition exists only to workround the Mockito uncast warning in the test below
-   interface GenericIntegerConsumer extends Consumer<Integer> {}
-
-   @MethodSource( "getMonitorNotificationServiceImplementations" )
-   @ParameterizedTest
-   void testMonitorDisconnectionBehaviour( String monitorNotificationServiceImpl ) throws InterruptedException
-   {
-      final Properties contextProperties = new Properties();
-      contextProperties.setProperty( "CA_MONITOR_NOTIFIER", monitorNotificationServiceImpl );
-      final Context mySpecialContext = new Context( contextProperties );
-
-      try ( Channel<Integer> channel = mySpecialContext.createChannel ("adc01", Integer.class) )
-      {
-         channel.addConnectionListener( (c,h) -> logger.log ( Level.INFO, String.format( "Channel '%s', new connection state is: '%s' ", c.getName(), c.getConnectionState() ) ) );
-
-         // Connect to some channel and get the default value (= value on creation) for the test PV
-         channel.connect();
-         final int defautAdcValue = channel.get();
-
-         // Change the PV value to something else, allow the change to propagate
-         // then verify that the expected value was received.
-         final int testValue = 99;
-         channel.put( testValue );
-         final Consumer<Integer> consumer = Mockito.mock( GenericIntegerConsumer.class );
-         channel.addValueMonitor( consumer );
-         Thread.sleep( 1_000 );
-         Mockito.verify( consumer, Mockito.times( 1) ).accept( testValue );
-
-         // Destroy the test server which will create a channel disconnection event.
-         // Verify that the monitor did not receive a new update
-         server.destroy();
-         Thread.sleep( 1_000 );
-         Mockito.verifyNoMoreInteractions( consumer );
-
-         // Now recreate the server and check that the monitor received an update with the default value
-         // for this PV
-         server = new CAJTestServer ();
-         server.runInSeparateThread ();
-         Thread.sleep( 1_000 );
-         Mockito.verify( consumer, Mockito.times( 1 ) ).accept( defautAdcValue );
-      }
-   }
-
-   @Test
-   void testMonitors() throws Throwable
-   {
-
-      try ( Channel<Integer> channel = context.createChannel ("counter", Integer.class) )
-      {
-         channel.connect ();
-
-         try
-         {
-            channel.addValueMonitor (null);
-            fail ("null handler accepted");
-         }
-         catch ( NullPointerException iae )
-         {
-            // ok
-         }
-
-         try
-         {
-            channel.addValueMonitor (( value ) -> {
-            }, 0);
-            fail ("empty mask accepted");
-         }
-         catch ( IllegalArgumentException iae )
-         {
-            // ok
-         }
-
-         // note: we accept currently non-valid masks to allow future/unstandard extensions
-         try ( Monitor<Integer> m = channel.addValueMonitor (( value ) -> {
-         }, Monitor.VALUE_MASK)
-         )
-         {
-            assertNotNull (m);
-         }
-
-         AtomicInteger monitorCount = new AtomicInteger ();
-         Monitor<Integer> m = channel.addValueMonitor (( value ) -> monitorCount.incrementAndGet (), Monitor.VALUE_MASK);
-         assertNotNull (m);
-         Thread.sleep (TIMEOUT_SEC * 1000);
-         m.close ();
-         m.close ();
-         int monitors = monitorCount.get ();
-         assertTrue (monitors >= TIMEOUT_SEC); // 1 + TIMEOUT_SEC (where one can be missed)
-         Thread.sleep (TIMEOUT_SEC * 1000);
-         assertEquals (monitors, monitorCount.get ());
-
-      }
-   }
-
-   @ParameterizedTest
-   @ValueSource( strings = { "true", "false" } )
-   void testGenericChannel( String asyncFlag ) throws Throwable
-   {
-      try ( Channel<Object> channel = context.createChannel ("adc01", Object.class) )
-      {
-         assertNotNull( channel );
-
-         channel.connect ();
-
-         internalTestValuePutAndGet( asyncFlag );
-         internalTestMetaPutAndGet( asyncFlag );
-      }
-   }
-
-   @Test
-   void testLargeArray() throws Throwable
-   {
-
-      tearDown ();
-
-      final String propName = com.cosylab.epics.caj.cas.CAJServerContext.class.getName () + ".max_array_bytes";
-      String oldValue = System.getProperty (propName);
-      System.setProperty (propName, String.valueOf (4 * 1024 * 1024 + 1024 + 32));
-      try
-      {
-         setUp ();
-
-         try ( Channel<int[]> channel = context.createChannel ("large", int[].class) )
-         {
-            channel.connect ();
-
-            int[] value = channel.getAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertNotNull (value);
-
-            final int LARGE_PRIME = 15485863;
-            for ( int i = 0; i < value.length; i++ )
-            {
-               assertEquals (i, value[ i ]);
-               value[ i ] += LARGE_PRIME;
-            }
-
-            Status putStatus = channel.putAsync (value).get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertEquals (Status.NORMAL, putStatus);
-
-            value = channel.getAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertNotNull (value);
-
-            for ( int i = 0; i < value.length; i++ )
-               assertEquals (i + LARGE_PRIME, value[ i ]);
-         }
-      }
-      finally
-      {
-         // restore value
-         if ( oldValue == null )
-            System.clearProperty (propName);
-         else
-            System.setProperty (propName, oldValue);
-      }
-   }
-
-
+/*- Nested Classes -----------------------------------------------------------*/
 
 }
