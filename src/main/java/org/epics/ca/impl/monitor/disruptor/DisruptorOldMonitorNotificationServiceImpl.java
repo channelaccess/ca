@@ -1,6 +1,6 @@
 /*- Package Declaration ------------------------------------------------------*/
 
-package org.epics.ca.impl.monitor;
+package org.epics.ca.impl.monitor.disruptor;
 
 /*- Imported packages --------------------------------------------------------*/
 
@@ -13,10 +13,8 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang3.Validate;
-import org.epics.ca.impl.BroadcastTransport;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
-import org.epics.ca.impl.disruptor.ConnectionInterruptable;
-import org.epics.ca.impl.disruptor.MonitorBatchEventProcessor;
+import org.epics.ca.impl.monitor.MonitorNotificationService;
 import org.epics.ca.util.Holder;
 
 import java.nio.ByteBuffer;
@@ -26,14 +24,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @ThreadSafe
-class DisruptorMonitorNotificationServiceOldImpl<T> implements MonitorNotificationService<T>
+public class DisruptorOldMonitorNotificationServiceImpl<T> implements MonitorNotificationService<T>
 {
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger ( DisruptorMonitorNotificationServiceOldImpl.class.getName ());
+   private static final Logger logger = Logger.getLogger ( DisruptorOldMonitorNotificationServiceImpl.class.getName ());
+
+   // The size of the ring buffer, must be power of 2.
+   private static final int NOTIFICATION_VALUE_BUFFER_SIZE = 2;
 
    private final Disruptor<Holder<T>> disruptor;
 
@@ -48,18 +49,15 @@ class DisruptorMonitorNotificationServiceOldImpl<T> implements MonitorNotificati
     *
     * @param consumer the consumer to whom publish evenbts will be sent.
     */
-   DisruptorMonitorNotificationServiceOldImpl( Consumer<? super T> consumer )
+   public DisruptorOldMonitorNotificationServiceImpl( Consumer<? super T> consumer )
    {
       Validate.notNull( consumer );
 
       // The factory for the thread
       final ThreadFactory myThreadFactory = new MyThreadFactory();
 
-      // Specify the size of the ring buffer, must be power of 2.
-      final int bufferSize = 2;
-
-      // Construct the Disruptor
-      disruptor = new Disruptor<>(Holder::new, bufferSize, myThreadFactory);
+      // Construct the Disruptor. The size of the ring buffer, must be a power of 2.
+      disruptor = new Disruptor<>(Holder::new, NOTIFICATION_VALUE_BUFFER_SIZE, myThreadFactory);
 
       disruptor.handleEventsWith (
          ( ringBuffer, barrierSequences ) ->
@@ -78,7 +76,7 @@ class DisruptorMonitorNotificationServiceOldImpl<T> implements MonitorNotificati
     * {@inheritDoc}
     */
    @Override
-   public void publish( ByteBuffer dataBuffer, TypeSupport<T> typeSupport, int dataCount )
+   public boolean publish( ByteBuffer dataBuffer, TypeSupport<T> typeSupport, int dataCount )
    {
       Validate.notNull( dataBuffer );
       Validate.notNull( typeSupport );
@@ -88,25 +86,27 @@ class DisruptorMonitorNotificationServiceOldImpl<T> implements MonitorNotificati
       // Note: this is OK only for single producer
       if ( ringBuffer.hasAvailableCapacity (1) )
       {
-         long next = ringBuffer.next ();
+         long next = ringBuffer.next();
          try
          {
-            lastValue = ringBuffer.get (next);
-            lastValue.value = typeSupport.deserialize (dataBuffer, lastValue.value, dataCount);
+            lastValue = ringBuffer.get( next );
+            lastValue.value = typeSupport.deserialize( dataBuffer, lastValue.value, dataCount  );
          }
          finally
          {
-            ringBuffer.publish (next);
+            ringBuffer.publish( next );
          }
+         return true;
       }
       else
       {
-         overrunValue = typeSupport.deserialize ( dataBuffer, overrunValue, dataCount);
+         overrunValue = typeSupport.deserialize( dataBuffer, overrunValue, dataCount );
 
          // nasty trick, swap the reference of the last value with overrunValue
          T tmp = lastValue.value;
          lastValue.value = overrunValue;
          overrunValue = tmp;
+         return false;
       }
    }
 
@@ -114,28 +114,33 @@ class DisruptorMonitorNotificationServiceOldImpl<T> implements MonitorNotificati
     * {@inheritDoc}
     */
    @Override
-   public void publish( T value )
+   public boolean publish( T value )
    {
       final RingBuffer<Holder<T>> ringBuffer = disruptor.getRingBuffer ();
 
-      // Note: this is OK only for single producer
-      if ( ringBuffer.hasAvailableCapacity (1) )
+      if ( ringBuffer.hasAvailableCapacity (1 ) )
       {
-         long next = ringBuffer.next ();
+         long nextSequence = ringBuffer.next();
          try
          {
-            lastValue = ringBuffer.get( next );
-            lastValue.value = value;
+            // Get the entry in the Disruptor for the sequence
+            final Holder<T> nextEventHolder = ringBuffer.get( nextSequence );
+
+            // Fill with data
+            nextEventHolder.value = value;
          }
          finally
          {
-            ringBuffer.publish( next );
+            ringBuffer.publish( nextSequence );
          }
+         return true;
       }
       else
       {
-         // nasty trick, swap the reference of the last value with the new value
-         lastValue.value = value;
+         long oldestSequence = ringBuffer.getCursor();
+         final Holder<T> oldestEventHolder = ringBuffer.get( oldestSequence );
+         oldestEventHolder.value = value;
+         return false;
       }
    }
 
@@ -157,8 +162,17 @@ class DisruptorMonitorNotificationServiceOldImpl<T> implements MonitorNotificati
    @Override
    public void dispose()
    {
-      disruptor.shutdown();
-   }
+      try
+      {
+         Thread.sleep( 10 );
+         disruptor.shutdown();
+         Thread.sleep( 10 );
+      }
+      catch ( InterruptedException ex )
+      {
+         logger.log( Level.WARNING, "Interrupted whilst waiting for disruptor shutdown" );
+      }
+  }
 
    /**
     * {@inheritDoc}
@@ -166,7 +180,49 @@ class DisruptorMonitorNotificationServiceOldImpl<T> implements MonitorNotificati
    @Override
    public void disposeAllResources() { }
 
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public int getQualityOfServiceNumberOfNotificationThreadsPerConsumer()
+   {
+      return 1;
+   }
 
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public boolean getQualityOfServiceIsNullPublishable()
+   {
+      return true;
+   }
+
+   /**
+    * {@inheritDoc}
+    *
+    * @implNote
+    * This implementation has a minimal buffer holding the previous value only.
+    * Thus, for all practical purposes it can be considered unbuffered when
+    * it comes to smoothing out bursty traffic requests.
+    */
+   @Override
+   public boolean getQualityOfServiceIsBuffered()
+   {
+      return false;
+   }
+
+   /**
+    * {@inheritDoc}
+    *
+    * @implNote
+    * This implementation has a minimal buffer holding the previous value only.
+    */
+   @Override
+   public int getQualityOfServiceBufferSizePerConsumer()
+   {
+      return NOTIFICATION_VALUE_BUFFER_SIZE;
+   }
 
 /*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/
@@ -179,7 +235,7 @@ class DisruptorMonitorNotificationServiceOldImpl<T> implements MonitorNotificati
       @Override
       public Thread newThread( Runnable r )
       {
-         return new Thread(r, "DisruptorThread-" + String.valueOf( id++ ) );
+         return new Thread(r, "DisruptorMonitorNotificationServiceThread-" + String.valueOf( id++ ) );
       }
    }
 
