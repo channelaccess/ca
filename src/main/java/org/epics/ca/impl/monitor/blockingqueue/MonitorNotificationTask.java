@@ -1,18 +1,18 @@
 /*- Package Declaration ------------------------------------------------------*/
 
-package org.epics.ca.impl.monitor;
+package org.epics.ca.impl.monitor.blockingqueue;
+
+/*- Imported packages --------------------------------------------------------*/
 
 import net.jcip.annotations.Immutable;
 import org.apache.commons.lang3.Validate;
-import org.epics.ca.impl.BroadcastTransport;
 
-import java.text.MessageFormat;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/*- Imported packages --------------------------------------------------------*/
+
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
 
@@ -44,14 +44,13 @@ class MonitorNotificationTask<T> implements Runnable
     * object of type T from the Supplier to the Consumer.
     *
     * @param valueConsumer the consumer.
-    * @param valueSupplier  the supplier.
+    * @param valueSupplier the supplier.
     */
     MonitorNotificationTask( Consumer<? super T> valueConsumer, Supplier<? extends T> valueSupplier )
     {
        this.valueConsumer = Validate.notNull( valueConsumer );
        this.valueSupplier = Validate.notNull( valueSupplier );
     }
-
 
 /*- Public methods -----------------------------------------------------------*/
 
@@ -61,17 +60,28 @@ class MonitorNotificationTask<T> implements Runnable
    @Override
    public void run()
    {
-      try
+      // This synchronization lock is essential to ensure that Consumers get
+      // called in the same order that notification values were obtained from
+      // the Supplier. However, it violates the principle that it is a bad
+      // idea to make an open call whilst holding a synchronization lock.
+      //
+      // In the current situation I do not believe this to be a problem but
+      // for more information see this article:
+      // https://www.javaworld.com/article/2075692/java-concurrency/avoid-synchronization-deadlocks.html
+      synchronized( this )
       {
-         final T latestValue = valueSupplier.get();
-         logger.log( Level.FINEST, "Notifying consumer '%s' with value: '%s'... ", new Object[] { valueConsumer, latestValue } );
-         valueConsumer.accept(latestValue);
-         logger.log( Level.FINEST, "Notification completed ok" );
-      }
-      catch ( RuntimeException ex )
-      {
-         logger.log( Level.WARNING,"Unexpected exception during transfer. Message was: '%s'", ex );
-         ex.printStackTrace();
+         try
+         {
+            final T latestValue = valueSupplier.get();
+            logger.log(Level.FINEST, String.format("Notifying consumer '%s' with value: '%s'... ", valueConsumer, latestValue));
+            valueConsumer.accept(latestValue);
+            logger.log(Level.FINEST, "Notification completed ok");
+         }
+         catch ( RuntimeException ex )
+         {
+            logger.log(Level.WARNING, String.format("Unexpected exception during transfer. Message was: '%s'", ex ) );
+            ex.printStackTrace();
+         }
       }
    }
 
