@@ -1,6 +1,6 @@
 /*- Package Declaration ------------------------------------------------------*/
 
-package org.epics.ca.impl.disruptor;
+package org.epics.ca.impl.monitor.disruptor;
 
 /*- Imported packages --------------------------------------------------------*/
 /*- Interface Declaration ----------------------------------------------------*/
