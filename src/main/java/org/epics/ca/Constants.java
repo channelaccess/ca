@@ -1,5 +1,7 @@
 package org.epics.ca;
 
+import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
+
 public interface Constants
 {
 
@@ -26,12 +28,12 @@ public interface Constants
    /**
     * String value of the JVM property key to configure the monitor notification engine.
     */
-   public static final String CA_MONITOR_NOTIFIER = "CA_MONITOR_NOTIFIER";
+   public static final String CA_MONITOR_NOTIFIER_IMPL = "CA_MONITOR_NOTIFIER_IMPL";
 
    /**
     * String value defining the default monitor notification engine.
     */
-   public static final String CA_MONITOR_NOTIFIER_DEFAULT = "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl";
+   public static final String CA_MONITOR_NOTIFIER_DEFAULT_IMPL = MonitorNotificationServiceFactory.DEFAULT_IMPL;
 
    /**
     * Minimal priority.
