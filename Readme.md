@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/channelaccess/ca.svg?branch=master)](https://travis-ci.org/channelaccess/ca)
-
 # Overview
 __ca__ is a pure Java Channel Access client implementation. __ca__ is the easiest way in Java to access Channel Access channels.
 
@@ -20,6 +18,10 @@ specification is distributed in the documents associated with each EPICS base re
 PDF of the current version is available in the [documents](docs) area of this project. 
 
 # Installation
+
+The current Travis build status of the latest release in the GitHub repository is:
+
+[![Build Status](https://travis-ci.org/channelaccess/ca.svg?branch=master)](https://travis-ci.org/channelaccess/ca)
 
 __ca__ is available on Maven Central. It can be easily retrieved by Maven or Gradle as follows:
 
@@ -383,10 +385,12 @@ There is no need to have *gradle* installed on your machine, the only prerequisi
 __Note:__ The first time you execute this command the required jars for the build system will be automatically downloaded and the build will start afterwards. The next time you execute the command the build should be faster.
 
 ## Maven Central
-To push the latest version to Maven Central use
+To push the latest version to Maven Central (via the OSS Sonatype Nexus Repository) use
 
 ```bash
 ./gradlew uploadArchives
 ```
 
 To be able to do so you need to have your ~/.gradle/gradle.properties file in place with your Sonatype username/password as well you need to be part of the group *org.epics*
+
+For further information on using gradle to upload binary releases to the Sonatype OSS Nexus Repository please see the document [here.](https://central.sonatype.org/pages/gradle.html)
