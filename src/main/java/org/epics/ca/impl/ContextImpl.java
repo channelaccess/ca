@@ -94,7 +94,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Configuration for the monitor notifier.
     */
-   protected String monitorNotifierConfig = "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl";
+   protected String monitorNotifierConfigImpl = MonitorNotificationServiceFactory.DEFAULT_IMPL;
 
    /**
     * Timer.
@@ -249,7 +249,7 @@ public class ContextImpl implements AutoCloseable, Constants
 
       channelSearchManager = new ChannelSearchManager (broadcastTransport.get ());
 
-      monitorNotificationFactory = new MonitorNotificationServiceFactory(monitorNotifierConfig );
+      monitorNotificationFactory = new MonitorNotificationServiceFactory( monitorNotifierConfigImpl );
    }
 
    protected MonitorNotificationServiceFactory getMonitorNotificationFactory()
@@ -346,8 +346,8 @@ public class ContextImpl implements AutoCloseable, Constants
          maxArrayBytes = Math.max (1024, maxArrayBytes);
       logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString () + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
 
-      monitorNotifierConfig = readStringProperty( properties, CA_MONITOR_NOTIFIER, CA_MONITOR_NOTIFIER_DEFAULT );
-      logger.log( Level.CONFIG, "CA_MONITOR_NOTIFIER: " + monitorNotifierConfig );
+      monitorNotifierConfigImpl = readStringProperty(properties, CA_MONITOR_NOTIFIER_IMPL, CA_MONITOR_NOTIFIER_DEFAULT_IMPL);
+      logger.log( Level.CONFIG, "CA_MONITOR_NOTIFIER_IMPL: " + monitorNotifierConfigImpl);
    }
 
    /**
