@@ -1,26 +1,42 @@
+/*- Package Declaration ------------------------------------------------------*/
 package org.epics.ca;
 
+/*- Imported packages --------------------------------------------------------*/
+
 import org.apache.commons.lang3.time.StopWatch;
-import org.epics.ca.impl.BroadcastTransport;
+import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
+
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
 
 class ChannelThroughputTests
 {
-   // Get Logger
+
+/*- Public attributes --------------------------------------------------------*/
+/*- Private attributes -------------------------------------------------------*/
+
    private static final Logger logger = Logger.getLogger( ChannelThroughputTests.class.getName() );
 
    private Context context;
    private CAJTestServer server;
+
+
+/*- Main ---------------------------------------------------------------------*/
+/*- Constructor --------------------------------------------------------------*/
+/*- Public methods -----------------------------------------------------------*/
 
    @BeforeAll
    static void beforeAll()
@@ -44,183 +60,202 @@ class ChannelThroughputTests
       server.destroy();
    }
 
-   @Test
-   void TestGet()
+   /**
+    * Tests the CA Get performance.
+    *
+    * Performs multiple CA puts on a monitored test channel and then times how long it takes
+    * to read the value back again using CA get.
+    *
+    * @param numberOfGets the number of put/get cycles to perform.
+    */
+   @ParameterizedTest
+   @ValueSource( ints = { 1, 10, 100, 1000, 2000, 5000 } )
+   void TestGet( int numberOfGets )
    {
-      logger.log(Level.INFO, "Get throughput test..." );
-      final Channel<Double> channel = context.createChannel("adc01", Double.class);
+      logger.log( Level.INFO, String.format("Starting Get throughput test for %d CA gets", numberOfGets ) );
+      final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
       channel.connect();
 
-      final List<Integer> samplePoints = Arrays.asList(1, 10, 100, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000);
-      final int maxChannels = samplePoints.get(samplePoints.size() - 1);
-      final Map<Integer, Long> resultMap = new LinkedHashMap<>();
       final StopWatch stopWatch = StopWatch.createStarted();
-
-      for ( int i = 1; i <= maxChannels; i++ )
+      for ( int i = 0; i < numberOfGets; i++ )
       {
-         try
-         {
-            channel.get();
-            if ( samplePoints.contains(i) )
-            {
-               resultMap.put(i, stopWatch.getTime( TimeUnit.MICROSECONDS) );
-            }
-         }
-         catch( Throwable ex )
-         {
-            logger.info("Test terminated due to exception after getting from {} channels" + String.valueOf( i ) );
-         }
+         channel.get();
       }
-
-      for ( int result : resultMap.keySet() )
-      {
-         logger.log( Level.INFO, String.format( "- Synchronous Get from '%s' channels took '%s' ms. Average: '%3f' us", result, resultMap.get(result), (float) resultMap.get(result) / result) );
-      }
-
-   }
-
-   @Test
-   void TestPutAndGet()
-   {
-      logger.info( "PutAndGet throughput test..." );
-      final Channel<Double> channel = context.createChannel("adc01", Double.class);
-      channel.connect();
-      final List<Integer> samplePoints = Arrays.asList(1, 10, 100, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000);
-      final int maxChannels = samplePoints.get(samplePoints.size() - 1);
-      final Map<Integer, Long> resultMap = new LinkedHashMap<>();
-      final StopWatch stopWatch = StopWatch.createStarted();
-
-      for ( int i = 1; i <= maxChannels; i++ )
-      {
-         try
-         {
-            channel.put( (double) i );
-            channel.get();
-            if ( samplePoints.contains(i) )
-            {
-               resultMap.put(i, stopWatch.getTime( TimeUnit.MICROSECONDS) );
-            }
-         }
-         catch ( Throwable ex )
-         {
-            logger.info("Test terminated due to exception after getting from {} channels" + String.valueOf( i ) );
-         }
-      }
+      long elapseTimeInMilliseconds = stopWatch.getTime( TimeUnit.MILLISECONDS );
 
       logger.info( "RESULTS:" );
-      for ( int result : resultMap.keySet() )
-      {
-         logger.log( Level.INFO, String.format( "- Synchronous PuAndGet from '%s' channels took '%s' ms. Average: '%3f' us", result, resultMap.get (result ), (float) resultMap.get(result) / result) );
-      }
+      logger.log( Level.INFO, String.format( "- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfGets ) );
+      logger.info("" );
    }
 
+   /**
+    * Tests the CA Put-and-Get performance.
+    *
+    * Performs multiple CA puts on a monitored test channel and then times how long it takes
+    * to read the value back again using CA get.
+    *
+    * @param numberOfPutsAndGets the number of put/get cycles to perform.
+    */
    @ParameterizedTest
-   @ValueSource( strings = { "SingleWorkerBlockingQueueMonitorNotificationServiceImpl",
-                             "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl",
-                             "DisruptorMonitorNotificationServiceOldImpl",
-                             "DisruptorMonitorNotificationServiceNewImpl" } )
-   void TestPutAndMonitor( String monitorNotificationServiceImpl )
+   @ValueSource( ints = { 1, 10, 100, 1000, 2000, 5000 } )
+   void TestPutAndGet( int numberOfPutsAndGets )
    {
-      logger.log( Level.INFO, String.format("Starting PutAndMonitor throughput test using impl: '%s'...", monitorNotificationServiceImpl ) );
+      logger.log( Level.INFO, String.format("Starting PutAndGet throughput test for %d CA puts/gets", numberOfPutsAndGets ) );
+      final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
+      channel.connect();
 
+      final StopWatch stopWatch = StopWatch.createStarted();
+      for ( int i = 0; i < numberOfPutsAndGets; i++ )
+      {
+         channel.get();
+      }
+      long elapseTimeInMilliseconds = stopWatch.getTime( TimeUnit.MILLISECONDS );
+
+      logger.info( "RESULTS:" );
+      logger.log( Level.INFO, String.format( "- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfPutsAndGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfPutsAndGets ) );
+      logger.info("" );
+   }
+
+   /**
+    * Tests the CA Put-and-Monitor performance for different monitor notification service implementations.
+    *
+    * Performs multiple CA puts on a monitored test channel and measures how long it takes for the
+    * notifications to be received by the monitor's consumer.
+    *
+    * @param serviceImpl the service implementation.
+    * @param numberOfPuts the number of puts to perform. Each put will result in a new monitor
+    *                     notification.
+    */
+   @ParameterizedTest
+   @MethodSource( "getArgumentsForTestPutAndMonitor" )
+   void TestPutAndMonitor( String serviceImpl, int numberOfPuts )
+   {
+      logger.log( Level.INFO, String.format("Starting PutAndMonitor throughput test using monitor notification impl: '%s' and for %d CA puts", serviceImpl, numberOfPuts ) );
       final Properties contextProperties = new Properties();
-      contextProperties.setProperty( "CA_MONITOR_NOTIFIER", monitorNotificationServiceImpl );
+      contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
       final Context mySpecialContext = new Context( contextProperties );
-
-      final List<Integer> samplePoints = Arrays.asList(1, 10, 100, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000);
-      final int maxChannels = samplePoints.get(samplePoints.size() - 1);
-      final Map<Integer, Long> resultMap1 = new LinkedHashMap<>();
-      final Map<Integer, Long> resultMap2 = new LinkedHashMap<>();
 
       final Channel<Integer> channel = mySpecialContext.createChannel("adc01", Integer.class);
       channel.connect();
 
-      final StopWatch stopWatch = new StopWatch();
+      // Add a value monitor and wait for first notification of the initial value
+      final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
+      testConsumer.clearCurrentNotificationCount();
+      testConsumer.setExpectedNotificationCount( 1 );
+      final Monitor monitor = channel.addValueMonitor( testConsumer );
+      testConsumer.awaitExpectedNotificationCount();
 
-      final Monitor<Integer> monitor = channel.addValueMonitor( v -> {
-         if ( samplePoints.contains( v ) )
-         {
-            resultMap2.put( v, stopWatch.getTime( TimeUnit.MICROSECONDS) );
-         }
-      } );
-
-      //monitor.
-      stopWatch.start();
-      for ( int i = 1; i <= maxChannels; i++ )
+      // Now send the requested number of puts
+      testConsumer.clearCurrentNotificationCount();
+      final StopWatch notificationDeliveryMeasurementStopWatch = StopWatch.createStarted();
+      for ( int i = 0; i < numberOfPuts; i++ )
       {
-         try
-         {
-            if ( samplePoints.contains(i) )
-            {
-               resultMap1.put( i, stopWatch.getTime( TimeUnit.MICROSECONDS) );
-            }
-            channel.put( i );
-         }
-         catch ( Throwable ex )
-         {
-            logger.info("Test terminated due to exception after putting to {} channels" + String.valueOf( i ) );
-         }
+         channel.put( i );
       }
+
+      // The end of sequence token is necessary become some monitor notification service
+      // implementations may be lossy but they are always guaranteed to deliver the last
+      // value in a sequence so we use this to detect the end of the notification sequence.
+      // It's also convenient to measure the latency here too.
+      final Integer endOfSequence = -1;
+      testConsumer.setExpectedNotificationValue( endOfSequence );
+      final StopWatch latencyMeasurementStopWatch = StopWatch.createStarted();
+      channel.put( endOfSequence );
+      testConsumer.awaitExpectedNotificationValue();
+
+      final long multipleNotificationDeliveryTimeInMilliseconds = notificationDeliveryMeasurementStopWatch.getTime( TimeUnit.MILLISECONDS );
+      final long singleNotificationDeliveryLatencyInMicroseconds = latencyMeasurementStopWatch.getTime( TimeUnit.MICROSECONDS );
 
       // Free up resources
       monitor.close();
 
       logger.info( "RESULTS:" );
-      for ( int result : resultMap1.keySet() )
-      {
-         long latency = ( resultMap1.containsKey( result ) && resultMap2.containsKey( result ) ) ? resultMap2.get( result) - resultMap1.get( result ) : 0L;
-         logger.log( Level.INFO, String.format( "- Synchronous PutAndMonitor from '%s' channels took '%s' ms. Average: '%3f' us. Latency '%s' us", result, resultMap1.get( result), (float) resultMap1.get( result ) / result, latency ) );
-      }
+      logger.log( Level.INFO, String.format( "- The test consumer received: %d notifications", testConsumer.getCurrentNotificationCount() ) );
+      logger.log( Level.INFO, String.format( "- The delivery latency was typically %d us", singleNotificationDeliveryLatencyInMicroseconds ) );
+      logger.log( Level.INFO, String.format( "- Synchronous PutAndMonitor with %d puts took %s ms. Average: %3f ms.", numberOfPuts, multipleNotificationDeliveryTimeInMilliseconds, (float) multipleNotificationDeliveryTimeInMilliseconds / (float) numberOfPuts ) );
+      logger.info("" );
    }
 
+   /**
+    * Tests the CA throughput performance of the library when using a CA monitor
+    * to receive notifications from a fast running counter.
+    *
+    * The test can be configured for different monitor notification service
+    * implementations and to listen for a configurable number of notifications.
+    *
+    * @param serviceImpl the service implementation.
+    * @param numberOfNotifications the number of notifications to listen for.
+    */
    @ParameterizedTest
-   @ValueSource( strings = { "SingleWorkerBlockingQueueMonitorNotificationServiceImpl",
-                             "MultipleWorkerBlockingQueueMonitorNotificationServiceImpl",
-                             "DisruptorMonitorNotificationServiceOldImpl",
-                             "DisruptorMonitorNotificationServiceNewImpl" } )
-   void TestFastCounterMonitor( String monitorNotificationServiceImpl ) throws InterruptedException
+   @MethodSource( "getArgumentsForTestFastCounterMonitor" )
+   void TestFastCounterMonitor( String serviceImpl, int numberOfNotifications )
    {
-      logger.log( Level.INFO, String.format( "Starting TestFastCounterMonitor throughput test using impl: '%s'...", monitorNotificationServiceImpl ) );
-
+      logger.log( Level.INFO, String.format("Starting FastCounterMonitor throughput test using impl: '%s'...", serviceImpl ) );
       final Properties contextProperties = new Properties();
-      contextProperties.setProperty( "CA_MONITOR_NOTIFIER", monitorNotificationServiceImpl );
+      contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
       final Context mySpecialContext = new Context( contextProperties );
 
-      final List<Integer> samplePoints = Arrays.asList( 100, 200, 500, 1_000, 5_000, 10_000 );
-      final Map<Integer, Long> resultMap = new LinkedHashMap<>();
       final Channel<Integer> channel = mySpecialContext.createChannel("fastCounter", Integer.class);
       channel.connect();
 
-      final StopWatch stopWatch = new StopWatch();
+      final List<Monitor> monitorList = new ArrayList<>();
 
-      final int start = Integer.MIN_VALUE + 1000;
-      final Monitor<Integer> monitor = channel.addValueMonitor( v -> {
-         //logger.info( "Thread = {}; Count = {} ", Thread.currentThread().getName(), String.valueOf( v -start ) );
-         int count = v - start;
-         if ( v == start )
-         {
-            logger.info( "Starting counting..." );
-            stopWatch.start();
-         }
-         if ( samplePoints.contains( count ) )
-         {
-            //logger.info( "Count = " + count );
-            //logger.info( "Time = " + stopWatch.getTime( TimeUnit.MILLISECONDS) );
-            resultMap.put( count, stopWatch.getTime( TimeUnit.MILLISECONDS) );
-         }
-      } );
+      // Can optionally set here the number of monitors that will simultaneously deliver
+      // notifications to the CA library TCP/IP socket and thus explore the performance of
+      // the system under increasing stress.
+      final int numberOfMonitors = 1;
+      for ( int i = 0; i < numberOfMonitors; i++ )
+      {
+         final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
+         monitorList.add( channel.addValueMonitor(testConsumer) );
+      }
 
-      // Wait for results to be available
-      Thread.sleep( 20_000 );
+      final int totalNotificationCount = numberOfNotifications * numberOfMonitors;
+      TestConsumer.setExpectedTotalNotificationCount( totalNotificationCount );
+      TestConsumer.clearCurrentTotalNotificationCount();
+
+      final StopWatch stopWatch = StopWatch.createStarted();
+      TestConsumer.awaitExpectedTotalNotificationCount();
+      final long elapsedTimeInMilliseconds = stopWatch.getTime( TimeUnit.MILLISECONDS );
 
       // Free up resources
-      monitor.close();
+      for ( Monitor monitor : monitorList )
+      {
+         monitor.close();
+      }
 
       logger.info( "RESULTS:" );
-      for ( int result : resultMap.keySet() )
-      {
-         logger.log( Level.INFO, String.format( "- TestFastCounterMonitor from '%s' channels took '%s' ms. Average: '%3f' ms", result, resultMap.get(result),(float) resultMap.get(result) / result ) );
-      }
+      logger.log( Level.INFO, String.format( "- The test consumer received: %d notifications", TestConsumer.getCurrentTotalNotificationCount() ) );
+      logger.log( Level.INFO, String.format( "- FastCounterMonitor with %d notifications took %s ms. Average: %3f ms.", totalNotificationCount, elapsedTimeInMilliseconds, (float) elapsedTimeInMilliseconds / (float) totalNotificationCount ) );
+      logger.info("" );
    }
+
+/*- Private methods ----------------------------------------------------------*/
+
+   /**
+    * Provides the argument data for the specified test.
+    * @return the data.
+    */
+   private static Stream<Arguments> getArgumentsForTestPutAndMonitor()
+   {
+      final List<String> serviceImpls = MonitorNotificationServiceFactory.getAllServiceImplementations();
+      final List<Integer> numberOfPuts = Arrays.asList( 100, 2000 );
+
+      return serviceImpls.stream().map( s -> numberOfPuts.stream().map( n -> Arguments.of(s, n) ) ).flatMap(s -> s);
+   }
+
+   /**
+    * Provides the argument data for the specified test.
+    * @return the data.
+    */
+   private static Stream<Arguments> getArgumentsForTestFastCounterMonitor()
+   {
+      final List<String> serviceImpls = MonitorNotificationServiceFactory.getAllServiceImplementations();
+      final List<Integer> notifications = Arrays.asList( 100, 2000 );
+
+      return serviceImpls.stream().map( s -> notifications.stream().map(n -> Arguments.of(s, n) ) ).flatMap( s -> s);
+   }
+
+/*- Nested Classes -----------------------------------------------------------*/
 
 }
