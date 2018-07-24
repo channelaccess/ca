@@ -1,4 +1,8 @@
+/*- Package Declaration ------------------------------------------------------*/
+
 package org.epics.ca;
+
+/*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.impl.*;
@@ -33,20 +37,26 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
+
 class TCPTransportTest
 {
+
+/*- Public attributes --------------------------------------------------------*/
+/*- Private attributes -------------------------------------------------------*/
+
    private static final Logger logger = Logger.getLogger( TCPTransportTest.class.getName() );
 
    private SocketChannel channel;
    private TCPTransport transport;
    private ResponseHandlers.ResponseHandler handler;
 
-   private static Stream<Arguments> getDefaultDebugLevelForTests()
-   {
-      // Change the setting below for the required debug level.
-      // This will be used for all tests except the CA Latency Test
-      return Stream.of ( Arguments.of( Level.INFO ) );
-   }
+
+/*- Main ---------------------------------------------------------------------*/
+/*- Constructor --------------------------------------------------------------*/
+/*- Public methods -----------------------------------------------------------*/
 
    @BeforeAll
    static void beforeAll()
@@ -636,6 +646,9 @@ class TCPTransportTest
                           "Maximum Execution Time was: " + String.valueOf( maximumExecutionTimeInMicroseconds ) + " us" );
    }
 
+
+/*- Private methods ----------------------------------------------------------*/
+
    private void setGlobalLoggingLevel( Level level )
    {
       final Logger rootLogger = LogManager.getLogManager ().getLogger ("");
@@ -645,4 +658,15 @@ class TCPTransportTest
          h.setLevel( level );
       }
    }
+
+   private static Stream<Arguments> getDefaultDebugLevelForTests()
+   {
+      // Change the setting below for the required debug level.
+      // This will be used for all tests except the CA Latency Test
+      return Stream.of ( Arguments.of( Level.INFO ) );
+   }
+
+/*- Nested Classes -----------------------------------------------------------*/
+
 }
+
