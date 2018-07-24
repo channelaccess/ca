@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.epics.ca.impl.disruptor;
+package org.epics.ca.impl.monitor.disruptor;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
-
-import org.epics.ca.impl.ChannelImpl;
 
 import com.lmax.disruptor.AlertException;
 import com.lmax.disruptor.BatchEventProcessor;
@@ -158,7 +156,7 @@ public final class MonitorBatchEventProcessor<T> implements EventProcessor
          {
             try
             {
-               final long availableSequence = sequenceBarrier.waitFor (nextSequence);
+               final long availableSequence = sequenceBarrier.waitFor( nextSequence );
 
                while ( nextSequence <= availableSequence )
                {
