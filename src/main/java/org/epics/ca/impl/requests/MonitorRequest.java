@@ -23,6 +23,8 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
    // Get Logger
    private static final Logger logger = Logger.getLogger( MonitorRequest.class.getName() );
 
+   private int bufferOverrunWarningCount = 0;
+
    /**
     * Context.
     */
@@ -101,7 +103,20 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       if ( caStatus == Status.NORMAL )
       {
          // Publish the new value to the consumer.
-         notifier.publish( dataPayloadBuffer, typeSupport, dataCount );
+         final boolean overrun = ! notifier.publish( dataPayloadBuffer, typeSupport, dataCount );
+         if ( overrun )
+         {
+            bufferOverrunWarningCount++;
+            if ( bufferOverrunWarningCount < 3 )
+            {
+               logger.log(Level.WARNING, "Buffer Overrun: the monitor notifier service implementation discarded the oldest data in the notification buffer.");
+            }
+            else if ( bufferOverrunWarningCount == 3 )
+            {
+               logger.log(Level.WARNING, "Buffer Overrun: no further warnings will be issued for this monitor.");
+            }
+         }
+
       }
       else
       {
