@@ -544,18 +544,6 @@ class TCPTransportTest
       verifyNoMoreInteractions (handler);
    }
 
-   // When debugging is on we have to reduce the latency requirement to make it less strict.
-   // Also the first test always runs slower
-   private static Stream<Arguments> getArgumentsForCaLatencyTest()
-   {
-      return Stream.of ( Arguments.of( Level.FINEST, 100_000 ),
-                         Arguments.of( Level.INFO, 3000 ),
-                         Arguments.of( Level.INFO, 3000 ),
-                         Arguments.of( Level.INFO, 3000 ),
-                         Arguments.of( Level.INFO, 3000 ),
-                         Arguments.of( Level.INFO, 3000 ),
-                         Arguments.of( Level.INFO, 3000 ) );
-   }
    @MethodSource( "getArgumentsForCaLatencyTest" )
    @ParameterizedTest
    void testCaReadLatency( Level debugLevel, int maximumExecutionTimeInMicroseconds) throws IOException
@@ -568,8 +556,8 @@ class TCPTransportTest
       final short payloadSize = 0x0004; // DBR_LONG has a payload size of 4 bytes
       final short dataType = 0x0005;    // DBR_LONG ID
       final short dataCount = 0x0001;   // must be 1
-      final int param1 = 0xDEADBEEF;     // SID
-      final int param2 = 0xDABBAD00;     // IOID
+      final int param1 = 0xDEADBEEF;    // SID
+      final int param2 = 0xDABBAD00;    // IOID
 
       final ByteBuffer bufSocketRead1 = ByteBuffer.allocate( 20 )
             .putShort(cmdVersion)
@@ -657,6 +645,19 @@ class TCPTransportTest
       {
          h.setLevel( level );
       }
+   }
+
+   // When debugging is on we have to reduce the latency requirement to make it less strict.
+   // Also the first test always runs slower
+   private static Stream<Arguments> getArgumentsForCaLatencyTest()
+   {
+      return Stream.of ( Arguments.of( Level.FINEST, 100_000 ),
+                         Arguments.of( Level.INFO, 5000 ),
+                         Arguments.of( Level.INFO, 5000 ),
+                         Arguments.of( Level.INFO, 5000 ),
+                         Arguments.of( Level.INFO, 5000 ),
+                         Arguments.of( Level.INFO, 5000 ),
+                         Arguments.of( Level.INFO, 5000 ) );
    }
 
    private static Stream<Arguments> getDefaultDebugLevelForTests()
