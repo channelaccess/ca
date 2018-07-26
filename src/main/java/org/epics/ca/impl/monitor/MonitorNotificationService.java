@@ -8,6 +8,10 @@ package org.epics.ca.impl.monitor;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * An interface providing the ability to control a service whose job it is to
@@ -16,7 +20,7 @@ import java.nio.ByteBuffer;
  *
  * @param <T> the type of the new value.
  */
-public interface MonitorNotificationService<T>
+public interface MonitorNotificationService<T> extends AutoCloseable
 {
 
 /*- Class Declaration --------------------------------------------------------*/
@@ -70,57 +74,12 @@ public interface MonitorNotificationService<T>
    /**
     * Brings this service to a state where it is ready to process new publication requests.
     */
-   void start();
+   void init();
 
    /**
-    * Brings this service to a state where it has released any resources that it can and
-    * where it will no longer accept new publication requests.
+    * Brings this service to a state where it has disposed of its resources.
     */
-   void dispose();
-
-   /**
-    * Brings the service to a state where it has released all underlying resources.
-    */
-   void disposeAllResources();
-
-   /**
-    * Returns an indication of whether this service implementation can be expected
-    * to drop notifications or whether it will buffer them in situations where
-    * the publication rate exceeds the rate at which the consumers can process the
-    * data.
-    *
-    * @return the result.
-    */
-   boolean getQualityOfServiceIsBuffered();
-
-   /**
-    * Returns an indication of the size of each consumer's notification buffer
-    * (for service implementations which provide buffering).
-    *
-    * Returns 1 in the case that the service implementation is not buffered.
-    *
-    * @return the result.
-    */
-   int getQualityOfServiceBufferSizePerConsumer();
-
-   /**
-    * Returns an indication of how many threads the consumer may be called back on.
-    * Where multiple threads are involved the consumer may wish to synchronize their
-    * accept method to force serialisation of the notification sequence so that
-    * events get notified in the same sequence as they were published.
-    *
-    * @return the result.
-    */
-   int getQualityOfServiceNumberOfNotificationThreadsPerConsumer();
-
-
-   /**
-    * Returns an indication of whether the publish method accepts null
-    * as a valid token to be sent to the Coinsumer.
-    *
-    * @return the result.
-    */
-   boolean getQualityOfServiceIsNullPublishable();
+   void close();
 
 /*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/

@@ -7,14 +7,10 @@ package org.epics.ca.impl.monitor.striped;
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.impl.TypeSupports;
 import org.epics.ca.impl.monitor.MonitorNotificationService;
-import org.epics.ca.impl.monitor.blockingqueue.BlockingQueueMonitorNotificationServiceImpl;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,21 +18,20 @@ import java.util.logging.Logger;
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
 
-public class StripedExecutorServiceImpl<T> implements MonitorNotificationService<T>
+public class StripedExecutorServiceMonitorNotificationService<T> implements MonitorNotificationService<T>
 {
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger( StripedExecutorServiceImpl.class.getName() );
+   private static final Logger logger = Logger.getLogger( StripedExecutorServiceMonitorNotificationService.class.getName() );
 
+   private final StripedExecutorServiceMonitorNotificationServiceFactory factory;
    private final Consumer<? super T> consumer;
    private final ExecutorService executorService;
-   private final int qosExecutorThreads;
 
    private T deserializedValue;
-
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -45,23 +40,17 @@ public class StripedExecutorServiceImpl<T> implements MonitorNotificationService
     * Constructs a new instance to work with the consumer using the specified
     * executor.
     *
+    * @param factory reference to the factory who created this instance.
     * @param executor provides the executor service needed by the library.
-    *
-    * @param qosExecutorThreads the number of threads on which consumer callback
-    *        may take place
-    *
     * @param consumer the consumer to be notified when a new value is published.
     */
-   public StripedExecutorServiceImpl( ExecutorService executor, int qosExecutorThreads, Consumer<? super T> consumer )
+   StripedExecutorServiceMonitorNotificationService( StripedExecutorServiceMonitorNotificationServiceFactory factory, ExecutorService executor, Consumer<? super T> consumer )
    {
-      Validate.notNull( executor );
-      Validate.notNull( consumer );
-      Validate.inclusiveBetween( 0, Integer.MAX_VALUE, qosExecutorThreads );
+      this.factory= Validate.notNull( factory );
+      this.executorService = Validate.notNull( executor );
+      this.consumer = Validate.notNull( consumer );
 
-      this.executorService = executor;
-      this.consumer = consumer;
       this.deserializedValue = null;
-      this.qosExecutorThreads = qosExecutorThreads;
    }
 
    /**
@@ -108,7 +97,7 @@ public class StripedExecutorServiceImpl<T> implements MonitorNotificationService
     * that is already in a viable state to cooperatively work with multiple consumers.
     */
    @Override
-   public void start() {}
+   public void init() {}
 
    /**
     * {@inheritDoc}
@@ -118,87 +107,9 @@ public class StripedExecutorServiceImpl<T> implements MonitorNotificationService
     * potentially still needed to work with other Consumers.
     */
    @Override
-   public void dispose() {}
-
-   /**
-    * {@inheritDoc}
-    */
-   @Override
-   public void disposeAllResources()
-   {
-      shutdownExecutor();
-   }
-
-   /**
-    * {@inheritDoc}
-    *
-    * @implNote
-    * Returns the metric that was passed in during class construction.
-    */
-   @Override
-   public int getQualityOfServiceNumberOfNotificationThreadsPerConsumer()
-   {
-      return qosExecutorThreads;
-   }
-
-   /**
-    * {@inheritDoc}
-    */
-   @Override
-   public boolean getQualityOfServiceIsNullPublishable()
-   {
-      return false;
-   }
-
-   /**
-    * {@inheritDoc}
-    */
-   @Override
-   public boolean getQualityOfServiceIsBuffered()
-   {
-      return true;
-   }
-
-   /**
-   * {@inheritDoc}
-    * @implNote
-    *
-    * Currently the buffer associated with this implementation is unbounded in size.
-    */
-   @Override
-   public int getQualityOfServiceBufferSizePerConsumer()
-   {
-      return Integer.MAX_VALUE;
-   }
+   public void close() {}
 
 /*- Private methods ----------------------------------------------------------*/
-
-   private void shutdownExecutor()
-{
-   logger.log ( Level.FINEST, "Starting executor shutdown sequence..." );
-
-   executorService.shutdown();
-   try
-   {
-      logger.log ( Level.FINEST, "Waiting 5 seconds for tasks to finish..." );
-      if ( executorService.awaitTermination(10, TimeUnit.SECONDS ) )
-      {
-         logger.log ( Level.FINEST, "Executor terminated ok." );
-      }
-      else
-      {
-         logger.log ( Level.FINEST, "Executor did not yet terminate. Forcing termination..." );
-         executorService.shutdownNow();
-         executorService.awaitTermination(10, TimeUnit.SECONDS );
-      }
-   }
-   catch ( InterruptedException ex )
-   {
-      logger.log ( Level.FINEST, "Interrupted whilst waiting for tasks to finish. Propagating interrupt." );
-      Thread.currentThread().interrupt();
-   }
-   logger.log ( Level.FINEST, "Executor shutdown sequence completed." );
-}
 /*- Nested Classes -----------------------------------------------------------*/
 
 }

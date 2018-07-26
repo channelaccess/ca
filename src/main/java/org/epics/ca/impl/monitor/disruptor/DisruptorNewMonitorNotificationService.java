@@ -23,14 +23,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @ThreadSafe
-public class DisruptorNewMonitorNotificationServiceImpl<T> implements MonitorNotificationService<T>
+public class DisruptorNewMonitorNotificationService<T> implements MonitorNotificationService<T>
 {
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   // Get Logger
-   private static final Logger logger = Logger.getLogger ( DisruptorNewMonitorNotificationServiceImpl.class.getName ());
+   private static final Logger logger = Logger.getLogger( DisruptorNewMonitorNotificationService.class.getName() );
 
    // The size of the ring buffer, must be power of 2.
    private static final int NOTIFICATION_VALUE_BUFFER_SIZE = 2;
@@ -49,7 +48,7 @@ public class DisruptorNewMonitorNotificationServiceImpl<T> implements MonitorNot
     *
     * @param consumer the consumer to whom publish events will be sent.
     */
-   public DisruptorNewMonitorNotificationServiceImpl( Consumer<? super T> consumer )
+   DisruptorNewMonitorNotificationService( Consumer<? super T> consumer )
    {
       Validate.notNull( consumer );
 
@@ -108,7 +107,7 @@ public class DisruptorNewMonitorNotificationServiceImpl<T> implements MonitorNot
     * Disruptor RingBuffer and to publish them to the Consumer.
     */
    @Override
-   public void start()
+   public void init()
    {
       disruptor.start();
    }
@@ -120,9 +119,8 @@ public class DisruptorNewMonitorNotificationServiceImpl<T> implements MonitorNot
     * The implementation here waits for all events to be processed then shuts down the executor.
     */
    @Override
-   public void dispose()
+   public void close()
    {
-
       try
       {
          // Note: the first delay is to
@@ -135,57 +133,6 @@ public class DisruptorNewMonitorNotificationServiceImpl<T> implements MonitorNot
          logger.log( Level.WARNING, "Interrupted whilst waiting for disruptor shutdown" );
       }
    }
-
-   /**
-    * {@inheritDoc}
-    */
-   @Override
-   public void disposeAllResources() {}
-
-   /**
-    * {@inheritDoc}
-    */
-   @Override
-   public int getQualityOfServiceNumberOfNotificationThreadsPerConsumer()
-   {
-      return 1;
-   }
-
-   /**
-    * {@inheritDoc}
-    */
-   @Override
-   public boolean getQualityOfServiceIsNullPublishable()
-   {
-      return true;
-   }
-
-   /**
-    * {@inheritDoc}
-    *
-    * @implNote
-    * This implementation has a minimal buffer holding the previous value only.
-    * Thus, for all practical purposes it can be considered unbuffered when
-    * it comes to smoothing out bursty traffic requests.
-    */
-   @Override
-   public boolean getQualityOfServiceIsBuffered()
-   {
-      return false;
-   }
-
-   /**
-    * {@inheritDoc}
-    *
-    * @implNote
-    * This implementation has a minimal buffer holding the previous value only.
-    */
-   @Override
-   public int getQualityOfServiceBufferSizePerConsumer()
-   {
-      return NOTIFICATION_VALUE_BUFFER_SIZE;
-   }
-
 
 /*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/

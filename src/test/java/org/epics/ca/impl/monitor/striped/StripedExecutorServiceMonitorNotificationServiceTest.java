@@ -15,7 +15,7 @@ import static org.epics.ca.TestConsumer.*;
 /**
  * Tests all underlying implementations of the MonitorNotificationService.
  */
-class StripedExecutorServiceMonitorNotificationServiceImplTest
+class StripedExecutorServiceMonitorNotificationServiceTest
 {
    // Get Logger
    private static final Logger logger = Logger.getLogger( MonitorNotificationServiceTest.class.getName() );
