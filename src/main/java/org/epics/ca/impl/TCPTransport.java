@@ -566,7 +566,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
     * NOTE: TCP sent buffer/sending has to be synchronized.
     *
     * @param buffer buffer to be sent
-    * @throws IOException
+    * @throws IOException the exception
     */
    private void noSyncSend( ByteBuffer buffer ) throws IOException
    {
