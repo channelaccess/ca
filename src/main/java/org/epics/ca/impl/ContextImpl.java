@@ -21,6 +21,7 @@ import org.epics.ca.Channel;
 import org.epics.ca.Constants;
 import org.epics.ca.Context;
 import org.epics.ca.Version;
+import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.epics.ca.impl.reactor.Reactor;
 import org.epics.ca.impl.reactor.ReactorHandler;
@@ -94,7 +95,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Configuration for the monitor notifier.
     */
-   protected String monitorNotifierConfigImpl = MonitorNotificationServiceFactory.DEFAULT_IMPL;
+   protected String monitorNotifierConfigImpl = MonitorNotificationServiceFactoryCreator.DEFAULT_IMPL;
 
    /**
     * Timer.
@@ -107,9 +108,9 @@ public class ContextImpl implements AutoCloseable, Constants
    protected final ExecutorService executorService = Executors.newSingleThreadExecutor ();
 
    /**
-    * Monitor dispatcher executor service.
+    * Factory to be used for creating MonitorNotificationService instances.
     */
-   protected final ExecutorService monitorExecutor = Executors.newCachedThreadPool ();
+   private final MonitorNotificationServiceFactory monitorNotificationServiceFactory;
 
    /**
     * Repeater registration future.
@@ -135,11 +136,6 @@ public class ContextImpl implements AutoCloseable, Constants
     * Context instance.
     */
    private final NamedLockPattern namedLocker = new NamedLockPattern ();
-
-   /**
-    * Factory to be used for returning MonitorNotifier instances.
-    */
-   private final MonitorNotificationServiceFactory monitorNotificationFactory;
 
    /**
     * TCP transport registry.
@@ -247,14 +243,14 @@ public class ContextImpl implements AutoCloseable, Constants
       catch ( Throwable th )
       { /* noop */ }
 
-      channelSearchManager = new ChannelSearchManager (broadcastTransport.get ());
+      channelSearchManager = new ChannelSearchManager (broadcastTransport.get() );
 
-      monitorNotificationFactory = new MonitorNotificationServiceFactory( monitorNotifierConfigImpl );
+      monitorNotificationServiceFactory = MonitorNotificationServiceFactoryCreator.create(monitorNotifierConfigImpl );
    }
 
-   protected MonitorNotificationServiceFactory getMonitorNotificationFactory()
+   protected MonitorNotificationServiceFactory getMonitorNotificationServiceFactory()
    {
-      return monitorNotificationFactory;
+      return monitorNotificationServiceFactory;
    }
 
    protected String readStringProperty( Properties properties, String key, String defaultValue )
@@ -521,16 +517,8 @@ public class ContextImpl implements AutoCloseable, Constants
       leaderFollowersThreadPool.shutdown ();
       timer.shutdown ();
 
-      monitorExecutor.shutdown ();
-      try
-      {
-         monitorExecutor.awaitTermination (3, TimeUnit.SECONDS);
-      }
-      catch ( InterruptedException e )
-      {
-         // noop
-      }
-      monitorExecutor.shutdownNow ();
+      // Dispose of the monitor service factory and all services which it has created
+      monitorNotificationServiceFactory.close();
 
       executorService.shutdown ();
       try
@@ -542,7 +530,6 @@ public class ContextImpl implements AutoCloseable, Constants
          // noop
       }
       executorService.shutdownNow ();
-
    }
 
    /**
