@@ -25,7 +25,6 @@ public class DisruptorMonitorNotificationServiceFactory implements MonitorNotifi
 
    private static final Logger logger = Logger.getLogger( DisruptorMonitorNotificationServiceFactory.class.getName() );
    private final List<MonitorNotificationService> serviceList = new ArrayList<>();
-
    private final boolean oldImpl;
 
 
@@ -42,16 +41,18 @@ public class DisruptorMonitorNotificationServiceFactory implements MonitorNotifi
     */
    public DisruptorMonitorNotificationServiceFactory( boolean oldImpl )
    {
-      super();
       this.oldImpl = oldImpl;
+
+      final int numberOfThreadsBaseline = Thread.getAllStackTraces().keySet().size();
+      logger.log( Level.INFO, String.format("The number of baseline threads in the system is: %d", numberOfThreadsBaseline));
 
       if ( oldImpl )
       {
-         logger.log(Level.INFO, "A DisruptorMonitorNotificationServiceFactory has been created to work with the OLD Disruptor implementation." );
+         logger.log( Level.INFO, "A DisruptorMonitorNotificationServiceFactory is being created to work with the OLD Disruptor implementation..." );
       }
       else
       {
-         logger.log(Level.INFO, "A DisruptorMonitorNotificationServiceFactory has been created to work with the NEW Disruptor implementation." );
+         logger.log( Level.INFO, "A DisruptorMonitorNotificationServiceFactory is being created to work with the NEW Disruptor implementation..." );
       }
    }
 

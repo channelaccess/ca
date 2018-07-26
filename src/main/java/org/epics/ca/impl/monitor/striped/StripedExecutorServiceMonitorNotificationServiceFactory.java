@@ -48,7 +48,9 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
       Validate.inclusiveBetween( 1, Integer.MAX_VALUE, numberOfThreads );
       this.numberOfThreads = numberOfThreads;
 
-      logger.log(Level.INFO, String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory has been created with %d threads and an unlimited notification entry buffer size.", numberOfThreads ) );
+      final int numberOfThreadsBaseline = Thread.getAllStackTraces().keySet().size();
+      logger.log(Level.INFO, String.format("The number of baseline threads in the system is: %d", numberOfThreadsBaseline));
+      logger.log(Level.INFO, String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory is being created with %d threads and an unlimited notification entry buffer size...", numberOfThreads ) );
       stripedExecutorService = new StripedExecutorService( numberOfThreads );
    }
 
