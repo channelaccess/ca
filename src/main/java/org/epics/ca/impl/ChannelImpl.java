@@ -4,8 +4,8 @@ import com.lmax.disruptor.EventFactory;
 import org.epics.ca.*;
 import org.epics.ca.data.Metadata;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
-import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.epics.ca.impl.monitor.MonitorNotificationService;
+import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.epics.ca.impl.requests.MonitorRequest;
 import org.epics.ca.impl.requests.ReadNotifyRequest;
 import org.epics.ca.impl.requests.WriteNotifyRequest;
@@ -152,8 +152,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    @Override
    public void close()
    {
-
-      if ( connectionState.getAndSet (ConnectionState.CLOSED) == ConnectionState.CLOSED )
+      if ( connectionState.getAndSet( ConnectionState.CLOSED) == ConnectionState.CLOSED )
          return;
 
       // stop searching...
@@ -178,7 +177,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
          transport.release (this);
          transport = null;
       }
-
    }
 
    @Override
@@ -446,8 +444,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
       final TCPTransport transport = connectionRequiredCheck ();
 
-      final MonitorNotificationServiceFactory notifierFactory = context.getMonitorNotificationFactory();
-      final MonitorNotificationService<T> notifier = notifierFactory.<T> getServiceForConsumer( handler );
+      final MonitorNotificationServiceFactory serviceFactory = context.getMonitorNotificationServiceFactory();
+      final MonitorNotificationService<T> notifier = serviceFactory.<T> getServiceForConsumer( handler );
 
       return new MonitorRequest<T>(this, transport, typeSupport, mask, notifier, handler );
    }
@@ -465,8 +463,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
       @SuppressWarnings( "unchecked" )
       final TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>) getTypeSupport (clazz, channelType);
-      final MonitorNotificationServiceFactory notifierFactory = context.getMonitorNotificationFactory();
-      final MonitorNotificationService<MT> notifier  = notifierFactory.<MT>getServiceForConsumer( handler );
+      final MonitorNotificationServiceFactory serviceFactory = context.getMonitorNotificationServiceFactory();
+      final MonitorNotificationService<MT> notifier  = serviceFactory.<MT>getServiceForConsumer( handler );
 
       return new MonitorRequest<MT> (this, transport, metaTypeSupport, mask, notifier, handler );
    }
@@ -827,11 +825,11 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       {
          try
          {
-            requests[ i ].exception (status.getStatusCode (), null);
+            requests[ i ].exception ( status.getStatusCode (),null );
          }
          catch ( Throwable th )
          {
-            logger.log( Level.WARNING, "Unexpected exception caught during disconnect/destroy notification.", th);
+            logger.log( Level.WARNING,"Unexpected exception caught during disconnect/destroy notification.", th );
          }
       }
    }
