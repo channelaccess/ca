@@ -62,7 +62,6 @@ dependencies {
 
     // Supports for documenting Thread-Safety
     compile 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
-    compile files ('libs/striped-executor-service-0.1.jar' )
 
     // Supports unit and integration tests
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.2.0'
