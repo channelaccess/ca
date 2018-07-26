@@ -4,11 +4,8 @@ package org.epics.ca;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.epics.ca.data.*;
-import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -43,7 +40,7 @@ class ChannelTest
 
    private static final double DELTA = 1e-10;
 
-   private Context context;
+   //private Context context;
    private CAJTestServer server;
    private static final int TIMEOUT_SEC = 5;
 
@@ -54,6 +51,7 @@ class ChannelTest
    @BeforeAll
    static void beforeAll()
    {
+
       System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s  %5$s%6$s%n");
       Locale.setDefault(Locale.ROOT );
    }
@@ -61,20 +59,17 @@ class ChannelTest
    @BeforeEach
    void setUp()
    {
-      Properties prop = new Properties();
       server = new CAJTestServer ();
       server.runInSeparateThread ();
-      context = new Context ( prop );
    }
 
    @AfterEach
    void tearDown()
    {
-      context.close ();
-      server.destroy ();
+      server.destroy();
    }
 
-   @Test()
+   @Test
    void logTest()
    {
       logger.log(Level.FINEST, "My msg is: %s", "abc" );
@@ -84,160 +79,172 @@ class ChannelTest
    @Test
    void testConnect() throws Throwable
    {
-      try ( Channel<Double> channel = context.createChannel ("no_such_channel_test", Double.class) )
+      try ( Context context = new Context() )
       {
-         assertNotNull (channel);
-         assertEquals ("no_such_channel_test", channel.getName ());
-
-         assertEquals (ConnectionState.NEVER_CONNECTED, channel.getConnectionState ());
-         try
+         try ( Channel<Double> channel = context.createChannel("no_such_channel_test", Double.class) )
          {
-            channel.connectAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            fail ("connected on non-existent channel, timeout expected");
+            assertNotNull(channel);
+            assertEquals("no_such_channel_test", channel.getName());
+
+            assertEquals(ConnectionState.NEVER_CONNECTED, channel.getConnectionState());
+            try
+            {
+               channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               fail("connected on non-existent channel, timeout expected");
+            }
+            catch ( TimeoutException tc )
+            {
+               // OK
+            }
+
+            assertEquals(ConnectionState.NEVER_CONNECTED, channel.getConnectionState());
          }
-         catch ( TimeoutException tc )
+
+         try ( Channel<Double> channel = context.createChannel("adc01", Double.class) )
          {
-            // OK
+            assertNotNull(channel);
+            assertEquals("adc01", channel.getName());
+
+            assertEquals(ConnectionState.NEVER_CONNECTED, channel.getConnectionState());
+            channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+            assertEquals(ConnectionState.CONNECTED, channel.getConnectionState());
+            assertEquals("adc01", channel.getName());
          }
 
-         assertEquals (ConnectionState.NEVER_CONNECTED, channel.getConnectionState ());
-      }
+         // connect to the previously closed channel
+         try ( Channel<Double> channel = context.createChannel("adc01", Double.class) )
+         {
+            assertNotNull(channel);
 
-      try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
-      {
-         assertNotNull (channel);
-         assertEquals ("adc01", channel.getName ());
-
-         assertEquals (ConnectionState.NEVER_CONNECTED, channel.getConnectionState ());
-         channel.connectAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
-         assertEquals (ConnectionState.CONNECTED, channel.getConnectionState ());
-         assertEquals ("adc01", channel.getName ());
-      }
-
-      // connect to the previously closed channel
-      try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
-      {
-         assertNotNull (channel);
-
-         assertEquals (ConnectionState.NEVER_CONNECTED, channel.getConnectionState ());
-         channel.connectAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
-         assertEquals (ConnectionState.CONNECTED, channel.getConnectionState ());
+            assertEquals(ConnectionState.NEVER_CONNECTED, channel.getConnectionState());
+            channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+            assertEquals(ConnectionState.CONNECTED, channel.getConnectionState());
+         }
       }
    }
 
    @Test
    void testConnectionListener() throws Throwable
    {
-      try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
+      try ( Context context = new Context() )
       {
-         assertNotNull (channel);
+         try ( Channel<Double> channel = context.createChannel("adc01", Double.class) )
+         {
+            assertNotNull(channel);
 
-         assertEquals (ConnectionState.NEVER_CONNECTED, channel.getConnectionState ());
+            assertEquals(ConnectionState.NEVER_CONNECTED, channel.getConnectionState());
 
-         final AtomicInteger connectedCount = new AtomicInteger ();
-         final AtomicInteger disconnectedCount = new AtomicInteger ();
-         final AtomicInteger unregisteredEventCount = new AtomicInteger ();
+            final AtomicInteger connectedCount = new AtomicInteger();
+            final AtomicInteger disconnectedCount = new AtomicInteger();
+            final AtomicInteger unregisteredEventCount = new AtomicInteger();
 
-         Listener cl = channel.addConnectionListener (( c, connected ) -> {
-            if ( c == channel )
-            {
-               if ( connected )
-                  connectedCount.incrementAndGet ();
-               else
-                  disconnectedCount.incrementAndGet ();
-            }
-         });
-         assertNotNull (cl);
+            Listener cl = channel.addConnectionListener(( c, connected ) -> {
+               if ( c == channel )
+               {
+                  if ( connected )
+                     connectedCount.incrementAndGet();
+                  else
+                     disconnectedCount.incrementAndGet();
+               }
+            });
+            assertNotNull(cl);
 
-         Listener cl2 = channel.addConnectionListener (( c, connected ) -> unregisteredEventCount.incrementAndGet ());
-         assertNotNull (cl2);
-         assertEquals (0, unregisteredEventCount.get ());
-         cl2.close ();
+            Listener cl2 = channel.addConnectionListener(( c, connected ) -> unregisteredEventCount.incrementAndGet());
+            assertNotNull(cl2);
+            assertEquals(0, unregisteredEventCount.get());
+            cl2.close();
 
-         channel.connectAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
-         assertEquals (ConnectionState.CONNECTED, channel.getConnectionState ());
+            channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+            assertEquals(ConnectionState.CONNECTED, channel.getConnectionState());
 
-         // we need to sleep here to catch any possible multiple/invalid events
-         Thread.sleep (TIMEOUT_SEC * 1000);
+            // we need to sleep here to catch any possible multiple/invalid events
+            Thread.sleep(TIMEOUT_SEC * 1000);
 
-         assertEquals (1, connectedCount.get ());
-         assertEquals (0, disconnectedCount.get ());
-         assertEquals (0, unregisteredEventCount.get ());
+            assertEquals(1, connectedCount.get());
+            assertEquals(0, disconnectedCount.get());
+            assertEquals(0, unregisteredEventCount.get());
 
-         channel.close ();
+            channel.close();
 
-         // we need to sleep here to catch any possible multiple/invalid events
-         Thread.sleep (TIMEOUT_SEC * 1000);
+            // we need to sleep here to catch any possible multiple/invalid events
+            Thread.sleep(TIMEOUT_SEC * 1000);
 
-         // NOTE: close does not notify disconnect
-         assertEquals (1, connectedCount.get ());
-         assertEquals (0, disconnectedCount.get ());
+            // NOTE: close does not notify disconnect
+            assertEquals(1, connectedCount.get());
+            assertEquals(0, disconnectedCount.get());
 
-         assertEquals (0, unregisteredEventCount.get ());
+            assertEquals(0, unregisteredEventCount.get());
+         }
       }
    }
 
    @Test
    void testAccessRightsListener() throws Throwable
    {
-      try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
+      try ( Context context = new Context() )
       {
-         assertNotNull (channel);
+         try ( Channel<Double> channel = context.createChannel("adc01", Double.class) )
+         {
+            assertNotNull(channel);
 
-         final AtomicInteger aclCount = new AtomicInteger ();
-         final AtomicInteger unregsiteredEventCount = new AtomicInteger ();
+            final AtomicInteger aclCount = new AtomicInteger();
+            final AtomicInteger unregsiteredEventCount = new AtomicInteger();
 
-         Listener rl = channel.addAccessRightListener (( c, ar ) -> {
-            if ( c == channel )
-            {
-               if ( ar == AccessRights.READ_WRITE )
-                  aclCount.incrementAndGet ();
-            }
-         });
-         assertNotNull (rl);
+            Listener rl = channel.addAccessRightListener(( c, ar ) -> {
+               if ( c == channel )
+               {
+                  if ( ar == AccessRights.READ_WRITE )
+                     aclCount.incrementAndGet();
+               }
+            });
+            assertNotNull(rl);
 
-         Listener cl2 = channel.addAccessRightListener (( c, ar ) -> unregsiteredEventCount.incrementAndGet ());
-         assertNotNull (cl2);
-         assertEquals (0, unregsiteredEventCount.get ());
-         cl2.close ();
+            Listener cl2 = channel.addAccessRightListener(( c, ar ) -> unregsiteredEventCount.incrementAndGet());
+            assertNotNull(cl2);
+            assertEquals(0, unregsiteredEventCount.get());
+            cl2.close();
 
-         channel.connectAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
-         assertEquals (AccessRights.READ_WRITE, channel.getAccessRights ());
+            channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+            assertEquals(AccessRights.READ_WRITE, channel.getAccessRights());
 
-         // we need to sleep here to catch any possible multiple/invalid events
-         Thread.sleep (TIMEOUT_SEC * 1000);
+            // we need to sleep here to catch any possible multiple/invalid events
+            Thread.sleep(TIMEOUT_SEC * 1000);
 
-         assertEquals (1, aclCount.get ());
-         assertEquals (0, unregsiteredEventCount.get ());
-         channel.close ();
+            assertEquals(1, aclCount.get());
+            assertEquals(0, unregsiteredEventCount.get());
+            channel.close();
 
-         // we need to sleep here to catch any possible multiple/invalid events
-         Thread.sleep (TIMEOUT_SEC * 1000);
+            // we need to sleep here to catch any possible multiple/invalid events
+            Thread.sleep(TIMEOUT_SEC * 1000);
 
-         assertEquals (1, aclCount.get ());
-         assertEquals (0, unregsiteredEventCount.get ());
+            assertEquals(1, aclCount.get());
+            assertEquals(0, unregsiteredEventCount.get());
+         }
       }
    }
 
    @Test
    void testProperties() throws Throwable
    {
-      try ( Channel<Double> channel = context.createChannel ("adc01", Double.class) )
+      try ( Context context = new Context() )
       {
-         channel.connectAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
+         try ( Channel<Double> channel = context.createChannel("adc01", Double.class) )
+         {
+            channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
 
-         Map<String, Object> props = channel.getProperties ();
-         Object nativeTypeCode = props.get (Constants.ChannelProperties.nativeTypeCode.name ());
-         assertNotNull( nativeTypeCode);
-         assertEquals( (short) 6, nativeTypeCode);
+            Map<String, Object> props = channel.getProperties();
+            Object nativeTypeCode = props.get(Constants.ChannelProperties.nativeTypeCode.name());
+            assertNotNull(nativeTypeCode);
+            assertEquals((short) 6, nativeTypeCode);
 
-         Object nativeElementCount = props.get (Constants.ChannelProperties.nativeElementCount.name ());
-         assertNotNull( nativeElementCount);
-         assertEquals(2, nativeElementCount);
+            Object nativeElementCount = props.get(Constants.ChannelProperties.nativeElementCount.name());
+            assertNotNull(nativeElementCount);
+            assertEquals(2, nativeElementCount);
 
-         Object nativeType = props.get (Constants.ChannelProperties.nativeType.name ());
-         assertNotNull( nativeType);
-         assertEquals(Double.class, nativeType);
+            Object nativeType = props.get(Constants.ChannelProperties.nativeType.name());
+            assertNotNull(nativeType);
+            assertEquals(Double.class, nativeType);
+         }
       }
    }
 
@@ -246,89 +253,94 @@ class ChannelTest
 
    @MethodSource( "getArgumentsForTestMonitorNotificationServiceImplementations" )
    @ParameterizedTest
-   void testMonitorDisconnectionBehaviour( String monitorNotificationServiceImpl ) throws InterruptedException
+   void testMonitorDisconnectionBehaviour( String serviceImpl ) throws InterruptedException
    {
       final Properties contextProperties = new Properties();
-      contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", monitorNotificationServiceImpl );
-      final Context mySpecialContext = new Context( contextProperties );
+      contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
 
-      try ( Channel<Integer> channel = mySpecialContext.createChannel ("adc01", Integer.class) )
+      try ( final Context context = new Context( contextProperties ) )
       {
-         channel.addConnectionListener( (c,h) -> logger.log ( Level.INFO, String.format( "Channel '%s', new connection state is: '%s' ", c.getName(), c.getConnectionState() ) ) );
+         try ( Channel<Integer> channel = context.createChannel("adc01", Integer.class) )
+         {
+            channel.addConnectionListener(( c, h ) -> logger.log(Level.INFO, String.format("Channel '%s', new connection state is: '%s' ", c.getName(), c.getConnectionState())));
 
-         // Connect to some channel and get the default value (= value on creation) for the test PV
-         channel.connect();
-         final int defautAdcValue = channel.get();
+            // Connect to some channel and get the default value (= value on creation) for the test PV
+            channel.connect();
+            final int defautAdcValue = channel.get();
 
-         // Change the PV value to something else, allow the change to propagate
-         // then verify that the expected value was received.
-         final int testValue = 99;
-         channel.put( testValue );
-         final Consumer<Integer> consumer = Mockito.mock( GenericIntegerConsumer.class );
-         channel.addValueMonitor( consumer );
-         Thread.sleep( 1_000 );
-         Mockito.verify( consumer, Mockito.times( 1) ).accept( testValue );
+            // Change the PV value to something else, allow the change to propagate
+            // then verify that the expected value was received.
+            final int testValue = 99;
+            channel.put(testValue);
+            final Consumer<Integer> consumer = Mockito.mock(GenericIntegerConsumer.class);
+            channel.addValueMonitor(consumer);
+            Thread.sleep(1000);
+            Mockito.verify(consumer, Mockito.times(1)).accept(testValue);
 
-         // Destroy the test server which will create a channel disconnection event.
-         // Verify that the monitor did not receive a new update
-         server.destroy();
-         Thread.sleep( 1_000 );
-         Mockito.verifyNoMoreInteractions( consumer );
+            // Destroy the test server which will create a channel disconnection event.
+            // Verify that the monitor did not receive a new update
+            server.destroy();
+            Thread.sleep(1000);
+            Mockito.verifyNoMoreInteractions(consumer);
 
-         // Now recreate the server and check that the monitor received an update with the default value
-         // for this PV
-         server = new CAJTestServer ();
-         server.runInSeparateThread ();
-         Thread.sleep( 1_000 );
-         Mockito.verify( consumer, Mockito.times( 1 ) ).accept( defautAdcValue );
+            // Now recreate the server and check that the monitor received an update with the default value
+            // for this PV
+            server = new CAJTestServer();
+            server.runInSeparateThread();
+            Thread.sleep(1000);
+            Mockito.verify(consumer, Mockito.times(1)).accept(defautAdcValue);
+         }
       }
    }
 
    @Test
    void testMonitors() throws Throwable
    {
-      try ( Channel<Integer> channel = context.createChannel ("counter", Integer.class) )
+      try ( Context context = new Context() )
       {
-         channel.connect ();
-         try
+         try ( Channel<Integer> channel = context.createChannel("counter", Integer.class) )
          {
-            channel.addValueMonitor (null);
-            fail ("null handler accepted");
-         }
-         catch ( NullPointerException iae )
-         {
-            // ok
-         }
+            channel.connect();
+            try
+            {
+               channel.addValueMonitor(null);
+               fail("null handler accepted");
+            }
+            catch ( NullPointerException iae )
+            {
+               // ok
+            }
 
-         try
-         {
-            channel.addValueMonitor (( value ) -> {
-            }, 0);
-            fail ("empty mask accepted");
-         }
-         catch ( IllegalArgumentException iae )
-         {
-            // ok
-         }
+            try
+            {
+               channel.addValueMonitor(( value ) -> {
+               }, 0);
+               fail("empty mask accepted");
+            }
+            catch ( IllegalArgumentException iae )
+            {
+               // ok
+            }
 
-         // note: we accept currently non-valid masks to allow future/unstandard extensions
-         try ( Monitor<Integer> m = channel.addValueMonitor (( value ) -> {
-         }, Monitor.VALUE_MASK)
-         )
-         {
-            assertNotNull (m);
-         }
+            // note: we accept currently non-valid masks to allow future/unstandard extensions
+            try ( Monitor<Integer> m = channel.addValueMonitor(( value ) -> {
+            }, Monitor.VALUE_MASK)
+            )
+            {
+               assertNotNull(m);
+            }
 
-         AtomicInteger monitorCount = new AtomicInteger ();
-         Monitor<Integer> m = channel.addValueMonitor (( value ) -> monitorCount.incrementAndGet (), Monitor.VALUE_MASK);
-         assertNotNull (m);
-         Thread.sleep (TIMEOUT_SEC * 1000);
-         m.close ();
-         m.close ();
-         int monitors = monitorCount.get ();
-         assertTrue (monitors >= TIMEOUT_SEC); // 1 + TIMEOUT_SEC (where one can be missed)
-         Thread.sleep (TIMEOUT_SEC * 1000);
-         assertEquals (monitors, monitorCount.get ());
+            AtomicInteger monitorCount = new AtomicInteger();
+            Monitor<Integer> m = channel.addValueMonitor(( value ) -> monitorCount.incrementAndGet(), Monitor.VALUE_MASK);
+            assertNotNull(m);
+            Thread.sleep(TIMEOUT_SEC * 1000);
+            m.close();
+            m.close();
+            int monitors = monitorCount.get();
+            assertTrue(monitors >= TIMEOUT_SEC); // 1 + TIMEOUT_SEC (where one can be missed)
+            Thread.sleep(TIMEOUT_SEC * 1000);
+            assertEquals(monitors, monitorCount.get());
+         }
       }
    }
 
@@ -336,14 +348,17 @@ class ChannelTest
    @ValueSource( strings = { "true", "false" } )
    void testGenericChannel( String asyncFlag ) throws Throwable
    {
-      try ( Channel<Object> channel = context.createChannel ("adc01", Object.class) )
+      try ( Context context = new Context() )
       {
-         assertNotNull( channel );
+         try ( Channel<Object> channel = context.createChannel("adc01", Object.class) )
+         {
+            assertNotNull(channel);
 
-         channel.connect ();
+            channel.connect();
 
-         internalTestValuePutAndGet( asyncFlag );
-         internalTestMetaPutAndGet( asyncFlag );
+            internalTestValuePutAndGet( asyncFlag );
+            internalTestMetaPutAndGet( asyncFlag );
+         }
       }
    }
 
@@ -355,41 +370,44 @@ class ChannelTest
       final String propName = com.cosylab.epics.caj.cas.CAJServerContext.class.getName () + ".max_array_bytes";
       String oldValue = System.getProperty (propName);
       System.setProperty (propName, String.valueOf (4 * 1024 * 1024 + 1024 + 32));
-      try
+      try ( Context context = new Context() )
       {
-         setUp ();
-
-         try ( Channel<int[]> channel = context.createChannel ("large", int[].class) )
+         try
          {
-            channel.connect ();
+            setUp();
 
-            int[] value = channel.getAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertNotNull (value);
-
-            final int LARGE_PRIME = 15485863;
-            for ( int i = 0; i < value.length; i++ )
+            try ( Channel<int[]> channel = context.createChannel("large", int[].class) )
             {
-               assertEquals (i, value[ i ]);
-               value[ i ] += LARGE_PRIME;
+               channel.connect();
+
+               int[] value = channel.getAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               assertNotNull(value);
+
+               final int LARGE_PRIME = 15485863;
+               for ( int i = 0; i < value.length; i++ )
+               {
+                  assertEquals(i, value[ i ]);
+                  value[ i ] += LARGE_PRIME;
+               }
+
+               Status putStatus = channel.putAsync(value).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               assertEquals(Status.NORMAL, putStatus);
+
+               value = channel.getAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               assertNotNull(value);
+
+               for ( int i = 0; i < value.length; i++ )
+                  assertEquals(i + LARGE_PRIME, value[ i ]);
             }
-
-            Status putStatus = channel.putAsync (value).get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertEquals (Status.NORMAL, putStatus);
-
-            value = channel.getAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertNotNull (value);
-
-            for ( int i = 0; i < value.length; i++ )
-               assertEquals (i + LARGE_PRIME, value[ i ]);
          }
-      }
-      finally
-      {
-         // restore value
-         if ( oldValue == null )
-            System.clearProperty (propName);
-         else
-            System.setProperty (propName, oldValue);
+         finally
+         {
+            // restore value
+            if ( oldValue == null )
+               System.clearProperty(propName);
+            else
+               System.setProperty(propName, oldValue);
+         }
       }
    }
 
@@ -410,12 +428,109 @@ class ChannelTest
       internalTestGraphicEnum ("enum", short[].class, new short[] { 3, 4 }, alarm, labels, true);
    }
 
+   @ParameterizedTest
+   @MethodSource( "getArgumentsForTestMonitorNotificationServiceImplementations" )
+   void testContextCloseAlsoClosesMonitorNotifier( String serviceImpl )
+   {
+      assertEquals(0, MonitorNotificationServiceFactoryCreator.getServiceCount() );
+
+      final Properties contextProperties = new Properties();
+      contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
+      final Context context = new Context( contextProperties );
+
+      final Channel<Integer> channel = context.createChannel ("adc01", Integer.class);
+      channel.connect();
+      assertEquals( 0, MonitorNotificationServiceFactoryCreator.getServiceCount()  );
+
+      final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
+      TestConsumer.clearCurrentTotalNotificationCount();
+      TestConsumer.setExpectedTotalNotificationCount( 2 );
+      channel.addValueMonitor( testConsumer );
+      channel.addValueMonitor( testConsumer );
+      assertEquals(2, MonitorNotificationServiceFactoryCreator.getServiceCount()  );
+      TestConsumer.awaitExpectedTotalNotificationCount();
+
+      context.close();
+      assertEquals( 0, MonitorNotificationServiceFactoryCreator.getServiceCount() );
+   }
+
+
+   @ParameterizedTest
+   @MethodSource( "getArgumentsForTestMonitorNotificationServiceImplementations" )
+   void testChannelCloseDoesNotClosesMonitorNotifier( String serviceImpl )
+   {
+      assertEquals(0, MonitorNotificationServiceFactoryCreator.getServiceCount() );
+
+      final Properties contextProperties = new Properties();
+      contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
+      try( final Context context = new Context( contextProperties ) )
+      {
+         final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
+         channel.connect();
+
+         assertEquals(0, MonitorNotificationServiceFactoryCreator.getServiceCount());
+
+         final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
+         TestConsumer.clearCurrentTotalNotificationCount();
+         TestConsumer.setExpectedTotalNotificationCount(2);
+         channel.addValueMonitor(testConsumer);
+         channel.addValueMonitor(testConsumer);
+         assertEquals(2, MonitorNotificationServiceFactoryCreator.getServiceCount());
+         TestConsumer.awaitExpectedTotalNotificationCount();
+
+         // Note: closing a channel does NOT currently close the MonitorNotificationService.
+         // Therefore the count of created instances is not reset to zero.
+         // TODO: we might want to look at this behaviour in the future and decide whether it needs to change !
+         channel.close();
+         assertEquals(2, MonitorNotificationServiceFactoryCreator.getServiceCount());
+
+      }
+      // After we close the context the MonitorNotificationService gets closed and the count is reset again.
+      assertEquals(0, MonitorNotificationServiceFactoryCreator.getServiceCount() );
+   }
+
+   @ParameterizedTest
+   @MethodSource( "getArgumentsForTestMonitorNotificationServiceImplementations" )
+   void testMonitorCloseDoesNotAlsoClosesMonitorNotifier( String serviceImpl )
+   {
+      assertEquals(0, MonitorNotificationServiceFactoryCreator.getServiceCount() );
+
+      final Properties contextProperties = new Properties();
+      contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
+      try( final Context context = new Context( contextProperties ) )
+      {
+         assertEquals(0, MonitorNotificationServiceFactoryCreator.getServiceCount());
+
+         final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
+         channel.connect();
+
+         assertEquals(0, MonitorNotificationServiceFactoryCreator.getServiceCount());
+
+         final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
+         TestConsumer.clearCurrentTotalNotificationCount();
+         TestConsumer.setExpectedTotalNotificationCount(2);
+         final Monitor monitor1 = channel.addValueMonitor(testConsumer);
+         final Monitor monitor2 = channel.addValueMonitor(testConsumer);
+         assertEquals(2, MonitorNotificationServiceFactoryCreator.getServiceCount());
+         TestConsumer.awaitExpectedTotalNotificationCount();
+
+         // Note: closing a channel does NOT currently close the MonitorNotificationService.
+         // Therefore the count of created instances is not reset to zero.
+         // TODO: we might want to look at this behaviour in the future and decide whether it needs to change !
+         monitor1.close();
+         assertEquals(2, MonitorNotificationServiceFactoryCreator.getServiceCount());
+         monitor2.close();
+         assertEquals(2, MonitorNotificationServiceFactoryCreator.getServiceCount());
+      }
+      // After we close the context the MonitorNotificationService gets closed and the count is reset again.
+      assertEquals(0, MonitorNotificationServiceFactoryCreator.getServiceCount() );
+   }
 
 /*- Private methods ----------------------------------------------------------*/
 
    private static Stream<Arguments> getArgumentsForTestMonitorNotificationServiceImplementations()
    {
-      final List<String> serviceImpls = MonitorNotificationServiceFactory.getAllServiceImplementations();
+      final List<String> serviceImpls = MonitorNotificationServiceFactoryCreator.getAllServiceImplementations();
       return serviceImpls.stream().map(Arguments::of);
    }
 
@@ -431,41 +546,45 @@ class ChannelTest
    @Test
    private <T> void internalTestPutAndGet( String channelName, Class<T> clazz, T expectedValue, boolean async ) throws Throwable
    {
-      try ( Channel<T> channel = context.createChannel (channelName, clazz) )
+      try ( Context context = new Context() )
       {
-         channel.connect ();
+         try ( Channel<T> channel = context.createChannel(channelName, clazz) )
+         {
+            channel.connect();
 
-         if ( async )
-         {
-            Status status = channel.putAsync (expectedValue).get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertTrue (status.isSuccessful ());
-         }
-         else
-         {
-            channel.putNoWait(expectedValue);
-         }
+            if ( async )
+            {
+               Status status = channel.putAsync(expectedValue).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               assertTrue(status.isSuccessful());
+            }
+            else
+            {
+               channel.putNoWait(expectedValue);
+            }
 
-         T value;
-         if ( async )
-         {
-            value = channel.getAsync ().get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertNotNull (value);
-         }
-         else
-         {
-            value = channel.get();
-         }
+            T value;
+            if ( async )
+            {
+               value = channel.getAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               assertNotNull(value);
+            }
+            else
+            {
+               value = channel.get();
+            }
 
-         if ( clazz.isArray () )
-         {
-            // Surely the assertion below is a bug and should instead be as follows:
-            // assertTrue( arrayEquals(expectedValue, value)); ..?
-            // The asserion below does not look at the result of the check.
-            arrayEquals(expectedValue, value);
-         }
-         else
-         {
-            assertEquals(expectedValue, value);
+            if ( clazz.isArray() )
+            {
+               // TODO: check and eliminate the following bug:
+               // Surely the assertion below is a bug and should instead be as follows:
+               // assertTrue( arrayEquals(expectedValue, value)); ..?
+               // The asserion below does not look at the result of the check.
+               arrayEquals(expectedValue, value);
+            }
+            else
+            {
+               assertEquals(expectedValue, value);
+            }
          }
       }
    }
@@ -492,68 +611,71 @@ class ChannelTest
    @SuppressWarnings( { "unchecked", "rawtypes" } )
    private <T, ST, MT extends Metadata<T>> void internalTestMetaPutAndGet( String channelName, Class<T> clazz, Class<ST> scalarClazz, T expectedValue, Class<? extends Metadata> meta, Alarm<?> expectedAlarm, Control<?, Double> expectedMeta, boolean async ) throws Throwable
    {
-      try ( Channel<T> channel = context.createChannel (channelName, clazz) )
+      try ( Context context = new Context() )
       {
-         channel.connect ();
-
-         if ( async )
+         try ( Channel<T> channel = context.createChannel(channelName, clazz) )
          {
-            Status status = channel.putAsync (expectedValue).get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertTrue (status.isSuccessful ());
+            channel.connect();
+
+            if ( async )
+            {
+               Status status = channel.putAsync(expectedValue).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               assertTrue(status.isSuccessful());
+            }
+            else
+               channel.putNoWait(expectedValue);
+
+            MT value;
+            if ( async )
+            {
+               value = (MT) channel.getAsync(meta).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               assertNotNull(value);
+            }
+            else
+               value = channel.get(meta);
+
+            if ( Alarm.class.isAssignableFrom(meta) )
+            {
+               Alarm<T> v = (Alarm<T>) value;
+               assertEquals(expectedAlarm.getAlarmStatus(), v.getAlarmStatus());
+               assertEquals(expectedAlarm.getAlarmSeverity(), v.getAlarmSeverity());
+            }
+
+            if ( Timestamped.class.isAssignableFrom(meta) )
+            {
+               Timestamped<T> v = (Timestamped<T>) value;
+               long dt = System.currentTimeMillis() - v.getMillis();
+               assertTrue(dt < (TIMEOUT_SEC * 1000));
+            }
+
+            if ( Graphic.class.isAssignableFrom(meta) )
+            {
+               Graphic<T, ST> v = (Graphic<T, ST>) value;
+
+               assertEquals( expectedMeta.getUnits(), v.getUnits());
+               if ( scalarClazz.equals(Double.class) || scalarClazz.equals(Float.class) )
+                  assertEquals( expectedMeta.getPrecision(), v.getPrecision());
+               // no NaN or other special values allowed
+               assertEquals( expectedMeta.getLowerAlarm(), Number.class.cast(v.getLowerAlarm()).doubleValue(), DELTA);
+               assertEquals( expectedMeta.getLowerDisplay(), Number.class.cast(v.getLowerDisplay()).doubleValue(), DELTA);
+               assertEquals( expectedMeta.getLowerWarning(), Number.class.cast(v.getLowerWarning()).doubleValue(), DELTA);
+               assertEquals( expectedMeta.getUpperAlarm(), Number.class.cast(v.getUpperAlarm()).doubleValue(), DELTA);
+               assertEquals( expectedMeta.getUpperDisplay(), Number.class.cast(v.getUpperDisplay()).doubleValue(), DELTA);
+               assertEquals( expectedMeta.getUpperWarning(), Number.class.cast(v.getUpperWarning()).doubleValue(), DELTA);
+            }
+
+            if ( Control.class.isAssignableFrom(meta) )
+            {
+               Control<T, ST> v = (Control<T, ST>) value;
+               assertEquals( expectedMeta.getLowerControl(), Number.class.cast(v.getLowerControl()).doubleValue(), DELTA);
+               assertEquals( expectedMeta.getUpperControl(), Number.class.cast(v.getUpperControl()).doubleValue(), DELTA);
+            }
+
+            if ( clazz.isArray() )
+               arrayEquals(expectedValue, value.getValue());
+            else
+               assertEquals(expectedValue, value.getValue());
          }
-         else
-            channel.putNoWait (expectedValue);
-
-         MT value;
-         if ( async )
-         {
-            value = (MT) channel.getAsync (meta).get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertNotNull (value);
-         }
-         else
-            value = channel.get (meta);
-
-         if ( Alarm.class.isAssignableFrom (meta) )
-         {
-            Alarm<T> v = (Alarm<T>) value;
-            assertEquals (expectedAlarm.getAlarmStatus (), v.getAlarmStatus ());
-            assertEquals (expectedAlarm.getAlarmSeverity (), v.getAlarmSeverity ());
-         }
-
-         if ( Timestamped.class.isAssignableFrom (meta) )
-         {
-            Timestamped<T> v = (Timestamped<T>) value;
-            long dt = System.currentTimeMillis () - v.getMillis ();
-            assertTrue (dt < (TIMEOUT_SEC * 1000));
-         }
-
-         if ( Graphic.class.isAssignableFrom (meta) )
-         {
-            Graphic<T, ST> v = (Graphic<T, ST>) value;
-
-            assertEquals (expectedMeta.getUnits (), v.getUnits ());
-            if ( scalarClazz.equals (Double.class) || scalarClazz.equals (Float.class) )
-               assertEquals (expectedMeta.getPrecision (), v.getPrecision ());
-            // no NaN or other special values allowed
-            assertEquals (expectedMeta.getLowerAlarm (), Number.class.cast (v.getLowerAlarm ()).doubleValue (), DELTA);
-            assertEquals (expectedMeta.getLowerDisplay (), Number.class.cast (v.getLowerDisplay ()).doubleValue (), DELTA);
-            assertEquals (expectedMeta.getLowerWarning (), Number.class.cast (v.getLowerWarning ()).doubleValue (), DELTA);
-            assertEquals (expectedMeta.getUpperAlarm (), Number.class.cast (v.getUpperAlarm ()).doubleValue (), DELTA);
-            assertEquals (expectedMeta.getUpperDisplay (), Number.class.cast (v.getUpperDisplay ()).doubleValue (), DELTA);
-            assertEquals (expectedMeta.getUpperWarning (), Number.class.cast (v.getUpperWarning ()).doubleValue (), DELTA);
-         }
-
-         if ( Control.class.isAssignableFrom (meta) )
-         {
-            Control<T, ST> v = (Control<T, ST>) value;
-            assertEquals (expectedMeta.getLowerControl (), Number.class.cast (v.getLowerControl ()).doubleValue (), DELTA);
-            assertEquals (expectedMeta.getUpperControl (), Number.class.cast (v.getUpperControl ()).doubleValue (), DELTA);
-         }
-
-         if ( clazz.isArray () )
-            arrayEquals (expectedValue, value.getValue ());
-         else
-            assertEquals (expectedValue, value.getValue ());
       }
    }
 
@@ -605,42 +727,45 @@ class ChannelTest
 
    private <T> void internalTestGraphicEnum( String channelName, Class<T> clazz, T expectedValue, Alarm<?> expectedAlarm, String[] expectedLabels, boolean async ) throws Throwable
    {
-      // put
-      try ( Channel<T> channel = context.createChannel( channelName, clazz ) )
+      try ( Context context = new Context() )
       {
-         channel.connect ();
-
-         if ( async )
+         // put
+         try ( Channel<T> channel = context.createChannel(channelName, clazz) )
          {
-            Status status = channel.putAsync (expectedValue).get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertTrue (status.isSuccessful ());
+            channel.connect();
+
+            if ( async )
+            {
+               Status status = channel.putAsync(expectedValue).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               assertTrue(status.isSuccessful());
+            }
+            else
+               channel.putNoWait(expectedValue);
+
+            Alarm<T> value;
+            @SuppressWarnings( "rawtypes" )
+            Class<? extends Metadata> gec = clazz.isArray() ? GraphicEnumArray.class : GraphicEnum.class;
+            if ( async )
+            {
+               value = (Alarm<T>) channel.getAsync(gec).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               assertNotNull(value);
+            }
+            else
+            {
+               value = channel.get(gec);
+            }
+
+            if ( clazz.isArray() )
+               arrayEquals(expectedValue, value.getValue());
+            else
+               assertEquals(expectedValue, value.getValue());
+
+            assertEquals(expectedAlarm.getAlarmStatus(), value.getAlarmStatus());
+            assertEquals(expectedAlarm.getAlarmSeverity(), value.getAlarmSeverity());
+
+            String[] labels = clazz.isArray() ? ((GraphicEnumArray) value).getLabels() : ((GraphicEnum) value).getLabels();
+            assertTrue(Arrays.equals(expectedLabels, labels));
          }
-         else
-            channel.putNoWait (expectedValue);
-
-         Alarm<T> value;
-         @SuppressWarnings( "rawtypes" )
-         Class<? extends Metadata> gec = clazz.isArray () ? GraphicEnumArray.class : GraphicEnum.class;
-         if ( async )
-         {
-            value = (Alarm<T>) channel.getAsync (gec).get (TIMEOUT_SEC, TimeUnit.SECONDS);
-            assertNotNull (value);
-         }
-         else
-         {
-            value = channel.get (gec);
-         }
-
-         if ( clazz.isArray () )
-            arrayEquals (expectedValue, value.getValue ());
-         else
-            assertEquals (expectedValue, value.getValue ());
-
-         assertEquals (expectedAlarm.getAlarmStatus (), value.getAlarmStatus ());
-         assertEquals (expectedAlarm.getAlarmSeverity (), value.getAlarmSeverity ());
-
-         String[] labels = clazz.isArray () ? ((GraphicEnumArray) value).getLabels () : ((GraphicEnum) value).getLabels ();
-         assertTrue (Arrays.equals (expectedLabels, labels));
       }
    }
 
