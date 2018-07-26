@@ -239,8 +239,8 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
       executorService.shutdown();
       try
       {
-         logger.log ( Level.FINEST, "Waiting 5 seconds for tasks to finish..." );
-         if ( executorService.awaitTermination(10, TimeUnit.SECONDS ) )
+         logger.log ( Level.FINEST, "Waiting 2 seconds for tasks to finish..." );
+         if ( executorService.awaitTermination(2, TimeUnit.SECONDS ) )
          {
             logger.log ( Level.FINEST, "Executor terminated ok." );
          }
@@ -248,7 +248,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
          {
             logger.log ( Level.FINEST, "Executor did not yet terminate. Forcing termination..." );
             executorService.shutdownNow();
-            executorService.awaitTermination(10, TimeUnit.SECONDS );
+            executorService.awaitTermination(2, TimeUnit.SECONDS );
          }
       }
       catch ( InterruptedException ex )

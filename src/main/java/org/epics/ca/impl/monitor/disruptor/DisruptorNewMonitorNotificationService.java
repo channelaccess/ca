@@ -123,10 +123,13 @@ public class DisruptorNewMonitorNotificationService<T> implements MonitorNotific
    {
       try
       {
-         // Note: the first delay is to
-         Thread.sleep( 1000 );
          disruptor.shutdown();
-         Thread.sleep( 1000 );
+
+         // TODO: examine whether this is good enough to meet the service guarantee
+         // TODO: that all threads should have been destroyed before exit.
+         // This pause is to allow threads created within the disruptor to die.
+         // Note: there is currently no guarantee of this.
+         Thread.sleep( 2000 );
       }
       catch ( InterruptedException ex )
       {

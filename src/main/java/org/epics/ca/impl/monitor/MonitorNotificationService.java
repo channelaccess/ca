@@ -78,6 +78,8 @@ public interface MonitorNotificationService<T> extends AutoCloseable
 
    /**
     * Brings this service to a state where it has disposed of its resources.
+    * Threads that were created within the service are guaranteed to be
+    * destroyed.
     */
    void close();
 

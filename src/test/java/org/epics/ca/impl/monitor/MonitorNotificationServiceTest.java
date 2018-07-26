@@ -54,7 +54,7 @@ public class MonitorNotificationServiceTest
    @MethodSource( "getMonitorNotificationServiceImplementations" )
    void testGetNotifierForConsumer_ThrowsNullPointerExceptionWhenConsumerNull( String serviceImpl )
    {
-      assertThrows( NullPointerException.class, () -> new MonitorNotificationServiceFactory( serviceImpl ).getServiceForConsumer( null ) );
+      assertThrows( NullPointerException.class, () -> MonitorNotificationServiceFactoryCreator.create(serviceImpl ).getServiceForConsumer(null ) );
    }
 
    @ParameterizedTest
@@ -62,22 +62,29 @@ public class MonitorNotificationServiceTest
    void testNotifyConsumerNullPublicationBehaviour( String serviceImpl, boolean acceptsNullExpectation )
    {
       Validate.notNull( serviceImpl );
-
       logger.log( Level.INFO, String.format("Assessing null publication behaviour of service implementation: '%s'", serviceImpl ) );
-      boolean acceptedNull = true;
-      try
+
+      boolean nullWasAccepted = true;
+      final boolean nullAcceptanceWasAdvertised;
+      try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create(serviceImpl ) )
       {
+         nullAcceptanceWasAdvertised = factory.getQosMetricIsNullPublishable();
+
+         final MonitorNotificationService<Long> notifier;
          final TestConsumer<Long> consumer = TestConsumer.getNormalConsumer();
-         final MonitorNotificationServiceFactory factory = new MonitorNotificationServiceFactory( serviceImpl );
-         final MonitorNotificationService<Long> notifier = factory.getServiceForConsumer( consumer );
-         notifier.publish( null );
+         notifier = factory.getServiceForConsumer( consumer );
+         try
+         {
+            notifier.publish(null );
+         }
+         catch ( NullPointerException ex )
+         {
+            nullWasAccepted = false;
+         }
       }
-      catch( NullPointerException ex )
-      {
-         acceptedNull = false;
-      }
-      assertEquals( acceptsNullExpectation, acceptedNull );
-      logger.log( Level.INFO, String.format( "The service implementation '%s' had the following null publication property: [accepts null=%b].\n", serviceImpl, acceptedNull ) );
+      assertEquals( acceptsNullExpectation, nullWasAccepted );
+      assertEquals( acceptsNullExpectation, nullAcceptanceWasAdvertised );
+      logger.log( Level.INFO, String.format( "The service implementation '%s' had the following null publication property: [advertises null acceptance = %b; accepts null=%b].\n", serviceImpl, nullAcceptanceWasAdvertised, nullWasAccepted ) );
    }
 
    @ParameterizedTest
@@ -93,46 +100,45 @@ public class MonitorNotificationServiceTest
       logger.log( Level.INFO, String.format( "Starting test with service implementation '%s', '%s' notifications, and notification value type: '%s'", serviceImpl, notifications, notificationValueType ) );
       assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
       {
-         // Startup the service
-         final TestConsumer<T> testConsumer = new TestConsumer<>( consumerType, consumerProcessingTimeInMicroseconds, TimeUnit.MICROSECONDS );
-         final MonitorNotificationService<? super T> notifier = new MonitorNotificationServiceFactory( serviceImpl ).getServiceForConsumer( testConsumer );
-
-         // Start the timer and send all the notifications but one
-         // logger.info( "Sending {} notifications...", notifications );
-         final StopWatch stopWatch = StopWatch.createStarted();
-         for ( long notification = 0; notification < notifications - 1; notification++ )
+         final long elapsedTimeInMicroseconds;
+         try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create(serviceImpl ) )
          {
-            if ( notifier.publish( notifyValue1 ) )
+            // Startup the service
+            final TestConsumer<T> testConsumer = new TestConsumer<>(consumerType, consumerProcessingTimeInMicroseconds, TimeUnit.MICROSECONDS);
+            final MonitorNotificationService<? super T> notifier = factory.getServiceForConsumer(testConsumer);
+
+            // Start the timer and send all the notifications but one
+            // logger.info( "Sending {} notifications...", notifications );
+            final StopWatch stopWatch = StopWatch.createStarted();
+            for ( long notification = 0; notification < notifications - 1; notification++ )
             {
-               logger.log( Level.FINEST, String.format( " Value %s accepted - buffer OK", notifyValue1 ) );
+               if ( notifier.publish(notifyValue1) )
+               {
+                  logger.log(Level.FINEST, String.format(" Value %s accepted - buffer OK", notifyValue1));
+               }
+               else
+               {
+                  logger.log(Level.FINEST, String.format(" Value %s accepted - buffer OVERRUN", notifyValue1));
+               }
+            }
+
+            // For the last notification send a different value, so that we can check it gets
+            // notified correctly.
+            testConsumer.setExpectedNotificationValue( notifyValue2 );
+            if ( notifier.publish( notifyValue2 ) )
+            {
+               logger.log(Level.FINEST, String.format(" Value %s accepted - buffer OK", notifyValue2 ) );
             }
             else
             {
-               logger.log( Level.FINEST, String.format( " Value %s accepted - buffer OVERRUN", notifyValue1 ) );
+               logger.log(Level.FINEST, String.format(" Value %s accepted - buffer OVERRUN", notifyValue2 ) );
             }
+
+            // Wait for the last notification. Poll relatively often so that it doesn't
+            // perturb the timing measurement too much.
+            testConsumer.awaitExpectedNotificationValue();
+            elapsedTimeInMicroseconds = stopWatch.getTime(TimeUnit.MICROSECONDS);
          }
-
-         // For the last notification send a different value, so that we can check it gets
-         // notified correctly.
-         testConsumer.setExpectedNotificationValue( notifyValue2 );
-         if ( notifier.publish( notifyValue2 ) )
-         {
-            logger.log( Level.FINEST, String.format( " Value %s accepted - buffer OK", notifyValue2 ) );
-         }
-         else
-         {
-            logger.log( Level.FINEST, String.format( " Value %s accepted - buffer OVERRUN", notifyValue2 ) );
-         }
-
-         // Wait for the last notification. Poll relatively often so that it doesn't
-         // perturb the timing measurement too much.
-         testConsumer.awaitExpectedNotificationValue();
-
-         final long elapsedTimeInMicroseconds = stopWatch.getTime(TimeUnit.MICROSECONDS);
-
-         // Now shutdown the service for good housekeeping
-         notifier.dispose();
-         notifier.disposeAllResources();
 
          double averageNotificationTimeInMicroseconds = (double) elapsedTimeInMicroseconds / (double) notifications;
          double elapsedTimeInMilliseconds = (double) elapsedTimeInMicroseconds / 1000;
@@ -166,61 +172,62 @@ public class MonitorNotificationServiceTest
 
       assertTimeoutPreemptively( Duration.ofSeconds( 120 ), () ->
       {
-        final MonitorNotificationServiceFactory factory = new MonitorNotificationServiceFactory( serviceImpl );
+         final long elapsedTimeInMicroseconds;
+         final int numberOfNotificationThreadsPerConsumerAsAdvertised;
+         try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create(serviceImpl ) )
+         {
+            numberOfNotificationThreadsPerConsumerAsAdvertised = factory.getQosMetricNumberOfNotificationThreadsPerConsumer();
 
-        // Set the expectation on how many notifications should be received. Since even the lossy
-        // monitor notification serviceImpls must notify each DISTINCT consumer we can simply wait
-        // for each consumer to notify.
-        TestConsumer.clearCurrentTotalNotificationCount();
-        TestConsumer.setExpectedTotalNotificationCount( notifications );
+            // Set the expectation on how many notifications should be received. Since even the lossy
+            // monitor notification serviceImpls must notify each DISTINCT consumer we can simply wait
+            // for each consumer to notify.
+            TestConsumer.clearCurrentTotalNotificationCount();
+            TestConsumer.setExpectedTotalNotificationCount(notifications);
 
-        // Start the stopwatch and send all the notifications
-        logger.log( Level.FINEST, String.format( "Sending '%s' notifications with value: '%s' ", notifications, notifyValue ) );
-        MonitorNotificationService<T> notifier = null;
-        final StopWatch stopWatch = StopWatch.createStarted();
-        for ( long notification = 0; notification < notifications; notification++ )
-        {
-           final TestConsumer<T> testConsumer = new TestConsumer<>( consumerType, consumerProcessingTimeInMicroseconds,TimeUnit.MICROSECONDS );
-           notifier = factory.getServiceForConsumer( testConsumer );
-           if ( ! notifier.publish( notifyValue) )
-           {
-              logger.log( Level.INFO, String.format( "Value was dropped: %s", notifyValue ) );
-           }
-        }
+            // Start the stopwatch and send all the notifications
+            logger.log(Level.FINEST, String.format("Sending '%s' notifications with value: '%s' ", notifications, notifyValue));
+            MonitorNotificationService<T> notifier;
+            final StopWatch stopWatch = StopWatch.createStarted();
+            for ( long notification = 0; notification < notifications; notification++ )
+            {
+               final TestConsumer<T> testConsumer = new TestConsumer<>(consumerType, consumerProcessingTimeInMicroseconds, TimeUnit.MICROSECONDS);
+               notifier = factory.getServiceForConsumer( testConsumer );
+               if ( !notifier.publish( notifyValue ) )
+               {
+                  logger.log(Level.INFO, String.format("Value was dropped: %s", notifyValue));
+               }
+            }
 
-        TestConsumer.awaitExpectedTotalNotificationCount();
-        final long elapsedTimeInMicroseconds = stopWatch.getTime( TimeUnit.MICROSECONDS );
+            TestConsumer.awaitExpectedTotalNotificationCount();
+            elapsedTimeInMicroseconds = stopWatch.getTime(TimeUnit.MICROSECONDS);
 
-         // Check that the expected number of notification events were received from the consumers
-         assertEquals( notifications, TestConsumer.getCurrentTotalNotificationCount(), "unexpected number of notifications received" );
+            // Check that the expected number of notification events were received from the consumers
+            assertEquals( notifications, TestConsumer.getCurrentTotalNotificationCount(), "unexpected number of notifications received");
+         }
 
-         // Now shutdown the service for good housekeeping
-         notifier.dispose();
-         notifier.disposeAllResources();
+         final double averageNotificationTimeInMicroseconds = (double) elapsedTimeInMicroseconds / (double) notifications;
+         final double elapsedTimeInMilliseconds = (double) elapsedTimeInMicroseconds / 1000;
+         final double throughput = 1_000_000 / averageNotificationTimeInMicroseconds;
 
-        final double averageNotificationTimeInMicroseconds = (double) elapsedTimeInMicroseconds / (double) notifications;
-        final double elapsedTimeInMilliseconds = (double) elapsedTimeInMicroseconds / 1000;
-        final double throughput = 1_000_000 / averageNotificationTimeInMicroseconds;
+         // The theoretical limit is based on there being an sufficient CPU cores to devote themeslved exclusively to the number of processing threads.
+         final double theoreticalThroughputLimit =  (double) 1_000_000 / ( (double) consumerProcessingTimeInMicroseconds / (double) numberOfNotificationThreadsPerConsumerAsAdvertised );
 
-        // The theoretical limit is based on there being an sufficient CPU cores to devote themeslved exclusively to the number of processing threads.
-        final int processingThreads = factory.getServiceForConsumer( TestConsumer.getNormalConsumer() ).getQualityOfServiceNumberOfNotificationThreadsPerConsumer();
-        final double theoreticalThroughputLimit =  (double) 1_000_000 / ( (double) consumerProcessingTimeInMicroseconds / (double) processingThreads );
+         // The CPU bound theoretical limit takes into account the fact that there may be less CPU cores than processing threads so in the situation
+         // that the consumer requires heavy processing there may not be enough CPU time available.
+         final int cpuCores = Runtime.getRuntime().availableProcessors();
+         logger.log( Level.FINEST, String.format( "CPU Cores are %d", cpuCores ) );
 
-        // The CPU bound theoretical limit takes into account the fact that there may be less CPU cores than processing threads so in the situation
-        // that the consumer requires heavy processing there may not be enough CPU time available.
-        final int cpuCores = Runtime.getRuntime().availableProcessors();
-        logger.log( Level.FINEST, String.format( "CPU Cores are %d", cpuCores ) );
+         final int availableThreads = Math.min( cpuCores, numberOfNotificationThreadsPerConsumerAsAdvertised );
+         logger.log( Level.FINEST, String.format( "Available threads are %d", availableThreads ) );
+         final double cpuBoundedThroughputLimitOnThisMachine =  (double) 1_000_000 / ( (double) consumerProcessingTimeInMicroseconds / (double) availableThreads );
 
-        final int availableThreads = Math.min( cpuCores, processingThreads );
-        logger.log( Level.FINEST, String.format( "Available threads are %d", availableThreads ) );
-        final double cpuBoundedThroughputLimitOnThisMachine =  (double) 1_000_000 / ( (double) consumerProcessingTimeInMicroseconds / (double) availableThreads );
-
-        final TestConsumer<Long> exampleConsumer = TestConsumer.getBusyWaitingSlowConsumer( consumerProcessingTimeInMicroseconds, TimeUnit.MICROSECONDS );
-        logger.log( Level.INFO, String.format( "Service Implementation '%s' took '%,.3f' ms to send %,d notifications of value type '%s' to DISTINCT consumers of type '%s'", serviceImpl, elapsedTimeInMilliseconds, notifications, notificationValueType, exampleConsumer ) );
-        logger.log( Level.INFO, String.format( "Average notification time was: '%,.3f' us ", averageNotificationTimeInMicroseconds ) );
-        logger.log( Level.INFO, String.format( "Throughput was: '%,.0f' notifications per second.", throughput ) );
-        logger.log( Level.INFO, String.format( "Theoretical limits were: theoretical / cpuBoundOnThisMachine '%,.0f' / '%,.0f' notifications per second.\n", theoreticalThroughputLimit, cpuBoundedThroughputLimitOnThisMachine ) );
+         final TestConsumer<Long> exampleConsumer = TestConsumer.getBusyWaitingSlowConsumer( consumerProcessingTimeInMicroseconds, TimeUnit.MICROSECONDS );
+         logger.log( Level.INFO, String.format( "Service Implementation '%s' took '%,.3f' ms to send %,d notifications of value type '%s' to DISTINCT consumers of type '%s'", serviceImpl, elapsedTimeInMilliseconds, notifications, notificationValueType, exampleConsumer ) );
+         logger.log( Level.INFO, String.format( "Average notification time was: '%,.3f' us ", averageNotificationTimeInMicroseconds ) );
+         logger.log( Level.INFO, String.format( "Throughput was: '%,.0f' notifications per second.", throughput ) );
+         logger.log( Level.INFO, String.format( "Theoretical limits were: theoretical / cpuBoundOnThisMachine '%,.0f' / '%,.0f' notifications per second.\n", theoreticalThroughputLimit, cpuBoundedThroughputLimitOnThisMachine ) );
       } );
+
    }
 
    /**
@@ -245,56 +252,60 @@ public class MonitorNotificationServiceTest
          final Long slowConsumerValue = 123L;
          final Long otherConsumerValue = 456L;
 
-         final TestConsumer<Long> slowConsumer = TestConsumer.getThreadSleepingSlowConsumer( slowConsumerDelayTimeInMillis, TimeUnit.MILLISECONDS );
-         final TestConsumer<Long> otherConsumer = TestConsumer.getNormalConsumer();
-         final MonitorNotificationServiceFactory factory = new MonitorNotificationServiceFactory( serviceImpl );
-         final MonitorNotificationService<Long> slowConsumerNotifier = factory.getServiceForConsumer( slowConsumer );
-         final MonitorNotificationService<Long> otherConsumerNotifier = factory.getServiceForConsumer( otherConsumer );
-
-         slowConsumer.setExpectedNotificationCount( 1 );
-         slowConsumer.setExpectedNotificationValue( slowConsumerValue );
-         otherConsumer.setExpectedNotificationCount( 1 );
-         otherConsumer.setExpectedNotificationValue( otherConsumerValue );
-
-         // Start the stopwatch
-         final StopWatch stopWatch = StopWatch.createStarted();
-
-         // Publish a value to both the slow consumer and the other one
-         if ( ! slowConsumerNotifier.publish( slowConsumerValue ))
+         final long otherConsumerNotifyTimeInMilliseconds;
+         final long slowConsumerNotifyTimeInMilliseconds;
+         try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create(serviceImpl ) )
          {
-            logger.log( Level.INFO, String.format( "Value was dropped: %s", slowConsumerValue ) );
+            final TestConsumer<Long> slowConsumer = TestConsumer.getThreadSleepingSlowConsumer( slowConsumerDelayTimeInMillis, TimeUnit.MILLISECONDS );
+            final TestConsumer<Long> otherConsumer = TestConsumer.getNormalConsumer();
+            final MonitorNotificationService<Long> slowConsumerNotifier = factory.getServiceForConsumer(slowConsumer);
+            final MonitorNotificationService<Long> otherConsumerNotifier = factory.getServiceForConsumer(otherConsumer);
+
+            slowConsumer.setExpectedNotificationCount(1);
+            slowConsumer.setExpectedNotificationValue(slowConsumerValue);
+            otherConsumer.setExpectedNotificationCount(1);
+            otherConsumer.setExpectedNotificationValue(otherConsumerValue);
+
+            // Start the stopwatch
+            final StopWatch stopWatch = StopWatch.createStarted();
+
+            // Publish a value to both the slow consumer and the other one
+            if ( !slowConsumerNotifier.publish( slowConsumerValue) )
+            {
+               logger.log(Level.INFO, String.format("Value was dropped: %s", slowConsumerValue));
+            }
+
+            if ( !otherConsumerNotifier.publish( otherConsumerValue) )
+            {
+               logger.log(Level.INFO, String.format("Value was dropped: %s", otherConsumerValue));
+            }
+
+            // Record the elapsed time when the normal consumer sees the expected value
+            otherConsumer.awaitExpectedNotificationCount();
+            otherConsumer.awaitExpectedNotificationValue();
+            otherConsumerNotifyTimeInMilliseconds = stopWatch.getTime(TimeUnit.MILLISECONDS );
+
+            // Record the elapsed time when the slow consumer sees the expected value
+            slowConsumer.awaitExpectedNotificationCount();
+            slowConsumer.awaitExpectedNotificationValue();
+            slowConsumerNotifyTimeInMilliseconds = stopWatch.getTime(TimeUnit.MILLISECONDS );
          }
-
-         if ( ! otherConsumerNotifier.publish( otherConsumerValue ))
-         {
-            logger.log( Level.INFO, String.format( "Value was dropped: %s", otherConsumerValue ) );
-         }
-
-         // Record the elapsed time when the normal consumer sees the expected value
-         otherConsumer.awaitExpectedNotificationCount();
-         otherConsumer.awaitExpectedNotificationValue();
-         final long otherConsumerNotifyTimeInMicroseconds = stopWatch.getTime( TimeUnit.MICROSECONDS );
-
-         // Record the elapsed time when the slow consumer sees the expected value
-         slowConsumer.awaitExpectedNotificationCount();
-         slowConsumer.awaitExpectedNotificationValue();
-         final long slowConsumerNotifyTimeInMicroseconds = stopWatch.getTime( TimeUnit.MICROSECONDS );
 
          // Check that the notification arrived in the expected time frame.
-         assertTrue(otherConsumerNotifyTimeInMicroseconds >= otherConsumerMinNotifyTimeInMillis * 1000,
-                     String.format( "%s greater than %s ", otherConsumerNotifyTimeInMicroseconds, otherConsumerMinNotifyTimeInMillis * 1000) );
+         assertTrue(otherConsumerNotifyTimeInMilliseconds >= otherConsumerMinNotifyTimeInMillis,
+                    String.format( "%s greater than %s ", otherConsumerNotifyTimeInMilliseconds, otherConsumerMinNotifyTimeInMillis));
 
-         assertTrue(otherConsumerNotifyTimeInMicroseconds < otherConsumerMaxNotifyTimeInMillis * 1000,
-                     String.format( "%s less than %s ", otherConsumerNotifyTimeInMicroseconds, otherConsumerMaxNotifyTimeInMillis * 1000) );
+         assertTrue(otherConsumerNotifyTimeInMilliseconds < otherConsumerMaxNotifyTimeInMillis,
+                    String.format( "%s less than %s ", otherConsumerNotifyTimeInMilliseconds, otherConsumerMaxNotifyTimeInMillis));
 
-         assertTrue(slowConsumerNotifyTimeInMicroseconds >= slowConsumerDelayTimeInMillis * 1000,
-                     String.format( "%s greater than %s ", slowConsumerNotifyTimeInMicroseconds, slowConsumerDelayTimeInMillis * 1000) );
+         assertTrue(slowConsumerNotifyTimeInMilliseconds >= slowConsumerDelayTimeInMillis,
+                    String.format( "%s greater than %s ", slowConsumerNotifyTimeInMilliseconds, slowConsumerDelayTimeInMillis));
 
-         logger.log( Level.INFO, String.format( "Slow consumer was notified in %,d us.",  slowConsumerNotifyTimeInMicroseconds ) );
-         logger.log( Level.INFO, String.format( "Other consumer was notified in %,d us.", otherConsumerNotifyTimeInMicroseconds ) );
+         logger.log(Level.INFO, String.format("Slow consumer was notified in %,d ms.", slowConsumerNotifyTimeInMilliseconds));
+         logger.log(Level.INFO, String.format("Other consumer was notified in %,d ms.", otherConsumerNotifyTimeInMilliseconds));
 
-         final boolean serviceIsBlocking = otherConsumerNotifyTimeInMicroseconds >= slowConsumerDelayTimeInMillis * 1000;
-         logger.log( Level.INFO, String.format( "The service implementation '%s' had the following notification properties: [blocking=%b].\n", serviceImpl, serviceIsBlocking ) );
+         final boolean serviceIsBlocking = otherConsumerNotifyTimeInMilliseconds >= slowConsumerDelayTimeInMillis;
+         logger.log(Level.INFO, String.format("The service implementation '%s' had the following notification properties: [blocking=%b].\n", serviceImpl, serviceIsBlocking));
       } );
    }
 
@@ -317,23 +328,25 @@ public class MonitorNotificationServiceTest
       assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
       {
          final TestConsumer<Long> testConsumer = TestConsumer.getNormalConsumer();
-         final MonitorNotificationServiceFactory factory = new MonitorNotificationServiceFactory( serviceImpl );
-         final MonitorNotificationService<? super Long> consumerNotifier = factory.getServiceForConsumer( testConsumer );
-
-         // Now arm the TestConsumer detectors and send all other values in sequence
-         testConsumer.setExpectedNotificationValue( lastNotificationValue );
-         testConsumer.setNotificationSequenceWasMonotonic();
-         testConsumer.setNotificationSequenceWasConsecutive();
-         for ( long i = 1; i <= lastNotificationValue; i++ )
+         try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create( serviceImpl ) )
          {
-            logger.log( Level.FINEST, String.format( "Publishing: %d", i ) );
-            if ( ! consumerNotifier.publish( i ) )
-            {
-               logger.log( Level.INFO, String.format( "Value was dropped: %s", i ) );
-            }
+            final MonitorNotificationService<? super Long> consumerNotifier = factory.getServiceForConsumer(testConsumer);
 
+            // Now arm the TestConsumer detectors and send all other values in sequence
+            testConsumer.setExpectedNotificationValue(lastNotificationValue);
+            testConsumer.setNotificationSequenceWasMonotonic();
+            testConsumer.setNotificationSequenceWasConsecutive();
+            for ( long i = 1; i <= lastNotificationValue; i++ )
+            {
+               logger.log(Level.FINEST, String.format("Publishing: %d", i));
+               if ( !consumerNotifier.publish(i) )
+               {
+                  logger.log(Level.INFO, String.format("Value was dropped: %s", i));
+               }
+
+            }
+            testConsumer.awaitExpectedNotificationValue();
          }
-         testConsumer.awaitExpectedNotificationValue();
 
          // Check the service implementation meets the expectations on notification monotonictity and sequentiality
          final boolean serviceIsMonotonic = testConsumer.getNotificationSequenceWasMonotonic();
@@ -365,26 +378,28 @@ public class MonitorNotificationServiceTest
    void testBufferOverrunConsumerLastValueAlwaysGetsSent( String serviceImpl  )
    {
       logger.log( Level.INFO, String.format( "Starting test with service implementation '%s'", serviceImpl ) );
-      assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () ->
+      assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
       {
          final TestConsumer<Long> testConsumer = TestConsumer.getBusyWaitingSlowConsumer( 1, TimeUnit.SECONDS );
-         final MonitorNotificationServiceFactory factory = new MonitorNotificationServiceFactory( serviceImpl );
-         final MonitorNotificationService<? super Long> consumerNotifier = factory.getServiceForConsumer( testConsumer );
-
-         for ( long i = 1; i <= 1000; i++ )
+         try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create( serviceImpl ) )
          {
-            testConsumer.setExpectedNotificationValue( i );
-            logger.log( Level.FINEST, String.format( "Publishing: %d", i ) );
+            final MonitorNotificationService<? super Long> consumerNotifier = factory.getServiceForConsumer(testConsumer);
 
-            if ( consumerNotifier.publish( i ) )
+            for ( long i = 1; i <= 1000; i++ )
             {
-               logger.log( Level.FINEST, String.format( " Value %s accepted - buffer OK", i ) );
-            }
-            else
-            {
-               logger.log( Level.FINEST, String.format( " Value %s accepted - buffer OVERRUN", i ) );
-               testConsumer.awaitExpectedNotificationValue();
-               break;
+               testConsumer.setExpectedNotificationValue( i );
+               logger.log( Level.INFO, String.format("Publishing: %d", i ) );
+
+               if ( consumerNotifier.publish( i ) )
+               {
+                  logger.log( Level.FINEST, String.format(" Value %s accepted - buffer OK", i ) );
+               }
+               else
+               {
+                  logger.log( Level.INFO, String.format(" Value %s accepted - buffer OVERRUN", i ) );
+                  testConsumer.awaitExpectedNotificationValue();
+                  break;
+               }
             }
          }
       } );
@@ -396,7 +411,7 @@ public class MonitorNotificationServiceTest
    // Provides a possible test method source to iterate test over all service implementations
    private static Stream<Arguments> getMonitorNotificationServiceImplementations()
    {
-      final List<String> allConfigurations = MonitorNotificationServiceFactory.getAllServiceImplementations();
+      final List<String> allConfigurations = MonitorNotificationServiceFactoryCreator.getAllServiceImplementations();
       return allConfigurations.stream().map(Arguments::of);
    }
 
@@ -434,8 +449,8 @@ public class MonitorNotificationServiceTest
     */
    private static Stream<Arguments> getArgumentsForTestThroughputWithDifferentConsumers()
    {
-      // Currently (2018-07-24) the build fails with the tests on the Disruptor. To prevent breaking
-      // the build they have been removed for the moment.
+      // TODO:  This is a bug that needs fixing !
+      // Currently (2018-07-24) the build fails with the tests on the Disruptor. To prevent breaking the build they have been removed for the moment.
       final List<String> disabledServiceImpls = Arrays.asList( "DisruptorOldMonitorNotificationServiceImpl",
                                                                "DisruptorNewMonitorNotificationServiceImpl");
 
