@@ -68,15 +68,15 @@ static void beforeAll()
     */
    private static Stream<Arguments> getArgumentsForTestMonitorNotificationServiceImpl_NumberOfServiceThreadsArgumentProcessing()
    {
-      return Stream.of( Arguments.of("StripedExecutorServiceMonitorNotificationServiceImpl", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
+      return Stream.of( Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
                         Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,66", 66 ),
-                        Arguments.of("StripedExecutorServiceMonitorNotificationServiceImpl,XXX", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
-                        Arguments.of("StripedExecutorServiceMonitorNotificationServiceImpl,XXX,YYY", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,XXX", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,XXX,YYY", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
                         Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl", 1 ),
-                        Arguments.of("BlockingQueueMultipleWorkerMonitorNotificationServiceImpl", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
+                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
                         Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,10", 10 ),
                         Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,10,YYY", 10 ),
-                        Arguments.of("BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,XXX", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
+                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,XXX", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
                         Arguments.of( "DisruptorOldMonitorNotificationServiceImpl", 1 ),
                         Arguments.of( "DisruptorOldMonitorNotificationServiceImpl,XXX", 1 ),
                         Arguments.of( "DisruptorOldMonitorNotificationServiceImpl,XXX,YYY", 1 ),

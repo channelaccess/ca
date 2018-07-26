@@ -211,7 +211,7 @@ Ca supports all metadata types Channel Access provides, namely `Timestamped`, `A
 |Graphic| alarmStatus, alarmSeverity, units, precision, upperDisplay, lowerDisplay, upperAlarm, lowerAlarm, upperWarning, lowerWarning|
 |Control| alarmStatus, alarmSeverity, units, precision, upperDisplay, lowerDisplay, upperAlarm, lowerAlarm, upperWarning, lowerWarning, upperControl, lowerControl|
 
-### Monitor
+### Monitors
 If you want to monitor a channel you can attach a monitor to it like this:
 
 ```java
@@ -233,6 +233,41 @@ Monitor<Timestamped<Double>> monitor =
             value -> { if (value != null) System.out.println(new Date(value.getMillis()) + " / " + value.getValue()); }
             );
 ```
+
+Internally the CA library uses a monitor notification engine to deliver the  notifications that are received
+from remote IOC to the local Consumer. The properties of this engine are configurable using either a system 
+property or via a ```Properties``` object passed to the Context at the time of construction.
+
+The property, named ```CA_MONITOR_NOTIFIER_IMPL```, can be used as follows:
+
+```java
+final Properties contextProperties = new Properties();
+contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", <my_monitor_config> );
+try ( final Context context = new Context( contextProperties ) ) {
+   ... create and use your monitor as normal here...
+}
+```
+
+The configuration string is used as follows:
+
+|Configuration String                                                          | Type            | Default Buffer Size  | Default Number of Consumer Notification Threads| Additional Comment |
+|------------------------------------------------------------------------------|-----------------|----------------------|------------------------------------------------|----------------------------------------------------|
+|"BlockingQueueMultipleWorkerMonitorNotificationServiceImpl{,threads}{,bufsiz}"| Non-lossy       | Integer.MAX_VALUE    | 16                                             | Threads and buffer size are configurable.          |
+|"BlockingQueueSingleWorkerMonitorNotificationServiceImpl{,threads}{,bufsiz}"  | Non-lossy       | Integer.MAX_VALUE    |  1                                             | Threads parameter is ignored and fixed to 1.       |
+|"DisruptorOldMonitorNotificationServiceImpl"                                  | Lossy           | 2                    |  1                                             | Limited to < 1000 monitors per client application. |
+|"DisruptorNewMonitorNotificationServiceImpl"                                  | Lossy           | 2                    |  1                                             | Experimental. Attempts to improve on the old one.  |
+|"StripedExecutorServiceMonitorNotificationServiceImpl{,threads}"              | Non-lossy       | Integer.MAX_VALUE    | 10                                             | Uses Heinz Kabbutz StripedExecutorService.         |
+
+Note: 
+
+1. The configuration of the monitor notification engine should be considered an experimental feature. In the future 
+it is possible and/or likely that we will provide only a single engine, fully configurable to meet the needs of the 
+client's application.   
+1. The ```BlockingQueueMultipleWorkerMonitorNotificationServiceImpl``` and ```StripedExecutorServiceMonitorNotificationServiceImpl```
+notification engines provide optional configuration parameters allowing the size of the notification buffer and number 
+of consumer notification threads to be configured. 
+1. Further details on the requirements for the monitor notification engine and its performance are available in the
+   following [MONITOR_PERFORMANCE.md](MONITOR_PERFORMANCE.md) file.
 
 ### Listeners
 A channel can have Access Right and Connection listeners. These two types of listeners are attached as follows.
