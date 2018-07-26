@@ -211,8 +211,6 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       {
          logger.log( Level.FINER, "Failed to send 'cancel subscription' message.", th);
       }
-
-      monitorNotificationService.close();
    }
 
 
