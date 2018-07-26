@@ -30,7 +30,6 @@ class ChannelThroughputTests
 
    private static final Logger logger = Logger.getLogger( ChannelThroughputTests.class.getName() );
 
-   private Context context;
    private CAJTestServer server;
 
 
@@ -50,13 +49,11 @@ class ChannelThroughputTests
    {
       server = new CAJTestServer();
       server.runInSeparateThread();
-      context = new Context();
    }
 
    @AfterEach
    void tearDown()
    {
-      context.close();
       server.destroy();
    }
 
@@ -73,19 +70,22 @@ class ChannelThroughputTests
    void TestGet( int numberOfGets )
    {
       logger.log( Level.INFO, String.format("Starting Get throughput test for %d CA gets", numberOfGets ) );
-      final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
-      channel.connect();
-
-      final StopWatch stopWatch = StopWatch.createStarted();
-      for ( int i = 0; i < numberOfGets; i++ )
+      try ( final Context context = new Context() )
       {
-         channel.get();
-      }
-      long elapseTimeInMilliseconds = stopWatch.getTime( TimeUnit.MILLISECONDS );
+         final Channel<Integer> channel = context.createChannel("adc01", Integer.class );
+         channel.connect();
 
-      logger.info( "RESULTS:" );
-      logger.log( Level.INFO, String.format( "- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfGets ) );
-      logger.info("" );
+         final StopWatch stopWatch = StopWatch.createStarted();
+         for ( int i = 0; i < numberOfGets; i++ )
+         {
+            channel.get();
+         }
+         long elapseTimeInMilliseconds = stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+         logger.info("RESULTS:");
+         logger.log(Level.INFO, String.format("- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfGets));
+         logger.info("");
+      }
    }
 
    /**
@@ -100,20 +100,23 @@ class ChannelThroughputTests
    @ValueSource( ints = { 1, 10, 100, 1000, 2000, 5000 } )
    void TestPutAndGet( int numberOfPutsAndGets )
    {
-      logger.log( Level.INFO, String.format("Starting PutAndGet throughput test for %d CA puts/gets", numberOfPutsAndGets ) );
-      final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
-      channel.connect();
-
-      final StopWatch stopWatch = StopWatch.createStarted();
-      for ( int i = 0; i < numberOfPutsAndGets; i++ )
+      try ( final Context context = new Context() )
       {
-         channel.get();
-      }
-      long elapseTimeInMilliseconds = stopWatch.getTime( TimeUnit.MILLISECONDS );
+         logger.log(Level.INFO, String.format("Starting PutAndGet throughput test for %d CA puts/gets", numberOfPutsAndGets));
+         final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
+         channel.connect();
 
-      logger.info( "RESULTS:" );
-      logger.log( Level.INFO, String.format( "- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfPutsAndGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfPutsAndGets ) );
-      logger.info("" );
+         final StopWatch stopWatch = StopWatch.createStarted();
+         for ( int i = 0; i < numberOfPutsAndGets; i++ )
+         {
+            channel.get();
+         }
+         long elapseTimeInMilliseconds = stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+         logger.info("RESULTS:");
+         logger.log(Level.INFO, String.format("- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfPutsAndGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfPutsAndGets));
+         logger.info("");
+      }
    }
 
    /**
@@ -216,6 +219,10 @@ class ChannelThroughputTests
          final StopWatch stopWatch = StopWatch.createStarted();
          TestConsumer.awaitExpectedTotalNotificationCount();
          final long elapsedTimeInMilliseconds = stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+         // Release references to monitor objects
+         monitorList.forEach( Monitor::close );
+         monitorList.clear();
 
          logger.info("RESULTS:");
          logger.log(Level.INFO, String.format("- The test consumer received: %d notifications", TestConsumer.getCurrentTotalNotificationCount()));
