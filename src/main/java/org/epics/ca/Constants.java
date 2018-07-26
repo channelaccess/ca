@@ -1,6 +1,6 @@
 package org.epics.ca;
 
-import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
+import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 
 public interface Constants
 {
@@ -33,7 +33,7 @@ public interface Constants
    /**
     * String value defining the default monitor notification engine.
     */
-   public static final String CA_MONITOR_NOTIFIER_DEFAULT_IMPL = MonitorNotificationServiceFactory.DEFAULT_IMPL;
+   public static final String CA_MONITOR_NOTIFIER_DEFAULT_IMPL = MonitorNotificationServiceFactoryCreator.DEFAULT_IMPL;
 
    /**
     * Minimal priority.
