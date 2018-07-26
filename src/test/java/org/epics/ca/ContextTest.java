@@ -1,4 +1,4 @@
-package org.epics.ca.test;
+package org.epics.ca;
 
 import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,25 +12,23 @@ import org.epics.ca.Constants;
 import org.epics.ca.Context;
 import org.junit.jupiter.api.Test;
 
-public class ContextTest
+class ContextTest
 {
 
    private final String TEST_CHANNEL_NAME = "test01";
 
    @Test
-   public void testContext()
+   void testContext()
    {
       try ( Context context = new Context () )
       {
          assertNotNull (context);
       }
-      ;
    }
 
    @Test
-   public void testContextProperties()
+   void testContextProperties()
    {
-
       try ( Context context = new Context (null) )
       {
          fail ("null properties accepted");
@@ -45,13 +43,11 @@ public class ContextTest
       {
          assertNotNull (context);
       }
-      ;
    }
 
    @Test
-   public void testCreateChannel()
+   void testCreateChannel()
    {
-
       try ( Context context = new Context () )
       {
          try ( Channel<?> c = context.createChannel (null, null) )
@@ -134,11 +130,10 @@ public class ContextTest
             assertNotNull (c);
          }
       }
-      ;
    }
 
    @Test
-   public void testClose()
+   void testClose()
    {
 
       Context context = new Context ();
