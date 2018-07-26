@@ -12,12 +12,7 @@ public interface Monitor<T> extends AutoCloseable
    public static final int ALARM_MASK = 0x04;
    public static final int PROPERTY_MASK = 0x08;
 
-   public static int getMask(
-         boolean valueChangeEvent,
-         boolean logEvent,
-         boolean alarmEvent,
-         boolean propertyChangeEvent
-   )
+   public static int getMask( boolean valueChangeEvent, boolean logEvent, boolean alarmEvent, boolean propertyChangeEvent )
    {
       int mask = (valueChangeEvent ? VALUE_MASK : 0);
       if ( logEvent )
