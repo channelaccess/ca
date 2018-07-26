@@ -4,6 +4,7 @@ package org.epics.ca.impl.monitor;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -171,6 +172,10 @@ static void beforeAll()
       }
    }
 
+   // TODO: Due to the sheer number of threads that are coming and going (eg due to the behaviour
+   // TODO: of the CAJ Test Server which is currently colocated in the same JVM) this test cannot
+   // TODO: operate reliably. For the moment  it is disabled.
+   @Disabled
    @MethodSource( "getMonitorNotificationServiceImplementations" )
    @ParameterizedTest
    void testServiceImplResourceDisposeBehaviour( String serviceImpl )
