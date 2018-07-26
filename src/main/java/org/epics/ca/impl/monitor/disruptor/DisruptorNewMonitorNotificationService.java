@@ -121,19 +121,30 @@ public class DisruptorNewMonitorNotificationService<T> implements MonitorNotific
    @Override
    public void close()
    {
-      try
-      {
-         disruptor.shutdown();
+      // TODO: examine whether this implementation is good enough to meet the service guarantee
+      // TODO: that all threads should have been destroyed before exit.
 
-         // TODO: examine whether this is good enough to meet the service guarantee
-         // TODO: that all threads should have been destroyed before exit.
-         // This pause is to allow threads created within the disruptor to die.
-         // Note: there is currently no guarantee of this.
-         Thread.sleep( 2000 );
-      }
-      catch ( InterruptedException ex )
+      final int shutdownDelayInMilliseconds = 2000;
+      final boolean useHaltImplementation = true;
+
+      if ( useHaltImplementation )
       {
-         logger.log( Level.WARNING, "Interrupted whilst waiting for disruptor shutdown" );
+         // Note: this will not block or throw an exception
+         disruptor.halt();
+      }
+      else
+      {
+         try
+         {
+            disruptor.shutdown();
+            // This pause is to allow threads created within the disruptor to die.
+            // Note: there is currently no guarantee of this.
+            Thread.sleep( shutdownDelayInMilliseconds );
+         }
+         catch ( InterruptedException ex )
+         {
+            logger.log(Level.WARNING, "Interrupted whilst waiting for disruptor shutdown");
+         }
       }
    }
 
