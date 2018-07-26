@@ -84,13 +84,13 @@ public class BlockingQueueMonitorNotificationServiceFactory implements MonitorNo
    @Override
    public void close()
    {
+      logger.log(Level.INFO, String.format( "A BlockingQueueMonitorNotificationServiceFactory is being closed with %d service entries...", getServiceCount() ) );
       for ( MonitorNotificationService service : serviceList )
       {
          service.close();
       }
       serviceList.clear();
       MonitorNotificationServiceFactoryCreator.shutdownExecutor( threadPoolExecutor );
-      logger.log(Level.INFO, String.format( "A BlockingQueueMonitorNotificationServiceFactory has been closed with %d service entries.", getServiceCount() ) );
    }
 
    /**

@@ -134,9 +134,9 @@ class ChannelThroughputTests
       final Properties contextProperties = new Properties();
       contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
 
-      try ( final Context mySpecialContext = new Context( contextProperties ) )
+      try ( final Context context = new Context( contextProperties ) )
       {
-         final Channel<Integer> channel = mySpecialContext.createChannel("adc01", Integer.class);
+         final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
          channel.connect();
 
          // Add a value monitor and wait for first notification of the initial value
@@ -193,9 +193,9 @@ class ChannelThroughputTests
       final Properties contextProperties = new Properties();
       contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
 
-      try ( final Context mySpecialContext = new Context( contextProperties ) )
+      try ( final Context context = new Context( contextProperties ) )
       {
-         final Channel<Integer> channel = mySpecialContext.createChannel("fastCounter", Integer.class );
+         final Channel<Integer> channel = context.createChannel("fastCounter", Integer.class );
          channel.connect();
          final List<Monitor> monitorList = new ArrayList<>();
 

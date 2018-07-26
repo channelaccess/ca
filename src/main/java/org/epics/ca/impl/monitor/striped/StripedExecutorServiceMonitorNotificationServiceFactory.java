@@ -76,13 +76,13 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
    @Override
    public void close()
    {
+      logger.log(Level.INFO, String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory is being closed with %d service entries...", getServiceCount() ) );
       for ( MonitorNotificationService service : serviceList )
       {
          service.close();
       }
       serviceList.clear();
       MonitorNotificationServiceFactoryCreator.shutdownExecutor( stripedExecutorService );
-      logger.log(Level.INFO, String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory has been closed with %d service entries.", getServiceCount() ) );
    }
 
    /**

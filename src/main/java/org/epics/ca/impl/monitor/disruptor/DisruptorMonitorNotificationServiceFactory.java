@@ -80,12 +80,12 @@ public class DisruptorMonitorNotificationServiceFactory implements MonitorNotifi
    @Override
    public void close()
    {
+      logger.log(Level.INFO, String.format( "A DisruptorMonitorNotificationServiceFactory is being closed with %d service entries...", getServiceCount() ) );
       for ( MonitorNotificationService service : serviceList )
       {
          service.close();
       }
       serviceList.clear();
-      logger.log(Level.INFO, String.format( "A DisruptorMonitorNotificationServiceFactory has been closed with %d service entries.", getServiceCount() ) );
    }
 
    /**
