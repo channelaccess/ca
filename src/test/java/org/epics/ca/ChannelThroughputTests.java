@@ -4,7 +4,7 @@ package org.epics.ca;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
+import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,47 +133,46 @@ class ChannelThroughputTests
       logger.log( Level.INFO, String.format("Starting PutAndMonitor throughput test using monitor notification impl: '%s' and for %d CA puts", serviceImpl, numberOfPuts ) );
       final Properties contextProperties = new Properties();
       contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
-      final Context mySpecialContext = new Context( contextProperties );
 
-      final Channel<Integer> channel = mySpecialContext.createChannel("adc01", Integer.class);
-      channel.connect();
-
-      // Add a value monitor and wait for first notification of the initial value
-      final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
-      testConsumer.clearCurrentNotificationCount();
-      testConsumer.setExpectedNotificationCount( 1 );
-      final Monitor monitor = channel.addValueMonitor( testConsumer );
-      testConsumer.awaitExpectedNotificationCount();
-
-      // Now send the requested number of puts
-      testConsumer.clearCurrentNotificationCount();
-      final StopWatch notificationDeliveryMeasurementStopWatch = StopWatch.createStarted();
-      for ( int i = 0; i < numberOfPuts; i++ )
+      try ( final Context mySpecialContext = new Context( contextProperties ) )
       {
-         channel.put( i );
+         final Channel<Integer> channel = mySpecialContext.createChannel("adc01", Integer.class);
+         channel.connect();
+
+         // Add a value monitor and wait for first notification of the initial value
+         final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
+         testConsumer.clearCurrentNotificationCount();
+         testConsumer.setExpectedNotificationCount(1);
+         final Monitor monitor = channel.addValueMonitor(testConsumer);
+         testConsumer.awaitExpectedNotificationCount();
+
+         // Now send the requested number of puts
+         testConsumer.clearCurrentNotificationCount();
+         final StopWatch notificationDeliveryMeasurementStopWatch = StopWatch.createStarted();
+         for ( int i = 0; i < numberOfPuts; i++ )
+         {
+            channel.put(i);
+         }
+
+         // The end of sequence token is necessary become some monitor notification service
+         // implementations may be lossy but they are always guaranteed to deliver the last
+         // value in a sequence so we use this to detect the end of the notification sequence.
+         // It's also convenient to measure the latency here too.
+         final Integer endOfSequence = -1;
+         testConsumer.setExpectedNotificationValue(endOfSequence);
+         final StopWatch latencyMeasurementStopWatch = StopWatch.createStarted();
+         channel.put(endOfSequence);
+         testConsumer.awaitExpectedNotificationValue();
+
+         final long multipleNotificationDeliveryTimeInMilliseconds = notificationDeliveryMeasurementStopWatch.getTime(TimeUnit.MILLISECONDS);
+         final long singleNotificationDeliveryLatencyInMicroseconds = latencyMeasurementStopWatch.getTime(TimeUnit.MICROSECONDS);
+
+         logger.info("RESULTS:");
+         logger.log(Level.INFO, String.format("- The test consumer received: %d notifications", testConsumer.getCurrentNotificationCount()));
+         logger.log(Level.INFO, String.format("- The delivery latency was typically %d us", singleNotificationDeliveryLatencyInMicroseconds));
+         logger.log(Level.INFO, String.format("- Synchronous PutAndMonitor with %d puts took %s ms. Average: %3f ms.", numberOfPuts, multipleNotificationDeliveryTimeInMilliseconds, (float) multipleNotificationDeliveryTimeInMilliseconds / (float) numberOfPuts));
+         logger.info("");
       }
-
-      // The end of sequence token is necessary become some monitor notification service
-      // implementations may be lossy but they are always guaranteed to deliver the last
-      // value in a sequence so we use this to detect the end of the notification sequence.
-      // It's also convenient to measure the latency here too.
-      final Integer endOfSequence = -1;
-      testConsumer.setExpectedNotificationValue( endOfSequence );
-      final StopWatch latencyMeasurementStopWatch = StopWatch.createStarted();
-      channel.put( endOfSequence );
-      testConsumer.awaitExpectedNotificationValue();
-
-      final long multipleNotificationDeliveryTimeInMilliseconds = notificationDeliveryMeasurementStopWatch.getTime( TimeUnit.MILLISECONDS );
-      final long singleNotificationDeliveryLatencyInMicroseconds = latencyMeasurementStopWatch.getTime( TimeUnit.MICROSECONDS );
-
-      // Free up resources
-      monitor.close();
-
-      logger.info( "RESULTS:" );
-      logger.log( Level.INFO, String.format( "- The test consumer received: %d notifications", testConsumer.getCurrentNotificationCount() ) );
-      logger.log( Level.INFO, String.format( "- The delivery latency was typically %d us", singleNotificationDeliveryLatencyInMicroseconds ) );
-      logger.log( Level.INFO, String.format( "- Synchronous PutAndMonitor with %d puts took %s ms. Average: %3f ms.", numberOfPuts, multipleNotificationDeliveryTimeInMilliseconds, (float) multipleNotificationDeliveryTimeInMilliseconds / (float) numberOfPuts ) );
-      logger.info("" );
    }
 
    /**
@@ -193,41 +192,36 @@ class ChannelThroughputTests
       logger.log( Level.INFO, String.format("Starting FastCounterMonitor throughput test using impl: '%s'...", serviceImpl ) );
       final Properties contextProperties = new Properties();
       contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
-      final Context mySpecialContext = new Context( contextProperties );
 
-      final Channel<Integer> channel = mySpecialContext.createChannel("fastCounter", Integer.class);
-      channel.connect();
-
-      final List<Monitor> monitorList = new ArrayList<>();
-
-      // Can optionally set here the number of monitors that will simultaneously deliver
-      // notifications to the CA library TCP/IP socket and thus explore the performance of
-      // the system under increasing stress.
-      final int numberOfMonitors = 1;
-      for ( int i = 0; i < numberOfMonitors; i++ )
+      try ( final Context mySpecialContext = new Context( contextProperties ) )
       {
-         final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
-         monitorList.add( channel.addValueMonitor(testConsumer) );
+         final Channel<Integer> channel = mySpecialContext.createChannel("fastCounter", Integer.class );
+         channel.connect();
+         final List<Monitor> monitorList = new ArrayList<>();
+
+         // Can optionally set here the number of monitors that will simultaneously deliver
+         // notifications to the CA library TCP/IP socket and thus explore the performance of
+         // the system under increasing stress.
+         final int numberOfMonitors = 1;
+         for ( int i = 0; i < numberOfMonitors; i++ )
+         {
+            final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
+            monitorList.add(channel.addValueMonitor(testConsumer));
+         }
+
+         final int totalNotificationCount = numberOfNotifications * numberOfMonitors;
+         TestConsumer.setExpectedTotalNotificationCount(totalNotificationCount);
+         TestConsumer.clearCurrentTotalNotificationCount();
+
+         final StopWatch stopWatch = StopWatch.createStarted();
+         TestConsumer.awaitExpectedTotalNotificationCount();
+         final long elapsedTimeInMilliseconds = stopWatch.getTime(TimeUnit.MILLISECONDS);
+
+         logger.info("RESULTS:");
+         logger.log(Level.INFO, String.format("- The test consumer received: %d notifications", TestConsumer.getCurrentTotalNotificationCount()));
+         logger.log(Level.INFO, String.format("- FastCounterMonitor with %d notifications took %s ms. Average: %3f ms.", totalNotificationCount, elapsedTimeInMilliseconds, (float) elapsedTimeInMilliseconds / (float) totalNotificationCount));
+         logger.info("");
       }
-
-      final int totalNotificationCount = numberOfNotifications * numberOfMonitors;
-      TestConsumer.setExpectedTotalNotificationCount( totalNotificationCount );
-      TestConsumer.clearCurrentTotalNotificationCount();
-
-      final StopWatch stopWatch = StopWatch.createStarted();
-      TestConsumer.awaitExpectedTotalNotificationCount();
-      final long elapsedTimeInMilliseconds = stopWatch.getTime( TimeUnit.MILLISECONDS );
-
-      // Free up resources
-      for ( Monitor monitor : monitorList )
-      {
-         monitor.close();
-      }
-
-      logger.info( "RESULTS:" );
-      logger.log( Level.INFO, String.format( "- The test consumer received: %d notifications", TestConsumer.getCurrentTotalNotificationCount() ) );
-      logger.log( Level.INFO, String.format( "- FastCounterMonitor with %d notifications took %s ms. Average: %3f ms.", totalNotificationCount, elapsedTimeInMilliseconds, (float) elapsedTimeInMilliseconds / (float) totalNotificationCount ) );
-      logger.info("" );
    }
 
 /*- Private methods ----------------------------------------------------------*/
@@ -238,7 +232,7 @@ class ChannelThroughputTests
     */
    private static Stream<Arguments> getArgumentsForTestPutAndMonitor()
    {
-      final List<String> serviceImpls = MonitorNotificationServiceFactory.getAllServiceImplementations();
+      final List<String> serviceImpls = MonitorNotificationServiceFactoryCreator.getAllServiceImplementations();
       final List<Integer> numberOfPuts = Arrays.asList( 100, 2000 );
 
       return serviceImpls.stream().map( s -> numberOfPuts.stream().map( n -> Arguments.of(s, n) ) ).flatMap(s -> s);
@@ -250,7 +244,7 @@ class ChannelThroughputTests
     */
    private static Stream<Arguments> getArgumentsForTestFastCounterMonitor()
    {
-      final List<String> serviceImpls = MonitorNotificationServiceFactory.getAllServiceImplementations();
+      final List<String> serviceImpls = MonitorNotificationServiceFactoryCreator.getAllServiceImplementations();
       final List<Integer> notifications = Arrays.asList( 100, 2000 );
 
       return serviceImpls.stream().map( s -> notifications.stream().map(n -> Arguments.of(s, n) ) ).flatMap( s -> s);
