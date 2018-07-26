@@ -2,7 +2,7 @@
 
 package org.epics.ca.impl.monitor.striped;
 
-import heinz.StripedRunnable;
+import eu.javaspecialists.tjsn.concurrency.stripedexecutor.StripedRunnable;
 import net.jcip.annotations.Immutable;
 import org.apache.commons.lang3.Validate;
 
