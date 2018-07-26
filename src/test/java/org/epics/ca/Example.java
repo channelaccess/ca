@@ -1,4 +1,4 @@
-package org.epics.ca.test;
+package org.epics.ca;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -15,7 +15,7 @@ import org.epics.ca.data.Graphic;
 import org.epics.ca.data.GraphicEnum;
 import org.epics.ca.data.Timestamped;
 
-
+// TODO: The Example does not currently work
 public class Example
 {
 
