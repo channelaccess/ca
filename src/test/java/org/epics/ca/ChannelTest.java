@@ -457,7 +457,7 @@ class ChannelTest
 
    @ParameterizedTest
    @MethodSource( "getArgumentsForTestMonitorNotificationServiceImplementations" )
-   void testChannelCloseDoesNotClosesMonitorNotifier( String serviceImpl )
+   void testChannelCloseDoesNotCloseMonitorNotifier( String serviceImpl )
    {
       assertEquals(0, MonitorNotificationServiceFactoryCreator.getServiceCount() );
 
