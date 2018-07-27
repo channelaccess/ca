@@ -141,7 +141,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
     */
    public static MonitorNotificationServiceFactory create( String serviceConfiguration )
    {
-      logger.log( Level.INFO, String.format("MonitorNotificationServiceFactoryCreator has been called with serviceImpl specifier: %s", serviceConfiguration ) );
+      logger.log( Level.FINEST, String.format("MonitorNotificationServiceFactoryCreator has been called with serviceImpl specifier: %s", serviceConfiguration ) );
 
       Validate.notEmpty( serviceConfiguration );
 
