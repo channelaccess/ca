@@ -53,7 +53,7 @@ This log describes the functionality of tagged versions within the repository.
       * DisruptorOldMonitorNotificationServiceImpl
       * DisruptorNewMonitorNotificationServiceImpl
       * StripedExecutorServiceMonitorNotificationServiceImpl
-   * Changes the default monitor notification engine so that it buffers notifcation messages rather than throwing them away.
+   * Changes the default monitor notification engine so that it buffers notification messages to slow consumers rather than throwing them away.
    * Now reports notification buffer overruns to stdout rather than silently throwing them away.
    * Fixes an issue which could occasionally occur with notification messages being delivered out of sequence.
    * Improves the monitor documentation available in the [README](https://github.com/channelaccess/ca/blob/master/README.md) file and in the [MONITOR_INFO](https://github.com/channelaccess/ca/blob/master/MONITOR_INFO.md) file.
