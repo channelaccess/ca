@@ -1,4 +1,4 @@
-# Requirements
+# Requirements for a Monitor -> Consumer Notification Engine
 
 These are the current requirements for the monitor notification service:
 
@@ -27,18 +27,10 @@ What does this mean ?  A fast update rate on one monitored channel should not re
 
 # Performance Testing
 
-The following section presents the results of using a test IOC developed for the WICA project
-to independently measure the performance of the CA library.
+The following section presents the results of using a test IOC (which was developed as part of the WICA project) to 
+independently measure the performance of the CA library.
 
-### Summary of Measurement on Latest Release
-
-|Library Version | Comment   |
-|----------------|-----------|
-| 1.0.1          | 
-| 1.1.0-RELEASE  | Fixed issue with xxx |
-| 1.2.0          | Fixed scalability issue with the number of monitors. Monitor notification behaviour is now configurable. Default behaviour is that monitors are now "non-lossy" with a buffer of size Integer.MAX_VALUE. |
- 
-
+## Testing on Software Release CA-1.2.0
 ### CA Context Tests
 
 Q1: Can the context manual close feature be relied on to cleanup the created channels ? Answer: **YES**
@@ -159,7 +151,7 @@ Q19: What is the cost of performing an asynchronous get on multiple channels (di
 ```
 Q20: What is the cost of performing a monitor on multiple channels ? Answer: **See below.**
 ```
-BlockingQueueSingleWorker:
+BlockingQueueSingleWorker implementation:
 - Asynchronous Monitor from 1 channels took 6 ms. Average: 6.000000 ms
 - Asynchronous Monitor from 100 channels took 43 ms. Average: 0.430000 ms
 - Asynchronous Monitor from 200 channels took 62 ms. Average: 0.310000 ms
@@ -168,7 +160,7 @@ BlockingQueueSingleWorker:
 ```
 Q20: What is the cost of performing a monitor on multiple channels ? Answer: **See below.**
 ```
-BlockingQueueMultipleWorker:
+BlockingQueueMultipleWorker implementation:
 - Asynchronous Monitor from 1 channels took 1 ms. Average: 1.000000 ms
 - Asynchronous Monitor from 100 channels took 10 ms. Average: 0.100000 ms
 - Asynchronous Monitor from 200 channels took 16 ms. Average: 0.080000 ms
@@ -177,7 +169,7 @@ BlockingQueueMultipleWorker:
 ```
 Q20: What is the cost of performing a monitor on multiple channels ? Answer: **See below.**
 ```
-Disruptor - Old Implementation:
+DisruptorOld implementation implementation:
 - Asynchronous Monitor from 1 channels took 35 ms. Average: 35.000000 ms
 - Asynchronous Monitor from 100 channels took 59 ms. Average: 0.590000 ms
 - Asynchronous Monitor from 200 channels took 80 ms. Average: 0.400000 ms
@@ -186,7 +178,7 @@ Disruptor - Old Implementation:
 ```
 Q20: What is the cost of performing a monitor on multiple channels ? Answer: **See below.**
 ```
-Disruptor - New Implementation:
+DisruptorNew implementation implementation:
 - Asynchronous Monitor from 1 channels took 18 ms. Average: 18.000000 ms
 - Asynchronous Monitor from 100 channels took 46 ms. Average: 0.460000 ms
 - Asynchronous Monitor from 200 channels took 133 ms. Average: 0.665000 ms
@@ -195,7 +187,7 @@ Disruptor - New Implementation:
 ```
 Q20: What is the cost of performing a monitor on multiple channels ? Answer: **See below.**
 ```
-StripedExecutorService:
+StripedExecutorService implementation:
 - Asynchronous Monitor from 1 channels took 16 ms. Average: 16.000000 ms
 - Asynchronous Monitor from 100 channels took 38 ms. Average: 0.380000 ms
 - Asynchronous Monitor from 200 channels took 40 ms. Average: 0.200000 ms
@@ -204,7 +196,7 @@ StripedExecutorService:
 ```
 Q21: What is the cost/performance when using CA to transfer large arrays ? Answer: **See below.**
 ```
-BlockingQueueSingleWorker:
+BlockingQueueSingleWorker implementation:
 - Transfer time for integer array of 10000 elements took 37 ms. Transfer rate: 1 MB/s
 - Transfer time for integer array of 20000 elements took 4 ms. Transfer rate: 19 MB/s
 - Transfer time for integer array of 50000 elements took 2 ms. Transfer rate: 95 MB/s
@@ -218,7 +210,7 @@ BlockingQueueSingleWorker:
 ```
 Q21: What is the cost/performance when using CA to transfer large arrays ? Answer: **See below.**
 ```
-BlockingQueueMultipleWorker:
+BlockingQueueMultipleWorker implementation:
 - Transfer time for integer array of 10000 elements took 11 ms. Transfer rate: 3 MB/s
 - Transfer time for integer array of 20000 elements took 2 ms. Transfer rate: 38 MB/s
 - Transfer time for integer array of 50000 elements took 3 ms. Transfer rate: 64 MB/s
@@ -232,7 +224,7 @@ BlockingQueueMultipleWorker:
 ```
 Q21: What is the cost/performance when using CA to transfer large arrays ? Answer: **See below.**
 ```
-Disruptor - Old Implementation:
+DisruptorOld implementation:
 - Transfer time for integer array of 10000 elements took 6 ms. Transfer rate: 6 MB/s
 - Transfer time for integer array of 20000 elements took 1 ms. Transfer rate: 76 MB/s
 - Transfer time for integer array of 50000 elements took 5 ms. Transfer rate: 38 MB/s
@@ -246,7 +238,7 @@ Disruptor - Old Implementation:
 ```
 Q21: What is the cost/performance when using CA to transfer large arrays ? Answer: **See below.**
 ```
-Disruptor - New Implementation:
+DisruptorNew implementation:
 - Transfer time for integer array of 10000 elements took 5 ms. Transfer rate: 8 MB/s
 - Transfer time for integer array of 20000 elements took 1 ms. Transfer rate: 76 MB/s
 - Transfer time for integer array of 50000 elements took 1 ms. Transfer rate: 191 MB/s
@@ -261,7 +253,7 @@ Disruptor - New Implementation:
 
 Q21: What is the cost/performance when using CA to transfer large arrays ? Answer: **See below.**
 ```
-StripedExecutorService:
+StripedExecutorService implementation:
 - Transfer time for integer array of 10000 elements took 6 ms. Transfer rate: 6 MB/s
 - Transfer time for integer array of 20000 elements took 1 ms. Transfer rate: 76 MB/s
 - Transfer time for integer array of 50000 elements took 1 ms. Transfer rate: 191 MB/s

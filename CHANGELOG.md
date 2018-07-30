@@ -40,7 +40,7 @@ This log describes the functionality of tagged versions within the repository.
   - [Issue #31](https://github.com/channelaccess/ca/issues/31) Adapt project structure so that 'src/test/java' tree is congruent with 'src/main/java' tree.
   - [Issue #32](https://github.com/channelaccess/ca/issues/32) Add support for uploading builds to PSI artifactory.
   - [Issue #33](https://github.com/channelaccess/ca/issues/33) Cleanup warnings detected by IntelliJ.
-  - [Issue #34](https://github.com/channelaccess/ca/issues/34) Provide direct access to socket ByteBuffer through MonitorNotifcationService interface.
+  - [Issue #34](https://github.com/channelaccess/ca/issues/34) Provide direct access to socket ByteBuffer through MonitorNotificationService interface.
   - [Issue #35](https://github.com/channelaccess/ca/issues/35) Revert Java buildCompatibility target to Java 8.
   - [Issue #36](https://github.com/channelaccess/ca/issues/35) Revert to java.util.logging throughout.
   
