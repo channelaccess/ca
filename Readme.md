@@ -31,7 +31,7 @@ Maven:
 <dependency>
   <groupId>org.epics</groupId>
   <artifactId>ca</artifactId>
-  <version>1.0.0</version>
+  <version>1.2.0</version>
 </dependency
 ```
 
@@ -234,8 +234,8 @@ Monitor<Timestamped<Double>> monitor =
             );
 ```
 
-Internally the CA library uses a monitor notification engine to deliver the  notifications that are received
-from remote IOC to the local Consumer. The properties of this engine are configurable using either a system 
+Internally the CA library uses a monitor notification engine to deliver the  notifications received from the
+remote IOCs to the local Consumer. The properties of this engine are configurable using either a system 
 property or via a ```Properties``` object passed to the Context at the time of construction.
 
 The property, named ```CA_MONITOR_NOTIFIER_IMPL```, can be used as follows:
@@ -260,9 +260,9 @@ The configuration string is used as follows:
 
 Note: 
 
-1. The configuration of the monitor notification engine is an experimental feature. In the future 
-it is possible and/or likely that we will provide only a single engine, fully configurable to meet the needs of the 
-client's application.   
+1. The configuration of the monitor notification engine is an experimental feature. In the future it is possible 
+and/or likely that the library will offer only a single engine, fully configurable to meet the needs of all 
+client applications.   
 1. The ```BlockingQueueMultipleWorkerMonitorNotificationServiceImpl``` and ```StripedExecutorServiceMonitorNotificationServiceImpl```
 notification engines provide optional configuration parameters allowing the size of the notification buffer and number 
 of consumer notification threads to be configured. 
