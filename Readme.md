@@ -267,7 +267,7 @@ client's application.
 notification engines provide optional configuration parameters allowing the size of the notification buffer and number 
 of consumer notification threads to be configured. 
 1. Further details on the requirements for the monitor notification engine and its performance are available in the
-   following [MONITOR_PERFORMANCE.md](MONITOR_PERFORMANCE.md) file.
+   following [MONITOR_INFO.md](MONITOR_PERFORMANCE.md) file.
 
 ### Listeners
 A channel can have Access Right and Connection listeners. These two types of listeners are attached as follows.

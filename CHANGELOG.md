@@ -43,3 +43,27 @@ This log describes the functionality of tagged versions within the repository.
   - [Issue #34](https://github.com/channelaccess/ca/issues/34) Provide direct access to socket ByteBuffer through MonitorNotifcationService interface.
   - [Issue #35](https://github.com/channelaccess/ca/issues/35) Revert Java buildCompatibility target to Java 8.
   - [Issue #36](https://github.com/channelaccess/ca/issues/35) Revert to java.util.logging throughout.
+  
+  
+* [1.2.0](https://github.com/channelaccess/ca/releases/tag/1.2.0)
+   ###### Overview:
+   * Provides configurability of the monitor -> consumer notification engine so that the user can choose between a number of implementations including,
+      * BlockingQueueMultipleWorkerMonitorNotificationServiceImpl (default)
+      * BlockingQueueSingleWorkerMonitorNotificationServiceImpl
+      * DisruptorOldMonitorNotificationServiceImpl
+      * DisruptorNewMonitorNotificationServiceImpl
+      * StripedExecutorServiceMonitorNotificationServiceImpl
+   * Changes the default monitor notification engine so that it buffers notifcation messages rather than throwing them away.
+   * Now reports notification buffer overruns to stdout rather than silently throwing them away.
+   * Fixes an issue which could occasionally occur with notification messages being delivered out of sequence.
+   * Improves the monitor documentation available in the [README](README.md) file and in the [MONITOR_INFO](MONITOR_INFO.md) file.
+   * Provides documentation on measured library performance. See the [MONITOR_INFO](MONITOR_INFO.md) file.
+   * Increases the test coverage (includes more unit tests. Switched to parameterized testing).
+   ###### Change List:    
+   - [Issue #37](https://github.com/channelaccess/ca/issues/37) Investigate and where necessary fix bug suggested by Fabian with respect to out of order notifications.
+   - [Issue #39](https://github.com/channelaccess/ca/issues/39) Provide the ability for library users to configure the appropriate monitor notification strategies. 
+   - [Issue #40](https://github.com/channelaccess/ca/issues/40) Decide on whether to keep possibility to send special monitor values (currently null) when a channel disconnects. 
+   - [Issue #41](https://github.com/channelaccess/ca/issues/41) Write a monitor notification service impl that buffers to ensure that notifications are not dropped (eg suitable for archiver)
+   - [Issue #42](https://github.com/channelaccess/ca/issues/42) Create software release 1.2.0. 
+   - [Issue #43](https://github.com/channelaccess/ca/issues/43) Add support for StripedExecutorService. 
+ 
