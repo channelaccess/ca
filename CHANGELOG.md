@@ -17,7 +17,7 @@ This log describes the functionality of tagged versions within the repository.
   ###### Change List: 
   - [Issue #23](https://github.com/channelaccess/ca/issues/23) Documentation Improvements.
      - added comment to README file on CA version compatibility. 
-     - added PDF of CA Protocol Specification. Source is [here]()https://epics.anl.gov/base/R3-16/1-docs/CAproto/index.html). 
+     - added PDF of CA Protocol Specification. Source is [here](https://epics.anl.gov/base/R3-16/1-docs/CAproto/index.html). 
      - added Enterprise Architect Model which can be useful for analysing/documenting the behaviour of this library. 
      - added additional logging (but no functional differences).         
   - [Issue #24:](https://github.com/channelaccess/ca/issues/24)  Upgraded for compatibility with latest versions of Java, Gradle, Disruptor, JUnit etc
@@ -56,9 +56,9 @@ This log describes the functionality of tagged versions within the repository.
    * Changes the default monitor notification engine so that it buffers notifcation messages rather than throwing them away.
    * Now reports notification buffer overruns to stdout rather than silently throwing them away.
    * Fixes an issue which could occasionally occur with notification messages being delivered out of sequence.
-   * Improves the monitor documentation available in the [README](README.md) file and in the [MONITOR_INFO](MONITOR_INFO.md) file.
-   * Provides documentation on measured library performance. See the [MONITOR_INFO](MONITOR_INFO.md) file.
-   * Increases the test coverage (includes more unit tests. Switched to parameterized testing).
+   * Improves the monitor documentation available in the [README](https://github.com/channelaccess/ca/blob/master/README.md) file and in the [MONITOR_INFO](https://github.com/channelaccess/ca/blob/master/MONITOR_INFO.md) file.
+   * Provides documentation on measured library performance. See the [MONITOR_INFO](https://github.com/channelaccess/ca/blob/master/MONITOR_INFO.md) file.
+   * Increases the test coverage (includes more unit tests; switched to parameterized testing).
    ###### Change List:    
    - [Issue #37](https://github.com/channelaccess/ca/issues/37) Investigate and where necessary fix bug suggested by Fabian with respect to out of order notifications.
    - [Issue #39](https://github.com/channelaccess/ca/issues/39) Provide the ability for library users to configure the appropriate monitor notification strategies. 
