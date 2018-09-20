@@ -91,7 +91,7 @@ test {
 }
 
 javadoc {
-    options.addBooleanOption('html5', true)
+   // options.addBooleanOption('html5', true)
     options.addStringOption( "tag", "implNote:a:Implementation Note:" )
 }
 
