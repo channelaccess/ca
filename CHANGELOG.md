@@ -66,4 +66,10 @@ This log describes the functionality of tagged versions within the repository.
    - [Issue #41](https://github.com/channelaccess/ca/issues/41) Write a monitor notification service impl that buffers to ensure that notifications are not dropped (eg suitable for archiver)
    - [Issue #42](https://github.com/channelaccess/ca/issues/42) Create software release 1.2.0. 
    - [Issue #43](https://github.com/channelaccess/ca/issues/43) Add support for StripedExecutorService. 
- 
+   
+* [1.2.1](https://github.com/channelaccess/ca/releases/tag/1.2.1)
+   ###### Overview:
+   As previous release, except now fixed deployment for Java 8 target.
+   ###### Change List:    
+   * [Issue #45](https://github.com/channelaccess/ca/issues/45) Reverted to building for Java 8 target.
+   * [Issue #46](https://github.com/channelaccess/ca/issues/46) Create software release 1.2.1. 

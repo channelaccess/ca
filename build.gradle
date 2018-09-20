@@ -5,10 +5,10 @@ apply plugin: 'signing'
 
 group = 'org.epics'
 archivesBaseName = 'ca'
-sourceCompatibility = JavaVersion.VERSION_1_10
 sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
-version = '1.2.0'
+version = '1.2.1'
 
 ext.isReleaseVersion = ! version.endsWith("SNAPSHOT")
 
