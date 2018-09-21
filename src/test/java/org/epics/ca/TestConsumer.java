@@ -238,11 +238,11 @@ public TestConsumer( ConsumerType type, long delayTime, TimeUnit timeUnit )
       // Only tritgger the tests when the Type is either Integer or Long
       if ( ( lastNotificationValue.get() != null ) && ( lastNotificationValue.get() instanceof Integer ) && ( newValue instanceof Integer ) )
       {
-         if ( (int) newValue < (int) lastNotificationValue.get() )
+         if ( (Integer) newValue < (Integer) lastNotificationValue.get() )
          {
             notificationSequenceWasMonotonic.set( false );
          }
-         if ( (int) newValue != (int) lastNotificationValue.get() + 1 )
+         if ( (Integer) newValue != (Integer) lastNotificationValue.get() + 1 )
          {
             notificationSequenceWasConsecutive.set( false );
          }
