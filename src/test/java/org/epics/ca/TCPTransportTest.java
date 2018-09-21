@@ -652,12 +652,12 @@ class TCPTransportTest
    private static Stream<Arguments> getArgumentsForCaLatencyTest()
    {
       return Stream.of ( Arguments.of( Level.FINEST, 100_000 ),
-                         Arguments.of( Level.INFO, 5000 ),
-                         Arguments.of( Level.INFO, 5000 ),
-                         Arguments.of( Level.INFO, 5000 ),
-                         Arguments.of( Level.INFO, 5000 ),
-                         Arguments.of( Level.INFO, 5000 ),
-                         Arguments.of( Level.INFO, 5000 ) );
+                         Arguments.of( Level.INFO, 10000 ),
+                         Arguments.of( Level.INFO, 10000 ),
+                         Arguments.of( Level.INFO, 10000 ),
+                         Arguments.of( Level.INFO, 10000 ),
+                         Arguments.of( Level.INFO, 10000 ),
+                         Arguments.of( Level.INFO, 10000 ) );
    }
 
    private static Stream<Arguments> getDefaultDebugLevelForTests()
