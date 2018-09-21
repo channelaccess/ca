@@ -3,6 +3,19 @@ apply plugin: 'eclipse'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
+    }
+}
+
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven-publish'
+
+
 group = 'org.epics'
 archivesBaseName = 'ca'
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -178,5 +191,33 @@ uploadArchives {
         }
     }
 }
+
+publishing {
+    publications {
+        MyPublication(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            groupId group
+            artifactId project.name
+            version version
+        }
+    }
+}
+
+bintray {
+    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    publications = ['MyPublication']
+    pkg {
+        repo = 'hltools'
+        name = 'channelaccess-ca'
+        userOrg = 'paulscherrerinstitute'
+        version {
+            name = version
+        }
+    }
+}
+
+
 
 

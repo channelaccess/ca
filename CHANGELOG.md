@@ -73,3 +73,4 @@ This log describes the functionality of tagged versions within the repository.
    ###### Change List:    
    * [Issue #45](https://github.com/channelaccess/ca/issues/45) Reverted to building for Java 8 target.
    * [Issue #46](https://github.com/channelaccess/ca/issues/46) Create software release 1.2.1. 
+   * [Issue #47](https://github.com/channelaccess/ca/issues/47) Add initial support for deploying via bintray/jcenter.
