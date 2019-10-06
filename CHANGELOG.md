@@ -74,3 +74,10 @@ This log describes the functionality of tagged versions within the repository.
    * [Issue #45](https://github.com/channelaccess/ca/issues/45) Reverted to building for Java 8 target.
    * [Issue #46](https://github.com/channelaccess/ca/issues/46) Create software release 1.2.1. 
    * [Issue #47](https://github.com/channelaccess/ca/issues/47) Add initial support for deploying via bintray/jcenter.
+   
+* [1.2.2](https://github.com/channelaccess/ca/releases/tag/1.2.2)
+   ###### Overview:
+   Bug fix release to handle connection problems when operating through PSI's channel access gateway.
+   ###### Change List:    
+   * [Issue #48](https://github.com/channelaccess/ca/issues/48) Create software release 1.2.2. 
+   * [Issue #49](https://github.com/channelaccess/ca/issues/49) Library fails to detect IOC connection state changes when operating through a firewall.
