@@ -64,7 +64,7 @@ public class ResponseHandlers
                ResponseHandlers::badResponse,   /* 24 */
                ResponseHandlers::badResponse,   /* 25 */
                ResponseHandlers::badResponse,   /* 26 */
-               ResponseHandlers::badResponse   /* 27 */
+               ResponseHandlers::channelDisconnectedResponse   /* 27 */
          };
 
    public static void handleResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
@@ -115,6 +115,18 @@ public class ResponseHandlers
       // dataType contains minor protocol revision
       // notify beacon handler
       beaconHandler.beaconNotify (header.dataType, timestamp, sequentalID);
+   }
+
+   // BUG FIX: Handle IOC connection state changes when operating through gateway.
+   // This code was taken from the JCA code which is now maintained
+   // at the following location: https://github.com/epics-base/jca.git
+   public static void channelDisconnectedResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
+   {
+      ChannelImpl<?> channel = transport.getContext ().getChannel( header.parameter1 );
+      if ( channel != null )
+      {
+         channel.disconnect( true );
+      }
    }
 
    public static void searchResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
