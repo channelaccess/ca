@@ -81,3 +81,4 @@ This log describes the functionality of tagged versions within the repository.
    ###### Change List:    
    * [Issue #48](https://github.com/channelaccess/ca/issues/48) Create software release 1.2.2. 
    * [Issue #49](https://github.com/channelaccess/ca/issues/49) Library fails to detect IOC connection state changes when operating through a firewall.
+   * [Issue #50](https://github.com/channelaccess/ca/issues/50) Switched to openjdk8. 
