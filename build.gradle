@@ -10,8 +10,8 @@ archivesBaseName = 'ca'
 version = '1.2.2'
 
 // Define the deployment location.
-ext.deployOSS = 'false'
-ext.deployPSI = 'false'
+ext.deployOSS = false
+ext.deployPSI = false
 
 // Define which version of the Java compiler to use.
 sourceCompatibility = JavaVersion.VERSION_1_8
