@@ -2,31 +2,33 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
 apply plugin: 'signing'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven-publish'
 
+// Define the coordinates for the build products.
+group = 'org.epics'
+archivesBaseName = 'ca'
+version = '1.2.2'
+
+// Define the deployment location.
+ext.deployOSS = 'false'
+ext.deployPSI = 'false'
+
+// Define which version of the Java compiler to use.
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+ext.isReleaseVersion = ! version.endsWith("SNAPSHOT")
+
+// Set up for bintray deployment to JCenter
 buildscript {
     repositories {
         jcenter()
     }
     dependencies {
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
     }
 }
-
-apply plugin: 'com.jfrog.bintray'
-apply plugin: 'maven-publish'
-
-
-group = 'org.epics'
-archivesBaseName = 'ca'
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
-
-version = '1.2.2'
-
-ext.isReleaseVersion = ! version.endsWith("SNAPSHOT")
-
-ext.deployOSS = 'false'
-ext.deployPSI = 'true'
 
 compileJava {
     // The following options can be enabled for deeper introspection into the codebase...
@@ -204,6 +206,7 @@ publishing {
     }
 }
 
+// Define the Jfrog Bintray build.
 bintray {
     user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
     key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
