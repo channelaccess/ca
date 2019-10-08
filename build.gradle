@@ -9,9 +9,9 @@ group = 'org.epics'
 archivesBaseName = 'ca'
 version = '1.2.2'
 
-// Define the deployment location.
-ext.deployOSS = false
-ext.deployPSI = false
+// Define extra properties used to control build.
+// ext.deployOSS = "X" // Don't care about the value just whether its defined or not.
+// ext.deployPSI = "X" // Don't care about the value just whether its defined or not.
 
 // Define which version of the Java compiler to use.
 sourceCompatibility = JavaVersion.VERSION_1_8
