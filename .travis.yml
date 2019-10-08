@@ -1,4 +1,23 @@
+##########################################################
+# Travis file to support automatic build of CA Artifacts
+##########################################################
+#
+# This build recipe has been set up to trigger every time new TAGGED commits
+# are pushed to the CA repository in the ChannelAccess Organisational
+# Area on the GitHub Server.
+#
+# Currently the build recipe supports the following actions:
+#
+# - Builds CA library using OpenJdk 8
+#
+
+# *******************************************
+# Build Environment Configuration Starts Here
+# *******************************************
+
+# Only trigger this build recipe on tagged commits.
+if: tag IS present
+
 language: java
 jdk:
   - openjdk8
-
