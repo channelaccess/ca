@@ -1,4 +1,4 @@
-# Overview
+# Overview [![Build Status](https://travis-ci.org/channelaccess/ca.svg?branch=master)](https://travis-ci.org/channelaccess/ca)
 __ca__ is a pure Java Channel Access client implementation. __ca__ is the easiest way in Java to access Channel Access channels.
 
 ## Features
@@ -21,8 +21,6 @@ PDF of the current version is available in the [documents](docs) area of this pr
 
 The current Travis build status of the latest release in the GitHub repository is:
 
-[![Build Status](https://travis-ci.org/channelaccess/ca.svg?branch=master)](https://travis-ci.org/channelaccess/ca)
-
 __ca__ is available on Maven Central. It can be easily retrieved by Maven or Gradle as follows:
 
 Maven:
@@ -31,7 +29,7 @@ Maven:
 <dependency>
   <groupId>org.epics</groupId>
   <artifactId>ca</artifactId>
-  <version>1.2.1</version>
+  <version>1.2.2</version>
 </dependency
 ```
 
