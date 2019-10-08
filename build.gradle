@@ -149,18 +149,18 @@ uploadArchives {
                 }
             }
 
-//            if ( project.hasProperty( "deployPSI") ) {
-//
-//                repository(url: "https://artifacts.psi.ch/artifactory/libs-releases-local") {
-//                    authentication(userName: mavenUser, password: mavenPassword)
-//                }
-//
-//                snapshotRepository(url: "https://artifacts.psi.ch/artifactory/libs-snapshots-local") {
-//                    authentication(userName: mavenUser, password: mavenPassword)
-//                }
-//            }
-//
-              pom.project {
+            if ( project.hasProperty( "deployPSI") ) {
+
+                repository(url: "https://artifacts.psi.ch/artifactory/libs-releases-local") {
+                    authentication(userName: mavenUser, password: mavenPassword)
+                }
+
+                snapshotRepository(url: "https://artifacts.psi.ch/artifactory/libs-snapshots-local") {
+                    authentication(userName: mavenUser, password: mavenPassword)
+                }
+            }
+
+            pom.project {
                 name = 'Example Application'
                 packaging = 'jar'
                 // optionally artifactId can be defined here
@@ -176,8 +176,8 @@ uploadArchives {
 
                 developers {
                     developer {
-                        name = 'Simon Ebner'
-                        email = 'daq@psi.ch'
+                        name = 'Simon Rees'
+                        email = 'simon.rees@psi.ch'
                         organization = 'Paul Scherrer Institute'
                     }
                 }
