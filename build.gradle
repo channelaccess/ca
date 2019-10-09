@@ -10,7 +10,7 @@ archivesBaseName = 'ca'
 version = '1.2.2'
 
 // Define extra properties used to control build.
-// ext.deployOSS = "X" // Don't care about the value just whether its defined or not.
+ext.deployOSS = "X" // Don't care about the value just whether its defined or not.
 // ext.deployPSI = "X" // Don't care about the value just whether its defined or not.
 
 // Define which version of the Java compiler to use.
@@ -29,7 +29,7 @@ compileJava {
 jar {
     manifest {
         attributes 'Implementation-Title': 'Java EPICS CA',
-                   'Implementation-Version': version
+                   'Implementation-Version': archiveVersion
     }
 }
 
@@ -101,17 +101,17 @@ javadoc {
 }
 
 task javadocJar(type: Jar) {
-    classifier = 'javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc
 }
 
 task sourcesJar(type: Jar) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allSource
 }
 
 task fatJar(type: Jar) {
-    classifier = 'all'
+    archiveClassifier = 'all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
