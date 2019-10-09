@@ -217,8 +217,10 @@ bintray {
         repo = 'hltools'
         name = 'channelaccess-ca'
         userOrg = 'paulscherrerinstitute'
+        vcsUrl = 'https://github.com/channelaccess/ca'
+        licenses = ['GPL-3.0']
         version {
-            name = version
+            name = project.version
         }
     }
 }
