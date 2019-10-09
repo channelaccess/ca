@@ -10,7 +10,7 @@ archivesBaseName = 'ca'
 version = '1.2.2'
 
 // Define extra properties used to control build.
-ext.deployOSS = "X" // Don't care about the value just whether its defined or not.
+// ext.deployOSS = "X" // Don't care about the value just whether its defined or not.
 // ext.deployPSI = "X" // Don't care about the value just whether its defined or not.
 
 // Define which version of the Java compiler to use.
