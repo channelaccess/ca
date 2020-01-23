@@ -13,7 +13,7 @@ __ca__ is a pure Java Channel Access client implementation. __ca__ is the easies
 
 ## Compatibility
 
-Implements CA protocol specified in version 4.13 of the Channel Access Protocol Specification. The CA protocol
+Implements the CA protocol specified in version 4.13 of the Channel Access Protocol Specification. The CA protocol
 specification is distributed in the documents associated with each EPICS base release. For developer convenience a 
 PDF of the current version is available in the [documents](docs) area of this project. 
 
