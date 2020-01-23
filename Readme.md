@@ -36,7 +36,7 @@ Maven:
 Gradle:
 
 ```gradle
-compile 'org.epics:ca:1.2.1'
+compile 'org.epics:ca:1.2.2'
 ```
 
 __Note:__ To be able to retrieve the current snapshot version you have to configure the following repository:
