@@ -18,8 +18,6 @@ PDF of the current version is available in the [documents](docs) area of this pr
 
 # Installation
 
-The current Travis build status of the latest release in the GitHub repository is:
-
 __ca__ is available on Maven Central. It can be easily retrieved by Maven or Gradle as follows:
 
 Maven:
