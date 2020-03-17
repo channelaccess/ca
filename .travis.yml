@@ -1,27 +1,7 @@
-##########################################################
-# Travis file to support automatic build of CA Artifacts
-##########################################################
-#
-# This build recipe has been set up to trigger every time new commits
-# are pushed to the CA repository in the ChannelAccess Organisational
-# Area on the GitHub Server.
-#
-# Currently the build recipe supports the following actions:
-#
-# - Builds CA library using OpenJdk 8
-# - Runs Unit Tests
-# - Builds documentation.
-
-# *******************************************
-# Build Environment Configuration Starts Here
-# *******************************************
-
-
 ###############################################################################
 # Travis file to support automatic build and deployment of CA Artifacts
 ###############################################################################
 
-#
 # This build recipe should be set up to trigger every time new TAGGED commits
 # are pushed to the CA repository in the channelaccess Organisational Area on
 # the GitHub Server.
@@ -36,13 +16,14 @@
 # Build Environment Configuration Starts Here
 # *******************************************
 
+# Build on a Ubuntu Linux Bionic 18.04 platform.
 os: linux
-
 dist: bionic
 
+# Define the required Java support
 language: java
-
-jdk: openjdk11
+jdk:
+  - openjdk11
 
 # Cache maven repository to speed up builds.
 cache:
