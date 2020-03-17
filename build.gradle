@@ -7,7 +7,7 @@ apply plugin: 'maven-publish'
 // Define the coordinates for the build products.
 group = 'org.epics'
 archivesBaseName = 'ca'
-version = '1.2.2'
+version = '1.2.3'
 
 // Define extra properties used to control build.
 // ext.deployOSS = "X" // Don't care about the value just whether its defined or not.
@@ -101,17 +101,17 @@ javadoc {
 }
 
 task javadocJar(type: Jar) {
-    archiveClassifier = 'javadoc'
+    archiveClassifier.set('javadoc' )
     from javadoc
 }
 
 task sourcesJar(type: Jar) {
-    archiveClassifier = 'sources'
+    archiveClassifier.set( 'sources' )
     from sourceSets.main.allSource
 }
 
 task fatJar(type: Jar) {
-    archiveClassifier = 'all'
+    archiveClassifier.set( 'all' )
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
