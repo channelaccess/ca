@@ -173,7 +173,7 @@ public final class Messages
     */
    public static final void generateEchoMessage( Transport transport, ByteBuffer buffer )
    {
-      if ( transport.getMinorRevision () >= 3 )
+      if ( transport.getMinorRevision () < 4 )
       {
          buffer.putShort ((short) 23);
          // conversion int -> unsigned short is done right
