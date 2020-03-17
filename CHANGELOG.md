@@ -3,7 +3,7 @@
 This log describes the functionality of tagged versions within the repository.
 
 # Tags  
-* [1.1.0-RELEASE](https://github.com/channelaccess/ca/releases/tag/1.1.0)
+* [1.1.0-RELEASE](https://github.com/channelaccess/ca/releases/tag/1.1.0) Released 2018-07-12
   ###### Overview:
   - This release provides an initial fix for the scalability bottleneck which prevented the use of more than ~4000 monitors
     in the Disruptor implementation. The default monitor implementation now uses a single shared work queue from which ten 
@@ -45,7 +45,7 @@ This log describes the functionality of tagged versions within the repository.
   - [Issue #36](https://github.com/channelaccess/ca/issues/35) Revert to java.util.logging throughout.
   
   
-* [1.2.0](https://github.com/channelaccess/ca/releases/tag/1.2.0)
+* [1.2.0](https://github.com/channelaccess/ca/releases/tag/1.2.0) Released 2018-07-30
    ###### Overview:
    * Provides configurability of the monitor -> consumer notification engine so that the user can choose between a number of implementations including,
       * BlockingQueueMultipleWorkerMonitorNotificationServiceImpl (default)
@@ -67,7 +67,7 @@ This log describes the functionality of tagged versions within the repository.
    - [Issue #42](https://github.com/channelaccess/ca/issues/42) Create software release 1.2.0. 
    - [Issue #43](https://github.com/channelaccess/ca/issues/43) Add support for StripedExecutorService. 
    
-* [1.2.1](https://github.com/channelaccess/ca/releases/tag/1.2.1)
+* [1.2.1](https://github.com/channelaccess/ca/releases/tag/1.2.1) Released 2018-09-18
    ###### Overview:
    As previous release, except now fixed deployment for Java 8 target.
    ###### Change List:    
@@ -75,10 +75,21 @@ This log describes the functionality of tagged versions within the repository.
    * [Issue #46](https://github.com/channelaccess/ca/issues/46) Create software release 1.2.1. 
    * [Issue #47](https://github.com/channelaccess/ca/issues/47) Add initial support for deploying via bintray/jcenter.
    
-* [1.2.2](https://github.com/channelaccess/ca/releases/tag/1.2.2)
+* [1.2.2](https://github.com/channelaccess/ca/releases/tag/1.2.2) Released 2019-10-09
    ###### Overview:
    Bug fix release to handle connection problems when operating through PSI's channel access gateway.
    ###### Change List:    
    * [Issue #48](https://github.com/channelaccess/ca/issues/48) Create software release 1.2.2. 
    * [Issue #49](https://github.com/channelaccess/ca/issues/49) Library fails to detect IOC connection state changes when operating through a firewall.
    * [Issue #50](https://github.com/channelaccess/ca/issues/50) Switched to openjdk8. 
+   
+* [1.2.3](https://github.com/channelaccess/ca/releases/tag/1.2.3) Released 2020-03-17
+  ###### Overview:
+  Bug fix mainly to address problems when interoperating with EPICS 7 Channel Access (see Issue #58). But other minor changes 
+  to modernise build chain to use later tools.
+  ###### Change List:   
+  * [Issue #53](https://github.com/channelaccess/ca/issues/57) README unclear about supported listeners.
+  * [Issue #58](https://github.com/channelaccess/ca/issues/58) Library does not interoperate with CA in EPICS 7.0 - "client version too old".
+  * [Issue #59](https://github.com/channelaccess/ca/issues/59) Transition away from 'travis-ci.org' site to newer 'travis-ci.com' site.
+  * [Issue #60](https://github.com/channelaccess/ca/issues/60) Create software release 1.2.3. 
+
