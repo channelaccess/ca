@@ -1,4 +1,4 @@
-# Overview [![Build Status](https://travis-ci.org/channelaccess/ca.svg?branch=master)](https://travis-ci.com/channelaccess/ca)
+# Overview [![Build Status](https://travis-ci.com/channelaccess/ca.svg?branch=master)](https://travis-ci.com/channelaccess/ca)
 __ca__ is a pure Java Channel Access client implementation. __ca__ is the easiest way in Java to access Channel Access channels.
 
 ## Features
@@ -30,14 +30,14 @@ Maven:
 <dependency>
   <groupId>org.epics</groupId>
   <artifactId>ca</artifactId>
-  <version>1.2.2</version>
-</dependency
+  <version>1.2.3</version>
+</dependency>
 ```
 
 Gradle:
 
 ```gradle
-compile 'org.epics:ca:1.2.1'
+compile 'org.epics:ca:1.2.3'
 ```
 
 __Note:__ To be able to retrieve the current snapshot version you have to configure the following repository:
