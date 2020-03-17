@@ -1,15 +1,16 @@
-# Overview [![Build Status](https://travis-ci.org/channelaccess/ca.svg?branch=master)](https://travis-ci.org/channelaccess/ca)
+# Overview [![Build Status](https://travis-ci.org/channelaccess/ca.svg?branch=master)](https://travis-ci.com/channelaccess/ca)
 __ca__ is a pure Java Channel Access client implementation. __ca__ is the easiest way in Java to access Channel Access channels.
 
 ## Features
-* Simplicity
-* Use of Java type system
-* Synchronous and asynchronous operations for get, put, connect
-* Efficient handling of parallel operations without the need to use threads
+* Simplicity.
+* Use of Java type system.
+* Synchronous and asynchronous operations for get, put, connect.
+* Efficient handling of parallel operations without the need to use threads.
 * Chaining of actions/operations, e.g. set this, then set that, ...
-* Easily get additional metadata to value: Timestamp, Alarms, Graphic, Control
-* Support of all listeners ChannelAccess supports: ConnectionListener, AccessRightListener, Value Listener (Monitor)
- 
+* Easily get additional metadata to value: Timestamp, Alarms, Graphic, Control.
+* Supports channel monitoring including mask capability to select events-of-interest (eg value, log, alarm 
+and/or property changes).
+* Supports the following listeners: ConnectionListener, AccessRightsListener.
 
 ## Compatibility
 
