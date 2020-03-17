@@ -606,53 +606,50 @@ public final class Messages
 
    /**
     * Events off message.
-    * @param transport
-    *
+    * @param transport the transport.
+    */
    public static void eventsOffSubscriptionMessage(Transport transport)
    {
-   boolean ignore = true;
-   try
-   {
-   startCAMessage(transport,
-   (short)8,
-   0,
-   (short)0,
-   0,
-   0,
-   0);
-
-   ignore = false;
+      boolean ignore = true;
+      try
+      {
+         startCAMessage(transport,
+         (short)8,
+         0,
+         (short)0,
+         0,
+         0,
+         0);
+         ignore = false;
+      }
+      finally
+      {
+         transport.releaseSendBuffer(ignore, false);
+      }
    }
-   finally
-   {
-   transport.releaseSendBuffer(ignore, false);
-   }
-   }*/
 
    /**
-    * Events on message.
-    * @param transport
-    *
+    * Events off message.
+    * @param transport the transport.
+    */
    public static void eventsOnSubscriptionMessage(Transport transport)
    {
-   boolean ignore = true;
-   try
-   {
-   startCAMessage(transport,
-   (short)9,
-   0,
-   (short)0,
-   0,
-   0,
-   0);
-
-   ignore = false;
+      boolean ignore = true;
+      try
+      {
+         startCAMessage(transport,
+         (short)9,
+         0,
+         (short)0,
+         0,
+         0,
+         0);
+         ignore = false;
+      }
+      finally
+      {
+         transport.releaseSendBuffer(ignore, false);
+      }
    }
-   finally
-   {
-   transport.releaseSendBuffer(ignore, false);
-   }
-   }
-    */
 
 }
