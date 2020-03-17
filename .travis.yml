@@ -16,6 +16,90 @@
 # Build Environment Configuration Starts Here
 # *******************************************
 
+
+###############################################################################
+# Travis file to support automatic build and deployment of CA Artifacts
+###############################################################################
+
+#
+# This build recipe should be set up to trigger every time new TAGGED commits
+# are pushed to the CA repository in the channelaccess Organisational Area on
+# the GitHub Server.
+#
+# Currently the build recipe supports the following actions:
+#
+# - Builds CA API documentation and transfers asset to GitHub Pages Area.
+# - Runs Unit Tests.
+# - Builds CA Release Bundle and transfers asset to GitHub Releases Area.
+#
+# *******************************************
+# Build Environment Configuration Starts Here
+# *******************************************
+
+os: linux
+
+dist: bionic
+
 language: java
-jdk:
-  - openjdk8
+
+jdk: openjdk11
+
+# Cache maven repository to speed up builds.
+cache:
+  directories:
+    - "$HOME/.m2"
+
+# *******************************************
+# Build Lifecycle Handling Starts Here
+# *******************************************
+
+before_install:
+  - echo -n "*** LIFECYCLE STARTED - 'before_install' *****************************************************************"
+  - echo -n "*** LIFECYCLE COMPLETED - before_install *****************************************************************"
+
+# Note: 'Install' here means bring things into the Travis environment that are needed for the build.
+install:
+  - echo "*** LIFECYCLE STARTED - 'install' ***************************************************************************"
+  - echo "*** LIFECYCLE COMPLETED - 'install' *************************************************************************"
+
+before_script:
+  - echo -n "*** LIFECYCLE STARTED - 'before_script' ******************************************************************"
+  - echo -n "*** LIFECYCLE COMPLETED - 'before_script' ****************************************************************"
+
+script:
+  - echo -n "*** LIFECYCLE STARTED - 'script' *************************************************************************"
+  - mvn clean package -DskipTests=true -D maven.javadoc.skip=false -B -V
+  - echo -n "*** LIFECYCLE COMPLETED - 'script' ***********************************************************************"
+
+# The Travis Lifecycle 'deploy' phase is optional and runs after the Travis Lifecycle 'script' phase has completed.
+deploy:
+  # Copy the CA release assets into the GitHub Releases Area.
+  - provider: releases                       # Travis GitHub Releases Provider.
+    edge: false                              # Stick with the old V1 Travis DPL support, not the new V2 support which
+                                             # currently (2020-01-05) has a bug which prevents it from working.
+
+    skip_cleanup: true                       # Set to false to allow cacheing, in accordance with Travis GitHub
+    # Releases Provider docs.
+    token: "$GITHUB_TOKEN"
+    file_glob: true                          # Needed to transfer ALL *.jar assets
+    file: build/libs/ca-*.jar                # The asset(s) to be deployed.
+    draft: false                             # Create a GitHub Regular Release not a GitHub Draft.
+    overwrite: true                          # Allow new releases to overwrite old ones.
+    on:
+      tags: true                             # Skip this deployment unless $TRAVIS_TAG is set.
+
+  # Copy the CA JavaDoc documentation into the GitHub Pages Area.
+  - provider: pages                          # Travis GitHub Pages Provider.
+    edge: false                              # Stick with the old V1 Travis DPL support, not the new V2 support which
+                                             # currently (2020-01-05) has a bug which prevents it from working.
+    skip_cleanup: true                       # Set to false to allow cacheing, in accordance with Travis GitHub
+    # Releases Provider docs.
+    local_dir: build/javadoc
+    token: "$GITHUB_TOKEN"                   # Set in the settings page of your repository, as a secure variable
+    keep_history: true                       # Retain previous versions of the documentation.
+    on:
+      tags: true                             # Skip this deployment unless $TRAVIS_TAG is set.
+
+after_script:
+  - echo -n "*** LIFECYCLE STARTED - 'after_script' *******************************************************************"
+  - echo -n "*** LIFECYCLE COMPLETED - 'after_script' *****************************************************************"
