@@ -69,20 +69,18 @@ dependencies {
     compile 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
 
     // Supports unit and integration tests
-    testCompile 'org.junit.jupiter:junit-jupiter-api:5.2.0'
-    testCompile('org.junit.jupiter:junit-jupiter-api:5.2.0:javadoc')
-    testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.2.0'
-    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.2.0:javadoc')
-    testCompile 'org.junit.jupiter:junit-jupiter-params:5.2.0'
-    testCompile 'org.junit.jupiter:junit-jupiter-params:5.2.0:javadoc'
-    testCompile 'org.mockito:mockito-core:2.18.3'
-    testCompile 'org.mockito:mockito-core:2.18.3:javadoc'
+    testCompile 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testCompile('org.junit.jupiter:junit-jupiter-api:5.6.0:javadoc')
+    testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.6.0:javadoc')
+    testCompile 'org.junit.jupiter:junit-jupiter-params:5.6.0'
+    testCompile 'org.junit.jupiter:junit-jupiter-params:5.6.0:javadoc'
+    testCompile 'org.mockito:mockito-core:3.3.3'
+    testCompile 'org.mockito:mockito-core:3.3.3:javadoc'
 
-    // Supports CAJ-based test server
-    testCompile 'org.epics:caj:1.1.16-SNAPSHOT'
-    testCompile 'org.epics:caj:1.1.16-SNAPSHOT:javadoc'
-    testCompile 'org.epics:jca:2.3.6'
-    testCompile 'org.epics:jca:2.3.6:javadoc'
+    // Supports JCA-based test server
+    testCompile 'org.epics:jca:2.4.2'
+    testCompile 'org.epics:jca:2.4.2:javadoc'
 }
 
 test {
