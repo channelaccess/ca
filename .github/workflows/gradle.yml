@@ -4,6 +4,8 @@
 name: Java CI with Gradle
 
 on:
+  watch:
+    types: [ started ]
   push:
     branches: [ master ]
   pull_request:
