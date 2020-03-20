@@ -88,7 +88,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
    /**
     * Owners (users) of the transport.
     */
-   private final Set<TransportClient> owners = new HashSet<TransportClient> ();
+   private final Set<TransportClient> owners = new HashSet<> ();
 
    /**
     * Initial receive buffer size.
@@ -209,15 +209,15 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
 
       // NOTE: not perfect, but holding a lock on owners
       // and calling external method leads to deadlocks
-      for ( int i = 0; i < clients.length; i++ )
+      for ( TransportClient client : clients )
       {
          try
          {
-            clients[ i ].transportClosed ();
+            client.transportClosed();
          }
          catch ( Throwable th )
          {
-            logger.log (Level.SEVERE, "Unexpected exception caught while calling TransportClient.transportClosed().", th);
+            logger.log(Level.SEVERE, "Unexpected exception caught while calling TransportClient.transportClosed().", th);
          }
       }
    }
@@ -308,10 +308,10 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
             // attempt to read from the channel as many bytes as available
             // in the supplied receive buffer. Store the data at successive
             // locations starting from the current position.
-            logger.log( Level.FINEST,"About to read into buffer starting at pos: " + String.valueOf (receiveBuffer.position ()));
+            logger.log( Level.FINEST,"About to read into buffer starting at pos: " + receiveBuffer.position());
 
             int bytesRead = channel.read (receiveBuffer);
-            logger.log( Level.FINEST,"Read #bytes from channel: " + String.valueOf (bytesRead));
+            logger.log( Level.FINEST,"Read #bytes from channel: " + bytesRead);
 
             if ( bytesRead < 0 )
             {
@@ -325,7 +325,6 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
                // no more data, disable flow control... hopefully this will allow
                // more data to be read pretty soon.
                // Note: flow control only works with monitors !
-               bufferFullCount = 0;
                logger.log( Level.FINEST, "Disabling flow control...");
                disableFlowControl ();
                break;
@@ -358,7 +357,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
             // and sets the position back to zero again.
             logger.log (Level.FINEST, "Flipping buffer.");
             receiveBuffer.flip ();
-            logger.log (Level.FINEST, "ReceiveBuffer now has #bytes: " + String.valueOf (receiveBuffer.remaining ()));
+            logger.log (Level.FINEST, "ReceiveBuffer now has #bytes: " + receiveBuffer.remaining());
 
             // Now go ahead and try to process whatever data we have obtained
             logger.log (Level.FINEST, "CA: processing new data...");
@@ -380,7 +379,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
    protected void processReadBuffer()
    {
       int lastMessageStartPosition = 0;
-      int lastMessageBytesAvailable = 0;
+      int lastMessageBytesAvailable;
 
       logger.log (Level.FINEST, "\n\nProcessing READ buffer from thread: " + Thread.currentThread ());
       // Read and process as many messages as may be available...
@@ -391,8 +390,8 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
          lastMessageBytesAvailable = receiveBuffer.remaining ();
 
          logger.log (Level.FINEST, "Processing NEXT loop iteration...");
-         logger.log (Level.FINEST, "- lastMessagePosition = " + String.valueOf (lastMessageStartPosition));
-         logger.log (Level.FINEST, "- lastMessageBytesAvailable = " + String.valueOf (lastMessageBytesAvailable));
+         logger.log (Level.FINEST, "- lastMessagePosition = " + lastMessageStartPosition);
+         logger.log (Level.FINEST, "- lastMessageBytesAvailable = " + lastMessageBytesAvailable);
 
          // Definitely not full header yet so break (nothing has been read from the byte buffer)
          if ( lastMessageBytesAvailable < Constants.CA_MESSAGE_HEADER_SIZE )
@@ -411,7 +410,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
          // If there is not yet enough data in the buffer to read the expected payload...
          if ( receiveBuffer.remaining () < header.payloadSize )
          {
-            logger.log (Level.FINEST, "Not enough bytes for payload: " + String.valueOf (header.payloadSize));
+            logger.log (Level.FINEST, "Not enough bytes for payload: " + header.payloadSize);
             // If the buffer itself is not big enough to contain the expected payload
             // then we need to allocate a new buffer, transfer the existing information
             // to it, then bail out of this function to wait for more data.
@@ -459,8 +458,8 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
 
          try
          {
-            logger.log (Level.FINEST, "Processing message starting at position:" + String.valueOf (receiveBuffer.position ()));
-            logger.log (Level.FINEST, "Payload size is: " + String.valueOf (header.payloadSize));
+            logger.log (Level.FINEST, "Processing message starting at position:" + receiveBuffer.position());
+            logger.log (Level.FINEST, "Payload size is: " + header.payloadSize);
             // Note: the first character to be read in the receiveBuffer is the first byte of the payload.
             responseHandler.handleResponse (socketAddress, this, header, receiveBuffer);
          }
@@ -495,7 +494,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
       {
          // copy remaining buffer, lastMessageBytesAvailable bytes from lastMessagePosition,
          // to the start of receiveBuffer
-         logger.log (Level.FINEST, "- moving remaining bytes to start of buffer. Unprocessed bytes = " + String.valueOf (unprocessedBytes));
+         logger.log (Level.FINEST, "- moving remaining bytes to start of buffer. Unprocessed bytes = " + unprocessedBytes);
          if ( unprocessedBytes < 1024 )
          {
             logger.log (Level.FINEST, "- using copy algorithm 1");
@@ -523,7 +522,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
       // - the position is set to the last unprocessed byte
       // - the limit is set to the buffer's capacity.
       receiveBuffer.limit (receiveBuffer.capacity ());
-      logger.log (Level.FINEST, "Done with read processing for now. Buffer Position is: " + String.valueOf (receiveBuffer.position ()));
+      logger.log (Level.FINEST, "Done with read processing for now. Buffer Position is: " + receiveBuffer.position());
    }
 
 
@@ -622,10 +621,11 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
                   {
                      // noop
                   }
-                  continue;
                }
                else
+               {
                   break;
+               }
             }
 
          }
@@ -760,7 +760,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
 
    private int startPosition;
 
-   private final void clearSendBuffer()
+   private void clearSendBuffer()
    {
       sendBuffer.clear ();
       // reserve space for events on/off message
@@ -782,7 +782,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
          Boolean insertFlowControlMessage = flowControlChangeRequest.getAndSet (null);
          if ( insertFlowControlMessage != null )
          {
-            long offOn = insertFlowControlMessage.booleanValue () ?
+            long offOn = insertFlowControlMessage ?
                   0x0008000000000000L :         // eventsOff
                   0x0009000000000000L;         // eventsOn
             sendBuffer.putLong (0, offOn);
