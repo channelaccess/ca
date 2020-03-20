@@ -9,6 +9,6 @@ public interface TransportClient
    /**
     * Notification of forcefully closed transport.
     */
-   public void transportClosed();
+   void transportClosed();
 
 }

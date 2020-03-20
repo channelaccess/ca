@@ -11,12 +11,12 @@ public interface ResponseRequest
     *
     * @return ioid
     */
-   public int getIOID();
+   int getIOID();
 
    /**
     * Cancel response request (always to be called to complete/destroy).
     */
-   public void cancel();
+   void cancel();
 
    /**
     * Exception response notification.
@@ -24,6 +24,6 @@ public interface ResponseRequest
     * @param errorCode    exception code.
     * @param errorMessage received detailed message.
     */
-   public void exception( int errorCode, String errorMessage );
+   void exception( int errorCode, String errorMessage );
 
 }
