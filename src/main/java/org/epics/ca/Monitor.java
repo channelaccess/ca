@@ -1,18 +1,13 @@
 package org.epics.ca;
 
-import org.epics.ca.util.Holder;
-
-import com.lmax.disruptor.dsl.Disruptor;
-
 public interface Monitor<T> extends AutoCloseable
 {
+   int VALUE_MASK = 0x01;
+   int LOG_MASK = 0x02;
+   int ALARM_MASK = 0x04;
+   int PROPERTY_MASK = 0x08;
 
-   public static final int VALUE_MASK = 0x01;
-   public static final int LOG_MASK = 0x02;
-   public static final int ALARM_MASK = 0x04;
-   public static final int PROPERTY_MASK = 0x08;
-
-   public static int getMask( boolean valueChangeEvent, boolean logEvent, boolean alarmEvent, boolean propertyChangeEvent )
+   static int getMask( boolean valueChangeEvent, boolean logEvent, boolean alarmEvent, boolean propertyChangeEvent )
    {
       int mask = (valueChangeEvent ? VALUE_MASK : 0);
       if ( logEvent )
