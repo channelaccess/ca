@@ -18,6 +18,7 @@ import org.epics.ca.data.Timestamped;
 
 import com.lmax.disruptor.EventFactory;
 
+@SuppressWarnings( "ALL" )
 public class TypeSupports
 {
 
@@ -36,10 +37,10 @@ public class TypeSupports
    /**
     * Create (extract) string (zero-terminated) from byte buffer.
     *
-    * @param rawBuffer
+    * @param rawBuffer the buffer.
     * @return decoded DBR.
     */
-   private final static String extractString( byte[] rawBuffer )
+   private static String extractString( byte[] rawBuffer )
    {
       int len = 0;
       final int rawBufferLen = rawBuffer.length;
@@ -48,7 +49,7 @@ public class TypeSupports
       return new String (rawBuffer, 0, len);
    }
 
-   private final static void readAlarm( ByteBuffer buffer, Alarm<?> data )
+   private static void readAlarm( ByteBuffer buffer, Alarm<?> data )
    {
       int status = buffer.getShort () & 0xFFFF;
       int severity = buffer.getShort () & 0xFFFF;
@@ -57,7 +58,7 @@ public class TypeSupports
       data.setAlarmSeverity (AlarmSeverity.values ()[ severity ]);
    }
 
-   private final static void readTimestamp( ByteBuffer buffer, Timestamped<?> data )
+   private static void readTimestamp( ByteBuffer buffer, Timestamped<?> data )
    {
       // seconds since 0000 Jan 1, 1990
       long secPastEpoch = buffer.getInt () & 0x00000000FFFFFFFFL;
@@ -68,7 +69,7 @@ public class TypeSupports
       data.setNanos (nsec);
    }
 
-   private final static void readUnits( ByteBuffer buffer, Graphic<?, ?> data )
+   private static void readUnits( ByteBuffer buffer, Graphic<?, ?> data )
    {
       final int MAX_UNITS_SIZE = 8;
       byte[] rawUnits = new byte[ MAX_UNITS_SIZE ];
@@ -77,7 +78,7 @@ public class TypeSupports
       data.setUnits (extractString (rawUnits));
    }
 
-   private final static void readPrecision( ByteBuffer buffer, Graphic<?, ?> data )
+   private static void readPrecision( ByteBuffer buffer, Graphic<?, ?> data )
    {
       int precision = buffer.getShort () & 0xFFFF;
       data.setPrecision (precision);
@@ -86,7 +87,7 @@ public class TypeSupports
       buffer.getShort ();
    }
 
-   private final static <T> void readGraphicLimits( TypeSupport<T> valueReader, ByteBuffer buffer, Graphic<?, T> data )
+   private static <T> void readGraphicLimits( TypeSupport<T> valueReader, ByteBuffer buffer, Graphic<?, T> data )
    {
       data.setUpperDisplay (valueReader.deserialize (buffer, data.getUpperDisplay (), 1));
       data.setLowerDisplay (valueReader.deserialize (buffer, data.getLowerDisplay (), 1));
@@ -96,36 +97,32 @@ public class TypeSupports
       data.setLowerAlarm (valueReader.deserialize (buffer, data.getLowerAlarm (), 1));
    }
 
-   private final static <T> void readControlLimits( TypeSupport<T> valueReader, ByteBuffer buffer, Control<?, T> data )
+   private static <T> void readControlLimits( TypeSupport<T> valueReader, ByteBuffer buffer, Control<?, T> data )
    {
       data.setUpperControl (valueReader.deserialize (buffer, data.getUpperControl (), 1));
       data.setLowerControl (valueReader.deserialize (buffer, data.getLowerControl (), 1));
    }
 
-   public static interface TypeSupport<T> extends EventFactory<T>
+   public interface TypeSupport<T> extends EventFactory<T>
    {
-      public int getDataType();
+      int getDataType();
 
-      public default int getForcedElementCount()
+      default int getForcedElementCount()
       {
          return 0;
       }
 
-      public default void serialize( ByteBuffer buffer, T object, int count )
+      default void serialize( ByteBuffer buffer, T object, int count )
       {
          throw new UnsupportedOperationException ();
       }
 
-      ;
-
-      public default int serializeSize( T object, int count )
+      default int serializeSize( T object, int count )
       {
          throw new UnsupportedOperationException ();
       }
 
-      ;
-
-      public T deserialize( ByteBuffer buffer, T object, int count );
+      T deserialize( ByteBuffer buffer, T object, int count );
    }
 
    private static abstract class MetadataTypeSupport<T, VT> implements TypeSupport<T>
@@ -150,7 +147,6 @@ public class TypeSupports
          buffer.position (buffer.position () + preValuePadding);
       }
 
-      ;
    }
 
    private static class STSTypeSupport<T> extends MetadataTypeSupport<Alarm<T>, T>
@@ -160,12 +156,10 @@ public class TypeSupports
          super (valueTypeSupport, preValuePadding);
       }
 
-      ;
-
       @Override
       public Alarm<T> newInstance()
       {
-         return new Alarm<T> ();
+         return new Alarm<> ();
       }
 
       @Override
@@ -195,12 +189,10 @@ public class TypeSupports
          super (valueTypeSupport, preValuePadding);
       }
 
-      ;
-
       @Override
       public Timestamped<T> newInstance()
       {
-         return new Timestamped<T> ();
+         return new Timestamped<> ();
       }
 
       @Override
@@ -237,12 +229,11 @@ public class TypeSupports
          this.scalarValueTypeSupport = scalarValueTypeSupport;
       }
 
-      ;
 
       @Override
       public Graphic<T, ST> newInstance()
       {
-         return new Graphic<T, ST> ();
+         return new Graphic<>();
       }
 
       @Override
@@ -284,12 +275,10 @@ public class TypeSupports
          this.scalarValueTypeSupport = scalarValueTypeSupport;
       }
 
-      ;
-
       @Override
       public Control<T, ST> newInstance()
       {
-         return new Control<T, ST> ();
+         return new Control<>();
       }
 
       @Override
@@ -322,13 +311,11 @@ public class TypeSupports
    private static final class DoubleTypeSupport implements TypeSupport<Double>
    {
       public static final DoubleTypeSupport INSTANCE = new DoubleTypeSupport ();
-      private static final Double DUMMY_INSTANCE = Double.valueOf (0);
+      private static final Double DUMMY_INSTANCE = (double) 0;
 
       private DoubleTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public Double newInstance()
@@ -351,7 +338,7 @@ public class TypeSupports
       @Override
       public void serialize( ByteBuffer buffer, Double object, int count )
       {
-         buffer.putDouble ((Double) object);
+         buffer.putDouble ( object);
       }
 
       @Override
@@ -360,8 +347,6 @@ public class TypeSupports
          return 8;
       }
 
-      ;
-
       @Override
       public Double deserialize( ByteBuffer buffer, Double object, int count )
       {
@@ -369,6 +354,7 @@ public class TypeSupports
       }
    }
 
+   @SuppressWarnings( "UnnecessaryLocalVariable" )
    private static final class DoubleArrayTypeSupport implements TypeSupport<double[]>
    {
       public static final DoubleArrayTypeSupport INSTANCE = new DoubleArrayTypeSupport ();
@@ -377,8 +363,6 @@ public class TypeSupports
       private DoubleArrayTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public double[] newInstance()
@@ -398,13 +382,10 @@ public class TypeSupports
          return 8 * count;
       }
 
-      ;
-
       @Override
       public void serialize( ByteBuffer buffer, double[] object, int count )
       {
-
-         double[] array = (double[]) object;
+         double[] array = object;
          if ( count < OPTIMIZED_COPY_THRESHOLD )
          {
             for ( int i = 0; i < count; i++ )
@@ -421,7 +402,6 @@ public class TypeSupports
       @Override
       public double[] deserialize( ByteBuffer buffer, double[] object, int count )
       {
-
          double[] data;
          if ( object == null )
          {
@@ -429,7 +409,7 @@ public class TypeSupports
          }
          else
          {
-            data = (double[]) object;
+            data = object;
             if ( data.length != count )
                data = new double[ count ];
          }
@@ -451,13 +431,11 @@ public class TypeSupports
    private static final class FloatTypeSupport implements TypeSupport<Float>
    {
       public static final FloatTypeSupport INSTANCE = new FloatTypeSupport ();
-      private static final Float DUMMY_INSTANCE = Float.valueOf (0);
+      private static final Float DUMMY_INSTANCE = (float) 0;
 
       private FloatTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public Float newInstance()
@@ -480,7 +458,7 @@ public class TypeSupports
       @Override
       public void serialize( ByteBuffer buffer, Float object, int count )
       {
-         buffer.putFloat ((Float) object);
+         buffer.putFloat( object) ;
       }
 
       @Override
@@ -489,8 +467,6 @@ public class TypeSupports
          return 4;
       }
 
-      ;
-
       @Override
       public Float deserialize( ByteBuffer buffer, Float object, int count )
       {
@@ -498,6 +474,7 @@ public class TypeSupports
       }
    }
 
+   @SuppressWarnings( "UnnecessaryLocalVariable" )
    private static final class FloatArrayTypeSupport implements TypeSupport<float[]>
    {
       public static final FloatArrayTypeSupport INSTANCE = new FloatArrayTypeSupport ();
@@ -506,8 +483,6 @@ public class TypeSupports
       private FloatArrayTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public float[] newInstance()
@@ -527,13 +502,11 @@ public class TypeSupports
          return 4 * count;
       }
 
-      ;
-
       @Override
       public void serialize( ByteBuffer buffer, float[] object, int count )
       {
-
-         float[] array = (float[]) object;
+         //noinspection UnnecessaryLocalVariable
+         float[] array = object;
          if ( count < OPTIMIZED_COPY_THRESHOLD )
          {
             for ( int i = 0; i < count; i++ )
@@ -558,7 +531,7 @@ public class TypeSupports
          }
          else
          {
-            data = (float[]) object;
+            data = object;
             if ( data.length != count )
                data = new float[ count ];
          }
@@ -580,13 +553,11 @@ public class TypeSupports
    private static final class ByteTypeSupport implements TypeSupport<Byte>
    {
       public static final ByteTypeSupport INSTANCE = new ByteTypeSupport ();
-      private static final Byte DUMMY_INSTANCE = Byte.valueOf ((byte) 0);
+      private static final Byte DUMMY_INSTANCE = (byte) 0;
 
       private ByteTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public Byte newInstance()
@@ -609,7 +580,7 @@ public class TypeSupports
       @Override
       public void serialize( ByteBuffer buffer, Byte object, int count )
       {
-         buffer.put ((Byte) object);
+         buffer.put (object);
       }
 
       @Override
@@ -617,8 +588,6 @@ public class TypeSupports
       {
          return 1;
       }
-
-      ;
 
       @Override
       public Byte deserialize( ByteBuffer buffer, Byte object, int count )
@@ -635,8 +604,6 @@ public class TypeSupports
       private ByteArrayTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public byte[] newInstance()
@@ -656,13 +623,11 @@ public class TypeSupports
          return count;
       }
 
-      ;
-
       @Override
       public void serialize( ByteBuffer buffer, byte[] object, int count )
       {
-
-         byte[] array = (byte[]) object;
+         //noinspection UnnecessaryLocalVariable
+         byte[] array = object;
          if ( count < OPTIMIZED_COPY_THRESHOLD )
          {
             for ( int i = 0; i < count; i++ )
@@ -686,7 +651,7 @@ public class TypeSupports
          }
          else
          {
-            data = (byte[]) object;
+            data = object;
             if ( data.length != count )
                data = new byte[ count ];
          }
@@ -708,13 +673,11 @@ public class TypeSupports
    private static final class ShortTypeSupport implements TypeSupport<Short>
    {
       public static final ShortTypeSupport INSTANCE = new ShortTypeSupport ();
-      public static final Short DUMMY_INSTANCE = Short.valueOf ((short) 0);
+      public static final Short DUMMY_INSTANCE = (short) 0;
 
       private ShortTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public Short newInstance()
@@ -740,12 +703,10 @@ public class TypeSupports
          return 2;
       }
 
-      ;
-
       @Override
       public void serialize( ByteBuffer buffer, Short object, int count )
       {
-         buffer.putShort (((Short) object));
+         buffer.putShort (object);
       }
 
       @Override
@@ -755,6 +716,7 @@ public class TypeSupports
       }
    }
 
+   @SuppressWarnings( "UnnecessaryLocalVariable" )
    private static final class ShortArrayTypeSupport implements TypeSupport<short[]>
    {
       public static final ShortArrayTypeSupport INSTANCE = new ShortArrayTypeSupport ();
@@ -763,8 +725,6 @@ public class TypeSupports
       private ShortArrayTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public short[] newInstance()
@@ -784,13 +744,10 @@ public class TypeSupports
          return 2 * count;
       }
 
-      ;
-
       @Override
       public void serialize( ByteBuffer buffer, short[] object, int count )
       {
-
-         short[] array = (short[]) object;
+         short[] array = object;
          if ( count < OPTIMIZED_COPY_THRESHOLD )
          {
             for ( int i = 0; i < count; i++ )
@@ -807,7 +764,6 @@ public class TypeSupports
       @Override
       public short[] deserialize( ByteBuffer buffer, short[] object, int count )
       {
-
          short[] data;
          if ( object == null )
          {
@@ -815,7 +771,7 @@ public class TypeSupports
          }
          else
          {
-            data = (short[]) object;
+            data = object;
             if ( data.length != count )
                data = new short[ count ];
          }
@@ -842,8 +798,6 @@ public class TypeSupports
       {
       }
 
-      ;
-
       @Override
       public GraphicEnum newInstance()
       {
@@ -868,6 +822,7 @@ public class TypeSupports
          GraphicEnum data = (object == null) ?
                newInstance () : object;
 
+         //noinspection DuplicatedCode
          readAlarm (buffer, data);
 
          final int MAX_ENUM_STRING_SIZE = 26;
@@ -906,8 +861,6 @@ public class TypeSupports
       {
       }
 
-      ;
-
       @Override
       public GraphicEnumArray newInstance()
       {
@@ -923,9 +876,9 @@ public class TypeSupports
       @Override
       public GraphicEnumArray deserialize( ByteBuffer buffer, GraphicEnumArray object, int count )
       {
-         GraphicEnumArray data = (object == null) ?
-               newInstance () : object;
+         GraphicEnumArray data = (object == null) ? newInstance () : object;
 
+         //noinspection DuplicatedCode
          readAlarm (buffer, data);
 
          final int MAX_ENUM_STRING_SIZE = 26;
@@ -959,13 +912,11 @@ public class TypeSupports
    private static final class IntegerTypeSupport implements TypeSupport<Integer>
    {
       public static final IntegerTypeSupport INSTANCE = new IntegerTypeSupport ();
-      public static final Integer DUMMY_INSTANCE = Integer.valueOf (0);
+      public static final Integer DUMMY_INSTANCE = 0;
 
       private IntegerTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public Integer newInstance()
@@ -991,12 +942,10 @@ public class TypeSupports
          return 4;
       }
 
-      ;
-
       @Override
       public void serialize( ByteBuffer buffer, Integer object, int count )
       {
-         buffer.putInt ((Integer) object);
+         buffer.putInt (object);
       }
 
       @Override
@@ -1014,8 +963,6 @@ public class TypeSupports
       private IntegerArrayTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public int[] newInstance()
@@ -1035,13 +982,11 @@ public class TypeSupports
          return 4 * count;
       }
 
-      ;
-
       @Override
       public void serialize( ByteBuffer buffer, int[] object, int count )
       {
-
-         int[] array = (int[]) object;
+         //noinspection UnnecessaryLocalVariable
+         int[] array = object;
          if ( count < OPTIMIZED_COPY_THRESHOLD )
          {
             for ( int i = 0; i < count; i++ )
@@ -1066,7 +1011,7 @@ public class TypeSupports
          }
          else
          {
-            data = (int[]) object;
+            data = object;
             if ( data.length != count )
                data = new int[ count ];
          }
@@ -1094,8 +1039,6 @@ public class TypeSupports
       {
       }
 
-      ;
-
       @Override
       public String newInstance()
       {
@@ -1120,12 +1063,10 @@ public class TypeSupports
          return object.length () + 1;
       }
 
-      ;
-
       @Override
       public void serialize( ByteBuffer buffer, String object, int count )
       {
-         buffer.put (((String) object).getBytes ());
+         buffer.put (object.getBytes ());
          buffer.put ((byte) 0);
       }
 
@@ -1175,8 +1116,6 @@ public class TypeSupports
       private StringArrayTypeSupport()
       {
       }
-
-      ;
 
       @Override
       public String[] newInstance()
@@ -1233,7 +1172,7 @@ public class TypeSupports
          }
          else
          {
-            data = (String[]) object;
+            data = object;
             if ( data.length != count )
                data = new String[ count ];
          }
@@ -1261,7 +1200,7 @@ public class TypeSupports
 
    static
    {
-      Set<Class<?>> set = new HashSet<Class<?>> ();
+      Set<Class<?>> set = new HashSet<>();
       set.add (String.class);
       set.add (Short.class);
       set.add (Float.class);
@@ -1310,19 +1249,19 @@ public class TypeSupports
       //
       {
          Map<Class<?>, TypeSupport<?>> map = new HashMap<> ();
-         map.put (String.class, new STSTypeSupport<String> (StringTypeSupport.INSTANCE, 0));
-         map.put (Short.class, new STSTypeSupport<Short> (ShortTypeSupport.INSTANCE, 0));
-         map.put (Float.class, new STSTypeSupport<Float> (FloatTypeSupport.INSTANCE, 0));
-         map.put (Byte.class, new STSTypeSupport<Byte> (ByteTypeSupport.INSTANCE, 1));
-         map.put (Integer.class, new STSTypeSupport<Integer> (IntegerTypeSupport.INSTANCE, 0));
-         map.put (Double.class, new STSTypeSupport<Double> (DoubleTypeSupport.INSTANCE, 4));
+         map.put (String.class, new STSTypeSupport<> (StringTypeSupport.INSTANCE, 0));
+         map.put (Short.class, new STSTypeSupport<> (ShortTypeSupport.INSTANCE, 0));
+         map.put (Float.class, new STSTypeSupport<> (FloatTypeSupport.INSTANCE, 0));
+         map.put (Byte.class, new STSTypeSupport<> (ByteTypeSupport.INSTANCE, 1));
+         map.put (Integer.class, new STSTypeSupport<> (IntegerTypeSupport.INSTANCE, 0));
+         map.put (Double.class, new STSTypeSupport<> (DoubleTypeSupport.INSTANCE, 4));
 
-         map.put (String[].class, new STSTypeSupport<String[]> (StringArrayTypeSupport.INSTANCE, 0));
-         map.put (short[].class, new STSTypeSupport<short[]> (ShortArrayTypeSupport.INSTANCE, 0));
-         map.put (float[].class, new STSTypeSupport<float[]> (FloatArrayTypeSupport.INSTANCE, 0));
-         map.put (byte[].class, new STSTypeSupport<byte[]> (ByteArrayTypeSupport.INSTANCE, 1));
-         map.put (int[].class, new STSTypeSupport<int[]> (IntegerArrayTypeSupport.INSTANCE, 0));
-         map.put (double[].class, new STSTypeSupport<double[]> (DoubleArrayTypeSupport.INSTANCE, 4));
+         map.put (String[].class, new STSTypeSupport<> (StringArrayTypeSupport.INSTANCE, 0));
+         map.put (short[].class, new STSTypeSupport<> (ShortArrayTypeSupport.INSTANCE, 0));
+         map.put (float[].class, new STSTypeSupport<> (FloatArrayTypeSupport.INSTANCE, 0));
+         map.put (byte[].class, new STSTypeSupport<> (ByteArrayTypeSupport.INSTANCE, 1));
+         map.put (int[].class, new STSTypeSupport<> (IntegerArrayTypeSupport.INSTANCE, 0));
+         map.put (double[].class, new STSTypeSupport<> (DoubleArrayTypeSupport.INSTANCE, 4));
 
          rootMap.put (Alarm.class, Collections.unmodifiableMap (map));
       }
@@ -1332,19 +1271,19 @@ public class TypeSupports
       //
       {
          Map<Class<?>, TypeSupport<?>> map = new HashMap<> ();
-         map.put (String.class, new TimeTypeSupport<String> (StringTypeSupport.INSTANCE, 0));
-         map.put (Short.class, new TimeTypeSupport<Short> (ShortTypeSupport.INSTANCE, 2));
-         map.put (Float.class, new TimeTypeSupport<Float> (FloatTypeSupport.INSTANCE, 0));
-         map.put (Byte.class, new TimeTypeSupport<Byte> (ByteTypeSupport.INSTANCE, 3));
-         map.put (Integer.class, new TimeTypeSupport<Integer> (IntegerTypeSupport.INSTANCE, 0));
-         map.put (Double.class, new TimeTypeSupport<Double> (DoubleTypeSupport.INSTANCE, 4));
+         map.put (String.class, new TimeTypeSupport<> (StringTypeSupport.INSTANCE, 0));
+         map.put (Short.class, new TimeTypeSupport<> (ShortTypeSupport.INSTANCE, 2));
+         map.put (Float.class, new TimeTypeSupport<> (FloatTypeSupport.INSTANCE, 0));
+         map.put (Byte.class, new TimeTypeSupport<> (ByteTypeSupport.INSTANCE, 3));
+         map.put (Integer.class, new TimeTypeSupport<> (IntegerTypeSupport.INSTANCE, 0));
+         map.put (Double.class, new TimeTypeSupport<> (DoubleTypeSupport.INSTANCE, 4));
 
-         map.put (String[].class, new TimeTypeSupport<String[]> (StringArrayTypeSupport.INSTANCE, 0));
-         map.put (short[].class, new TimeTypeSupport<short[]> (ShortArrayTypeSupport.INSTANCE, 2));
-         map.put (float[].class, new TimeTypeSupport<float[]> (FloatArrayTypeSupport.INSTANCE, 0));
-         map.put (byte[].class, new TimeTypeSupport<byte[]> (ByteArrayTypeSupport.INSTANCE, 3));
-         map.put (int[].class, new TimeTypeSupport<int[]> (IntegerArrayTypeSupport.INSTANCE, 0));
-         map.put (double[].class, new TimeTypeSupport<double[]> (DoubleArrayTypeSupport.INSTANCE, 4));
+         map.put (String[].class, new TimeTypeSupport<> (StringArrayTypeSupport.INSTANCE, 0));
+         map.put (short[].class, new TimeTypeSupport<> (ShortArrayTypeSupport.INSTANCE, 2));
+         map.put (float[].class, new TimeTypeSupport<> (FloatArrayTypeSupport.INSTANCE, 0));
+         map.put (byte[].class, new TimeTypeSupport<> (ByteArrayTypeSupport.INSTANCE, 3));
+         map.put (int[].class, new TimeTypeSupport<> (IntegerArrayTypeSupport.INSTANCE, 0));
+         map.put (double[].class, new TimeTypeSupport<> (DoubleArrayTypeSupport.INSTANCE, 4));
 
          rootMap.put (Timestamped.class, Collections.unmodifiableMap (map));
       }
@@ -1355,18 +1294,18 @@ public class TypeSupports
       {
          Map<Class<?>, TypeSupport<?>> map = new HashMap<> ();
          // there is no real Graphic<String>
-         map.put (Short.class, new GraphicTypeSupport<Short, Short> (ShortTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
-         map.put (Float.class, new GraphicTypeSupport<Float, Float> (FloatTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
-         map.put (Byte.class, new GraphicTypeSupport<Byte, Byte> (ByteTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
-         map.put (Integer.class, new GraphicTypeSupport<Integer, Integer> (IntegerTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
-         map.put (Double.class, new GraphicTypeSupport<Double, Double> (DoubleTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
+         map.put (Short.class, new GraphicTypeSupport<> (ShortTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
+         map.put (Float.class, new GraphicTypeSupport<> (FloatTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
+         map.put (Byte.class, new GraphicTypeSupport<> (ByteTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
+         map.put (Integer.class, new GraphicTypeSupport<> (IntegerTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
+         map.put (Double.class, new GraphicTypeSupport<> (DoubleTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
 
          // there is no real Graphic<String[]>
-         map.put (short[].class, new GraphicTypeSupport<short[], Short> (ShortArrayTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
-         map.put (float[].class, new GraphicTypeSupport<float[], Float> (FloatArrayTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
-         map.put (byte[].class, new GraphicTypeSupport<byte[], Byte> (ByteArrayTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
-         map.put (int[].class, new GraphicTypeSupport<int[], Integer> (IntegerArrayTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
-         map.put (double[].class, new GraphicTypeSupport<double[], Double> (DoubleArrayTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
+         map.put (short[].class, new GraphicTypeSupport<> (ShortArrayTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
+         map.put (float[].class, new GraphicTypeSupport<> (FloatArrayTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
+         map.put (byte[].class, new GraphicTypeSupport<> (ByteArrayTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
+         map.put (int[].class, new GraphicTypeSupport<> (IntegerArrayTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
+         map.put (double[].class, new GraphicTypeSupport<> (DoubleArrayTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
 
          rootMap.put (Graphic.class, Collections.unmodifiableMap (map));
       }
@@ -1377,18 +1316,18 @@ public class TypeSupports
       {
          Map<Class<?>, TypeSupport<?>> map = new HashMap<> ();
          // there is no real Control<String>
-         map.put (Short.class, new ControlTypeSupport<Short, Short> (ShortTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
-         map.put (Float.class, new ControlTypeSupport<Float, Float> (FloatTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
-         map.put (Byte.class, new ControlTypeSupport<Byte, Byte> (ByteTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
-         map.put (Integer.class, new ControlTypeSupport<Integer, Integer> (IntegerTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
-         map.put (Double.class, new ControlTypeSupport<Double, Double> (DoubleTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
+         map.put (Short.class, new ControlTypeSupport<> (ShortTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
+         map.put (Float.class, new ControlTypeSupport<> (FloatTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
+         map.put (Byte.class, new ControlTypeSupport<> (ByteTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
+         map.put (Integer.class, new ControlTypeSupport<> (IntegerTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
+         map.put (Double.class, new ControlTypeSupport<> (DoubleTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
 
          // there is no real Control<String[]>
-         map.put (short[].class, new ControlTypeSupport<short[], Short> (ShortArrayTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
-         map.put (float[].class, new ControlTypeSupport<float[], Float> (FloatArrayTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
-         map.put (byte[].class, new ControlTypeSupport<byte[], Byte> (ByteArrayTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
-         map.put (int[].class, new ControlTypeSupport<int[], Integer> (IntegerArrayTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
-         map.put (double[].class, new ControlTypeSupport<double[], Double> (DoubleArrayTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
+         map.put (short[].class, new ControlTypeSupport<> (ShortArrayTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
+         map.put (float[].class, new ControlTypeSupport<> (FloatArrayTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
+         map.put (byte[].class, new ControlTypeSupport<> (ByteArrayTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
+         map.put (int[].class, new ControlTypeSupport<> (IntegerArrayTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
+         map.put (double[].class, new ControlTypeSupport<> (DoubleArrayTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
 
          rootMap.put (Control.class, Collections.unmodifiableMap (map));
       }
@@ -1396,12 +1335,12 @@ public class TypeSupports
       typeSupportMap = Collections.unmodifiableMap (rootMap);
    }
 
-   static final TypeSupport<?> getTypeSupport( Class<?> clazz )
+   static TypeSupport<?> getTypeSupport( Class<?> clazz )
    {
       return getTypeSupport (Void.class, clazz);
    }
 
-   static final TypeSupport<?> getTypeSupport( Class<?> metaTypeClass, Class<?> typeClass )
+   static TypeSupport<?> getTypeSupport( Class<?> metaTypeClass, Class<?> typeClass )
    {
       // special case(s)
       if ( metaTypeClass == GraphicEnum.class )
@@ -1413,7 +1352,7 @@ public class TypeSupports
       return (m != null) ? m.get (typeClass) : null;
    }
 
-   static final boolean matches( TypeSupport<?> typeSupport, short typeCode, int elementCount )
+   static boolean matches( TypeSupport<?> typeSupport, short typeCode, int elementCount )
    {
       if ( typeSupport.getDataType () == typeCode )
       {
@@ -1426,7 +1365,7 @@ public class TypeSupports
          return false;
    }
 
-   static final TypeSupport<?> getTypeSupport( short typeCode, int elementCount )
+   static TypeSupport<?> getTypeSupport( short typeCode, int elementCount )
    {
       if ( matches (GraphicEnumTypeSupport.INSTANCE, typeCode, elementCount) )
          return GraphicEnumTypeSupport.INSTANCE;
@@ -1446,7 +1385,7 @@ public class TypeSupports
       }
    }
 
-   static final boolean isNativeType( Class<?> clazz )
+   static boolean isNativeType( Class<?> clazz )
    {
       return nativeTypeSet.contains (clazz);
    }
