@@ -16,6 +16,6 @@ public interface NotifyResponseRequest extends ResponseRequest
     * @param dataCount the CA channel element count.
     * @param dataPayloadBuffer the buffer with the payload
     */
-   public void response( int status, short dataType, int dataCount, ByteBuffer dataPayloadBuffer );
+   void response( int status, short dataType, int dataCount, ByteBuffer dataPayloadBuffer );
 
 }
