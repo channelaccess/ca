@@ -14,28 +14,28 @@ public interface Transport
     *
     * @return remote address.
     */
-   public InetSocketAddress getRemoteAddress();
+   InetSocketAddress getRemoteAddress();
 
    /**
     * Get context transport is living in.
     *
     * @return context transport is living in.
     */
-   public ContextImpl getContext();
+   ContextImpl getContext();
 
    /**
     * Transport protocol minor revision.
     *
     * @return protocol minor revision.
     */
-   public short getMinorRevision();
+   short getMinorRevision();
 
-   public int getPriority();
+   int getPriority();
 
-   public ByteBuffer acquireSendBuffer( int requiredSize );
+   ByteBuffer acquireSendBuffer( int requiredSize );
 
-   public void releaseSendBuffer( boolean ignore, boolean flush );
+   void releaseSendBuffer( boolean ignore, boolean flush );
 
-   public void flush();
+   void flush();
 
 }
