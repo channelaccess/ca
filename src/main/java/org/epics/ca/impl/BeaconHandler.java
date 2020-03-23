@@ -62,11 +62,12 @@ public class BeaconHandler
    public void beaconNotify( short remoteTransportRevision, long timestamp, long sequentialID )
    {
       boolean networkChanged = updateBeaconPeriod (remoteTransportRevision, timestamp, sequentialID);
-      if ( networkChanged )
-      {
-         // what to do here?!!
+
+      //if ( networkChanged )
+      //{
+         //  what to do here?!!
          // report changedTransport
-      }
+      //}
    }
 
    /**
