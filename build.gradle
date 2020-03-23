@@ -81,8 +81,8 @@ dependencies {
 
     // Needed for parameter validation (also the stopwatch timing class
     // that is used in testing).
-    compile 'org.apache.commons:commons-lang3:3.7'
-    compile 'org.apache.commons:commons-lang3:3.7:javadoc'
+    compile 'org.apache.commons:commons-lang3:3.9'
+    compile 'org.apache.commons:commons-lang3:3.9:javadoc'
 
     // Supports for documenting Thread-Safety
     compile 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
@@ -99,11 +99,6 @@ dependencies {
     testCompile( 'org.hamcrest:hamcrest:2.2')
 
     // Supports JCA-based test server
-//    testCompile 'org.epics:caj:1.1.16-SNAPSHOT'
-//    testCompile 'org.epics:caj:1.1.16-SNAPSHOT:javadoc'
-//    testCompile 'org.epics:jca:2.3.6'
-//    testCompile 'org.epics:jca:2.3.6:javadoc'
-
     testCompile 'org.epics:jca:2.4.2:javadoc'
     testCompile 'org.epics:jca:2.4.2'
 }
