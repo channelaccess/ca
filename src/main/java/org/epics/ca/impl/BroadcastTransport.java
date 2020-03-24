@@ -198,18 +198,18 @@ public class BroadcastTransport implements ReactorHandler, Transport
       if ( broadcastAddresses == null )
          return;
 
-      for ( int i = 0; i < broadcastAddresses.length; i++ )
+
+      for ( InetSocketAddress broadcastAddress : broadcastAddresses )
       {
          try
          {
             // prepare buffer
-            buffer.flip ();
-
-            channel.send (buffer, broadcastAddresses[ i ]);
+            buffer.flip();
+            channel.send(buffer, broadcastAddress );
          }
          catch ( Throwable ioex )
          {
-            logger.log ( Level.WARNING, "Failed to sent a datagram to:" + broadcastAddresses[ i ], ioex);
+            logger.log(Level.WARNING, "Failed to sent a datagram to:" + broadcastAddress, ioex);
          }
       }
    }
