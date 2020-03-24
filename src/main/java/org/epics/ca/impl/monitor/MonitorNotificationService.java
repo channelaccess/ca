@@ -6,12 +6,7 @@ package org.epics.ca.impl.monitor;
 /*- Interface Declaration ----------------------------------------------------*/
 
 import org.epics.ca.impl.TypeSupports.TypeSupport;
-
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * An interface providing the ability to control a service whose job it is to
