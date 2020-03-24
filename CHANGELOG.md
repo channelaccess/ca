@@ -85,11 +85,23 @@ This log describes the functionality of tagged versions within the repository.
    
 * [1.2.3](https://github.com/channelaccess/ca/releases/tag/1.2.3) Released 2020-03-17
   ###### Overview:
-  Bug fix mainly to address problems when interoperating with EPICS 7 Channel Access (see Issue #58). But other minor changes 
-  to modernise build chain to use later tools.
+  Release was triggered mainly by need to address problems when interoperating with EPICS 7 Channel Access (see Issue #58). 
+  But other changes to modernise build chain to use later tools.
+  Also refactored lots of code following IntelliJ code inspection recommendations.
+  Thanks to JL Muir for his contributions. :-)
   ###### Change List:   
-  * [Issue #53](https://github.com/channelaccess/ca/issues/57) README unclear about supported listeners.
+  * [Issue #52](https://github.com/channelaccess/ca/issues/52)Fix readme Gradle fragment version. Credit JL Muir. :-)
+  * [Issue #53](https://github.com/channelaccess/ca/issues/53) README unclear about supported listeners. Credit JL Muir. :-)
+  * [Issue #54](https://github.com/channelaccess/ca/issues/54) Fix readme typo in Compatibility section. Credit JL Muir. :-)
+  * [Issue #55](https://github.com/channelaccess/ca/issues/55) Remove nonexistent Travis build status from readme. Credit JL Muir. :-)
+  * [Issue #56](https://github.com/channelaccess/ca/issues/56) Fix readme typos. Credit JL Muir. :-)
+  * [Issue #57](https://github.com/channelaccess/ca/issues/57) Improve robustness of some tests.
   * [Issue #58](https://github.com/channelaccess/ca/issues/58) Library does not interoperate with CA in EPICS 7.0 - "client version too old".
   * [Issue #59](https://github.com/channelaccess/ca/issues/59) Transition away from 'travis-ci.org' site to newer 'travis-ci.com' site.
   * [Issue #60](https://github.com/channelaccess/ca/issues/60) Create software release 1.2.3. 
-
+  * [Issue #61](https://github.com/channelaccess/ca/issues/61) Get the Example Program Working. 
+  * [Issue #62](https://github.com/channelaccess/ca/issues/62) Update CA test server to use more recent JCA release
+  * [Issue #63](https://github.com/channelaccess/ca/issues/63) Update dependencies to later versions.
+  * [Issue #64](https://github.com/channelaccess/ca/issues/64) Refactor project according to IntelliJ inspection suggestions.
+  * [Issue #65](https://github.com/channelaccess/ca/issues/65) Change name of CAJTestServer to EpicsChannelAccesstestServer.
+  * [Issue #66](https://github.com/channelaccess/ca/issues/66) Update gradle to more recent build paradigms.
