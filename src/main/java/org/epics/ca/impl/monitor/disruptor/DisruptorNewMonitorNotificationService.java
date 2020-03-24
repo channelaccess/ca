@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@SuppressWarnings( "DuplicatedCode" )
 @ThreadSafe
 public class DisruptorNewMonitorNotificationService<T> implements MonitorNotificationService<T>
 {
@@ -58,7 +59,9 @@ public class DisruptorNewMonitorNotificationService<T> implements MonitorNotific
       // Construct the Disruptor. The size of the ring buffer, must be a power of 2.
       disruptor = new Disruptor<>( Holder::new, NOTIFICATION_VALUE_BUFFER_SIZE, myThreadFactory );
 
-      EventHandler eventHandler = new MySpecialEventHandler<>( consumer );
+      // Could not find a way to eliminate this warning other than to suppress it !
+      @SuppressWarnings( "rawtypes" )
+      final EventHandler eventHandler = new MySpecialEventHandler<>(consumer );
       disruptor.handleEventsWith( eventHandler );
 
       // Get the ring buffer from the Disruptor to be used for publishing.
@@ -127,6 +130,7 @@ public class DisruptorNewMonitorNotificationService<T> implements MonitorNotific
       final int shutdownDelayInMilliseconds = 2000;
       final boolean useHaltImplementation = true;
 
+      //noinspection ConstantConditions
       if ( useHaltImplementation )
       {
          // Note: this will not block or throw an exception
@@ -159,7 +163,7 @@ public class DisruptorNewMonitorNotificationService<T> implements MonitorNotific
       @Override
       public Thread newThread( Runnable r )
       {
-         return new Thread( r, "DisruptorMonitorNotificationServiceThread-" + String.valueOf( id++ ) );
+         return new Thread( r, "DisruptorMonitorNotificationServiceThread-" + id++);
       }
    }
 
