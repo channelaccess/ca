@@ -21,7 +21,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.time.Duration;
 import java.util.Locale;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -41,6 +40,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
 
+@SuppressWarnings( "SpellCheckingInspection" )
 class TCPTransportTest
 {
 
@@ -89,8 +89,11 @@ class TCPTransportTest
       // Note: INetSocketAddress cant be mocked (because it declares hashcode and equals as final).
       // So we create a real one here. For the purpose of the test the difference is irrelevant.
       final InetSocketAddress socketAddress = new InetSocketAddress(1234);
-      final ScheduledFuture scheduledFuture = Mockito.mock( ScheduledFuture.class );
-      final ScheduledExecutorService scheduledExecutorService = Mockito.mock (ScheduledExecutorService.class );
+
+      @SuppressWarnings( "rawtypes" )
+      final ScheduledFuture scheduledFuture = Mockito.mock(ScheduledFuture.class );
+
+      final ScheduledExecutorService scheduledExecutorService = Mockito.mock ( ScheduledExecutorService.class );
       final TransportRegistry transportRegistry = Mockito.mock( TransportRegistry.class );
       final Socket socket = Mockito.mock( Socket.class );
 
@@ -98,7 +101,10 @@ class TCPTransportTest
       Mockito.when( channel.socket ()).thenReturn (socket);
       Mockito.when( socket.getRemoteSocketAddress ()).thenReturn (socketAddress);
       Mockito.when( context.getScheduledExecutor ()).thenReturn (scheduledExecutorService);
-      Mockito.when( scheduledExecutorService.scheduleWithFixedDelay( any(), ArgumentMatchers.anyLong(), ArgumentMatchers.anyLong(), any() ) ).thenReturn( scheduledFuture );
+
+      //noinspection unchecked
+      Mockito.when( scheduledExecutorService.scheduleWithFixedDelay( any(), ArgumentMatchers.anyLong(), ArgumentMatchers.anyLong(), any() ) )
+            .thenReturn( scheduledFuture );
       Mockito.when( context.getTransportRegistry ()).thenReturn (transportRegistry);
 
       // Ok, we now have everything in place to construct our TCPTransport that we will test/
@@ -630,8 +636,8 @@ class TCPTransportTest
 
       // Verify the timing was no greater than expected
       assertTrue(elapsedTimeInMicroseconds < maximumExecutionTimeInMicroseconds,
-                 "Actual Execution Time was: "  + String.valueOf( elapsedTimeInMicroseconds ) + " us. " +
-                          "Maximum Execution Time was: " + String.valueOf( maximumExecutionTimeInMicroseconds ) + " us" );
+                 "Actual Execution Time was: "  + elapsedTimeInMicroseconds + " us. " +
+                          "Maximum Execution Time was: " + maximumExecutionTimeInMicroseconds + " us" );
    }
 
 
@@ -664,7 +670,7 @@ class TCPTransportTest
    {
       // Change the setting below for the required debug level.
       // This will be used for all tests except the CA Latency Test
-      return Stream.of ( Arguments.of( Level.INFO ) );
+      return Stream.of ( Arguments.of( Level.ALL ) );
    }
 
 /*- Nested Classes -----------------------------------------------------------*/
