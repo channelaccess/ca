@@ -3,6 +3,7 @@ package org.epics.ca.impl.reactor.lf;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,12 +24,12 @@ public class LeaderFollowersThreadPool
    /**
     * Shutdown status flag.
     */
-   private volatile boolean shutdown = false;
+   private final AtomicBoolean shutdown = new AtomicBoolean( false );
 
    /**
     * Executor.
     */
-   private ThreadPoolExecutor executor;
+   private final ThreadPoolExecutor executor;
 
    /**
     * Constructor.
@@ -53,7 +54,7 @@ public class LeaderFollowersThreadPool
       // unbounded queue is OK, since its naturally limited (threadPoolSize + # of transports (used for flushing))
       executor = new ThreadPoolExecutor (threadPoolSize, threadPoolSize,
                                          Long.MAX_VALUE, TimeUnit.NANOSECONDS,
-                                         new LinkedBlockingQueue<Runnable> ());
+                                         new LinkedBlockingQueue<> ());
       executor.prestartAllCoreThreads ();
    }
 
@@ -89,18 +90,21 @@ public class LeaderFollowersThreadPool
    /**
     * Shutdown.
     */
-   public synchronized void shutdown()
+   public void shutdown()
    {
-      if ( shutdown )
+      if ( shutdown.get() )
+      {
          return;
-      shutdown = true;
-
+      }
+      shutdown.set( true );
       executor.shutdown ();
       try
       {
          // NOTE: if thead pool is shutdown from one of its threads, this will always block for 1s
          if ( !executor.awaitTermination (1, TimeUnit.SECONDS) )
-            executor.shutdownNow ();
+         {
+            executor.shutdownNow();
+         }
       }
       catch ( InterruptedException ie )
       { /* noop */ }
