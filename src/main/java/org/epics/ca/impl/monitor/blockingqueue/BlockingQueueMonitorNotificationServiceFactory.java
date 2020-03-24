@@ -27,7 +27,7 @@ public class BlockingQueueMonitorNotificationServiceFactory implements MonitorNo
 
    private static final Logger logger = Logger.getLogger( BlockingQueueMonitorNotificationServiceFactory.class.getName() );
 
-   private final List<MonitorNotificationService> serviceList = new ArrayList<>();
+   private final List<MonitorNotificationService<?>> serviceList = new ArrayList<>();
    private final ThreadPoolExecutor threadPoolExecutor;
    private final int bufferSize;
    private final int numberOfThreads;
@@ -87,7 +87,7 @@ public class BlockingQueueMonitorNotificationServiceFactory implements MonitorNo
    public void close()
    {
       logger.log( Level.FINEST, String.format( "A BlockingQueueMonitorNotificationServiceFactory is being closed with %d service entries...", getServiceCount() ) );
-      for ( MonitorNotificationService service : serviceList )
+      for ( MonitorNotificationService<?> service : serviceList )
       {
          service.close();
       }
@@ -158,7 +158,7 @@ public class BlockingQueueMonitorNotificationServiceFactory implements MonitorNo
       @Override
       public Thread newThread( Runnable r )
       {
-         return new Thread(r, prefix + String.valueOf( id++ ) );
+         return new Thread(r, prefix + id++);
       }
    }
 
