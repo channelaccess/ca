@@ -30,7 +30,7 @@ class ChannelThroughputTests
 
    private static final Logger logger = Logger.getLogger( ChannelThroughputTests.class.getName() );
 
-   private CAJTestServer server;
+   private EpicsChannelAccessTestServer server;
 
 
 /*- Main ---------------------------------------------------------------------*/
@@ -47,7 +47,7 @@ class ChannelThroughputTests
    @BeforeEach
    void setUp()
    {
-      server = new CAJTestServer();
+      server = new EpicsChannelAccessTestServer();
       server.runInSeparateThread();
    }
 
