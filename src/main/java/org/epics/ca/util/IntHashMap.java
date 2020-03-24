@@ -9,13 +9,14 @@ import java.util.ArrayList;
  *
  * <p>This implementation is based on original java implementation.</p>
  */
+@SuppressWarnings( "UnnecessaryLocalVariable" )
 public class IntHashMap<T>
 {
 
    /**
     * The hash table data.
     */
-   private transient Entry table[];
+   private transient Entry[] table;
 
    /**
     * The total number of entries in the hash table.
@@ -93,7 +94,7 @@ public class IntHashMap<T>
       /**
        * Pool of reusable objects.
        */
-      private ArrayList<Entry> pool;
+      private final ArrayList<Entry> pool;
       private int lastPos = -1;
 
       /**
@@ -103,7 +104,7 @@ public class IntHashMap<T>
        */
       public EntryObjectPool( int initialCapacity )
       {
-         pool = new ArrayList<Entry> (initialCapacity);
+         pool = new ArrayList<> (initialCapacity);
       }
 
       /**
@@ -242,7 +243,7 @@ public class IntHashMap<T>
          throw new NullPointerException ();
       }
 
-      Entry tab[] = table;
+      final Entry[] tab = table;
       for ( int i = tab.length; i-- > 0; )
       {
          for ( Entry e = tab[ i ]; e != null; e = e.next )
@@ -284,9 +285,9 @@ public class IntHashMap<T>
     */
    public boolean containsKey( int key )
    {
-      Entry tab[] = table;
-      int hash = key;
-      int index = (hash & 0x7FFFFFFF) % tab.length;
+      final Entry[] tab = table;
+      final int hash = key;
+      final int index = (hash & 0x7FFFFFFF) % tab.length;
       for ( Entry e = tab[ index ]; e != null; e = e.next )
       {
          if ( e.hash == hash )
@@ -309,9 +310,9 @@ public class IntHashMap<T>
    @SuppressWarnings( "unchecked" )
    public T get( int key )
    {
-      Entry tab[] = table;
-      int hash = key;
-      int index = (hash & 0x7FFFFFFF) % tab.length;
+      final Entry[] tab = table;
+      final int hash = key;
+      final int index = (hash & 0x7FFFFFFF) % tab.length;
       for ( Entry e = tab[ index ]; e != null; e = e.next )
       {
          if ( e.hash == hash )
@@ -333,11 +334,11 @@ public class IntHashMap<T>
     */
    protected void rehash()
    {
-      int oldCapacity = table.length;
-      Entry oldMap[] = table;
+      final int oldCapacity = table.length;
+      final Entry[] oldMap = table;
 
-      int newCapacity = oldCapacity * 2 + 1;
-      Entry newMap[] = new Entry[ newCapacity ];
+      final int newCapacity = oldCapacity * 2 + 1;
+      final Entry[] newMap = new Entry[ newCapacity ];
 
       threshold = (int) (newCapacity * loadFactor);
       table = newMap;
@@ -374,7 +375,7 @@ public class IntHashMap<T>
    public Object put( int key, T value )
    {
       // Makes sure the key is not already in the hashtable.
-      Entry tab[] = table;
+      Entry[] tab = table;
       int hash = key;
       int index = (hash & 0x7FFFFFFF) % tab.length;
       for ( Entry e = tab[ index ]; e != null; e = e.next )
@@ -418,7 +419,7 @@ public class IntHashMap<T>
    @SuppressWarnings( "unchecked" )
    public T remove( int key )
    {
-      Entry tab[] = table;
+      Entry[] tab = table;
       int hash = key;
       int index = (hash & 0x7FFFFFFF) % tab.length;
       for ( Entry e = tab[ index ], prev = null; e != null; prev = e, e = e.next )
@@ -451,18 +452,16 @@ public class IntHashMap<T>
     */
    public void clear()
    {
-      Entry tab[] = table;
+      final Entry[] tab = table;
       for ( int index = tab.length; --index >= 0; )
       {
-
-         Entry e = tab[ index ];
+         final Entry e = tab[ index ];
          if ( e != null )
          {
             e.value = null;
             e.next = null;
             pool.putEntry (e);
          }
-
          tab[ index ] = null;
       }
       count = 0;
@@ -479,15 +478,20 @@ public class IntHashMap<T>
    {
       if ( arr == null || arr.length < count )
       {
-         arr = (T[]) Array.newInstance (arr.getClass ().getComponentType (), count);
+         // TODO: Note: March 2020: this looks like a bug to me. But without a unit
+         //  test to confirm  this I will not change things.
+         arr = (T[]) Array.newInstance( arr.getClass().getComponentType(), count );
       }
 
       int pos = 0;
-      Entry tab[] = table;
+      final Entry[] tab = table;
       for ( int i = tab.length; i-- > 0; )
+      {
          for ( Entry e = tab[ i ]; e != null; e = e.next )
+         {
             arr[ pos++ ] = (T) e.value;
-
+         }
+      }
       return arr;
    }
 
