@@ -3,6 +3,7 @@ package org.epics.ca.util;
 /**
  * Utility for dumping binary data.
  */
+@SuppressWarnings( "UnnecessaryLocalVariable" )
 public class HexDump
 {
 
@@ -12,7 +13,7 @@ public class HexDump
     * @param name name (description) of the message.
     * @param bs   buffer to dump
     */
-   public static void hexDump( String name, byte bs[] )
+   public static void hexDump( String name, byte[] bs )
    {
       hexDump (name, bs, 0, bs.length);
    }
@@ -26,7 +27,7 @@ public class HexDump
     */
    public static void hexDump(
          String name,
-         byte bs[],
+         byte[] bs,
          int len
    )
    {
@@ -43,7 +44,7 @@ public class HexDump
     */
    public static void hexDump(
          String name,
-         byte bs[],
+         byte[] bs,
          int start,
          int len
    )
@@ -63,7 +64,7 @@ public class HexDump
    public static synchronized void hexDump(
          String prologue,
          String name,
-         byte bs[],
+         byte[] bs,
          int start,
          int len
    )
@@ -98,12 +99,11 @@ public class HexDump
 
       if ( len % 16 != 0 )
       {
-         int pad = 0;
-         int delta_bytes = 16 - (len % 16);
+         final int delta_bytes = 16 - (len % 16);
 
          //rest of line (no of bytes)
          //each byte takes two chars plus one ws
-         pad = delta_bytes * 3;
+         int pad = delta_bytes * 3;
 
          //additional whitespaces after four bytes
          pad += (delta_bytes / 4);
@@ -127,22 +127,15 @@ public class HexDump
    /**
     * Get hex representation of byte.
     *
-    * @param b
+    * @param b the byte to convert.
     * @return string hex representation of byte.
     */
-   private static final String toHexAndSpace( byte b )
+   private static String toHexAndSpace( byte b )
    {
-      StringBuilder sb = new StringBuilder ();
-
-      int upper = (b >> 4) & 0x0F;
-      sb.append (lookup[ upper ]);
-
-      int lower = b & 0x0F;
-      sb.append (lookup[ lower ]);
-
-      sb.append (' ');
-
-      return sb.toString ();
+      final int upper = (b >> 4) & 0x0F;
+      final int lower = b & 0x0F;
+      final String sb = String.valueOf( lookup[ upper ]) + lookup[ lower ] + ' ';
+      return sb;
    }
 
    /**
@@ -151,17 +144,12 @@ public class HexDump
     * @param b the byte to convert.
     * @return string hex representation of byte.
     */
-   public static final String toHex( byte b )
+   public static String toHex( byte b )
    {
-      StringBuilder sb = new StringBuilder ();
-
-      int upper = (b >> 4) & 0x0F;
-      sb.append (lookup[ upper ]);
-
-      int lower = b & 0x0F;
-      sb.append (lookup[ lower ]);
-
-      return sb.toString ();
+      final int upper = (b >> 4) & 0x0F;
+      final int lower = b & 0x0F;
+      final String sb = String.valueOf(lookup[ upper ]) +  lookup[ lower ];
+      return sb;
    }
 
    /**
@@ -170,10 +158,9 @@ public class HexDump
     * @param b the byte to convert.
     * @return ASCII representation of byte, dot if non-readable.
     */
-   public static final char toAscii( byte b )
+   public static char toAscii( byte b )
    {
-      if ( b > (byte) 31 &&
-            b < (byte) 127 )
+      if ( b > (byte) 31 && b < (byte) 127 )
       {
          return (char) b;
       }
