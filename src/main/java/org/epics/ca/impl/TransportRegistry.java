@@ -16,13 +16,12 @@ public class TransportRegistry
    /**
     * Map caching transports.
     */
-   private final Map<InetSocketAddress, IntHashMap<Transport>> transports =
-         new HashMap<InetSocketAddress, IntHashMap<Transport>> ();
+   private final Map<InetSocketAddress, IntHashMap<Transport>> transports = new HashMap<> ();
 
    /**
     * Array of all transports.
     */
-   private final ArrayList<Transport> allTransports = new ArrayList<Transport> ();
+   private final ArrayList<Transport> allTransports = new ArrayList<> ();
 
    /**
     * Cache new (address, transport) pair.
@@ -34,11 +33,11 @@ public class TransportRegistry
    {
       synchronized ( transports )
       {
-         IntHashMap<Transport> priorities = transports.get (address);
+         IntHashMap<Transport> priorities = transports.get( address);
          if ( priorities == null )
          {
-            priorities = new IntHashMap<Transport> ();
-            transports.put (address, priorities);
+            priorities = new IntHashMap<>();
+            transports.put( address, priorities);
          }
          priorities.put (transport.getPriority (), transport);
          allTransports.add (transport);
@@ -100,7 +99,7 @@ public class TransportRegistry
          IntHashMap<Transport> priorities = transports.get (address);
          if ( priorities != null )
          {
-            Transport transport = (Transport) priorities.remove (priority);
+            Transport transport = priorities.remove (priority);
             if ( priorities.size () == 0 )
                transports.remove (address);
             if ( transport != null )
@@ -146,7 +145,7 @@ public class TransportRegistry
    {
       synchronized ( transports )
       {
-         return (Transport[]) allTransports.toArray (new Transport[ transports.size () ]);
+         return allTransports.toArray (new Transport[ transports.size () ]);
       }
    }
 }
