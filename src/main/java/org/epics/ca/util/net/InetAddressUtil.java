@@ -9,7 +9,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.Iterator;
+
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -40,27 +40,27 @@ public class InetAddressUtil
          return new InetSocketAddress[] { new InetSocketAddress ("255.255.255.255", port) };
       }
 
-      ArrayList<InetSocketAddress> list = new ArrayList<InetSocketAddress> (10);
+      ArrayList<InetSocketAddress> list = new ArrayList<> (10);
 
       while ( nets.hasMoreElements () )
       {
-         NetworkInterface net = (NetworkInterface) nets.nextElement ();
+         NetworkInterface net = nets.nextElement ();
          try
          {
             if ( net.isUp () )
             {
-               List<InterfaceAddress> interfaceAddresses = net.getInterfaceAddresses ();
-               if ( interfaceAddresses != null )
+               final List<InterfaceAddress> interfaceAddresses = net.getInterfaceAddresses();
+               if ( ! interfaceAddresses.isEmpty() )
                {
-                  Iterator<InterfaceAddress> iter = interfaceAddresses.iterator ();
-                  while ( iter.hasNext () )
+                  for ( InterfaceAddress addr : interfaceAddresses )
                   {
-                     InterfaceAddress addr = (InterfaceAddress) iter.next ();
-                     if ( addr.getBroadcast () != null )
+                     if ( addr.getBroadcast() != null )
                      {
-                        InetSocketAddress isa = new InetSocketAddress (addr.getBroadcast (), port);
-                        if ( !list.contains (isa) )
-                           list.add (isa);
+                        InetSocketAddress isa = new InetSocketAddress(addr.getBroadcast(), port);
+                        if ( !list.contains(isa) )
+                        {
+                           list.add(isa);
+                        }
                      }
                   }
                }
@@ -123,10 +123,11 @@ public class InetAddressUtil
 
       byte[] a = addr.getAddress ();
 
-      int res = ((a[ 0 ] & 0xFF) << 24)
-            | ((a[ 1 ] & 0xFF) << 16)
-            | ((a[ 2 ] & 0xFF) << 8)
-            | (a[ 3 ] & 0xFF);
+      @SuppressWarnings( "UnnecessaryLocalVariable" )
+      final int res = ((a[ 0 ] & 0xFF) << 24)
+         | ((a[ 1 ] & 0xFF) << 16)
+         | ((a[ 2 ] & 0xFF) << 8)
+         | (a[ 3 ] & 0xFF);
 
       return res;
    }
@@ -154,7 +155,7 @@ public class InetAddressUtil
     */
    public static InetSocketAddress[] getSocketAddressList( String list, int defaultPort, InetSocketAddress[] appendList )
    {
-      ArrayList<InetSocketAddress> al = new ArrayList<InetSocketAddress> ();
+      final ArrayList<InetSocketAddress> al = new ArrayList<> ();
 
       // parse string
       StringTokenizer st = new StringTokenizer (list);
