@@ -11,7 +11,7 @@ public enum Severity
 
    private final int value;
 
-   private Severity( int value )
+   Severity( int value )
    {
       this.value = value;
    }
