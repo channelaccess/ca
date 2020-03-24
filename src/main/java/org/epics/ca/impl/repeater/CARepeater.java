@@ -50,13 +50,13 @@ public class CARepeater implements Runnable
    /**
     * CA repeater client.
     */
-   class Client
+   static class Client
    {
 
       /**
        * Client address.
        */
-      private InetSocketAddress clientAddress;
+      private final InetSocketAddress clientAddress;
 
       /**
        * Client address.
@@ -66,7 +66,7 @@ public class CARepeater implements Runnable
       /**
        * Constructor.
        *
-       * @param clientAddress
+       * @param clientAddress the client address.
        */
       public Client( InetSocketAddress clientAddress )
       {
@@ -114,31 +114,31 @@ public class CARepeater implements Runnable
       }
 
       /**
-       * Verify the state of the socket.
+       * Verify that the socket is not already in use.
        *
-       * @return verification success.
+       * @return true if the socket is already open.
        */
-      public boolean verify()
+      public boolean isClientListeningSocketClosed()
       {
          try
          {
             // this should fail, if client is listening
-            DatagramSocket socket = createDatagramSocket (clientAddress.getPort (), false);
+            final DatagramSocket socket = createDatagramSocket( clientAddress.getPort (), false);
             socket.close ();
             logger.log( Level.FINEST, "Dead client detected: " + clientAddress);
-            return false;
+            return true;
          }
          catch ( Throwable th )
          {
             // this is OK
-            return true;
+            return false;
          }
       }
 
       /**
        * Send packet.
        *
-       * @param packet
+       * @param packet the packet
        * @return success status.
        */
       public boolean send( DatagramPacket packet )
@@ -190,17 +190,17 @@ public class CARepeater implements Runnable
    /**
     * Repeater port.
     */
-   protected int repeaterPort = Constants.CA_REPEATER_PORT;
+   private int repeaterPort = Constants.CA_REPEATER_PORT;
 
    /**
     * Local unbounded DatagramSocket.
     */
-   protected DatagramSocket localDatagramSocket = null;
+   private DatagramSocket localDatagramSocket = null;
 
    /**
     * List of registered clients.
     */
-   protected List<Client> clients = new ArrayList<Client> ();
+   private final List<Client> clients = new ArrayList<> ();
 
    /**
     * Constructor.
@@ -297,11 +297,9 @@ public class CARepeater implements Runnable
          // do not waste resources, if nobody to send
          if ( clients.size () != 0 )
          {
-            Iterator<Client> iter = clients.iterator ();
-            while ( iter.hasNext () )
+            for ( Client c : clients )
             {
-               Client c = iter.next ();
-               if ( c.getClientAddress ().getPort () == clientAddress.getPort () )
+               if ( c.getClientAddress().getPort() == clientAddress.getPort() )
                {
                   client = c;
                   break;
@@ -315,7 +313,7 @@ public class CARepeater implements Runnable
       // create new, if necessary
       if ( client == null )
       {
-         client = new Client (clientAddress);
+         client = new Client(clientAddress);
          if ( !client.connect () )
          {
             client.destroy ();
@@ -359,15 +357,16 @@ public class CARepeater implements Runnable
 
    protected void fanOut( InetSocketAddress fromAddress, ByteBuffer buffer )
    {
-      synchronized ( clients )
+      synchronized( clients )
       {
          // do not waste resources, if nobody to send
          if ( clients.size () == 0 )
+         {
             return;
+         }
 
          // create packet to send, send address still needs to be set
-         DatagramPacket packetToSend =
-               new DatagramPacket (buffer.array (), buffer.position (), buffer.limit ());
+         DatagramPacket packetToSend = new DatagramPacket (buffer.array (), buffer.position (), buffer.limit ());
 
          Iterator<Client> iter = clients.iterator ();
          while ( iter.hasNext () )
@@ -382,9 +381,9 @@ public class CARepeater implements Runnable
             if ( !client.send (packetToSend) )
             {
                // check if socket is valid
-               if ( !client.verify () )
+               if ( client.isClientListeningSocketClosed() )
                {
-                  // destory and remove
+                  // desroy and remove
                   client.destroy ();
                   iter.remove ();
                }
@@ -403,7 +402,9 @@ public class CARepeater implements Runnable
       {
          // do not waste resources, if nobody to send
          if ( clients.size () == 0 )
+         {
             return;
+         }
 
          Iterator<Client> iter = clients.iterator ();
          while ( iter.hasNext () )
@@ -411,9 +412,9 @@ public class CARepeater implements Runnable
             Client client = iter.next ();
 
             // check if socket is valid
-            if ( !client.verify () )
+            if ( client.isClientListeningSocketClosed() )
             {
-               // destory and remove
+               // destroy and remove
                client.destroy ();
                iter.remove ();
             }
@@ -433,11 +434,11 @@ public class CARepeater implements Runnable
 
          // Create a buffer to read datagrams into. If a packet is
          // larger than this buffer, the excess will simply be discarded.
-         byte[] buffer = new byte[ Constants.MAX_UDP_RECV ];
-         ByteBuffer data = ByteBuffer.wrap (buffer);
+         final byte[] buffer = new byte[ Constants.MAX_UDP_RECV ];
+         final ByteBuffer data = ByteBuffer.wrap( buffer );
 
          // create a packet to receive data into the buffer
-         DatagramPacket packet = new DatagramPacket (buffer, buffer.length);
+         final DatagramPacket packet = new DatagramPacket (buffer, buffer.length);
 
          // create and bind datagram socket
          try
@@ -453,38 +454,39 @@ public class CARepeater implements Runnable
          logger.log( Level.FINE,"Binded to UDP socket: " + socket.getLocalSocketAddress ());
          logger.log( Level.FINE,"CA repeater attached and initialized.");
 
-         while ( true )
+         //noinspection InfiniteLoopStatement
+         while( true )
          {
             // wait to receive a datagram
             data.clear ();
             socket.receive (packet);
 
-            InetSocketAddress receivedFrom = (InetSocketAddress) packet.getSocketAddress ();
-
-            int bytesReceived = packet.getLength ();
-            data.limit (bytesReceived);
+            final InetSocketAddress receivedFrom = (InetSocketAddress) packet.getSocketAddress();
+            final int bytesReceived = packet.getLength();
+            data.limit( bytesReceived );
             if ( bytesReceived >= Constants.CA_MESSAGE_HEADER_SIZE )
             {
-               short command = data.getShort (COMMAND_OFFSET);
+               final short command = data.getShort( COMMAND_OFFSET );
                // register request message
                if ( command == REPEATER_REGISTER )
                {
-                  registerNewClient (receivedFrom);
+                  registerNewClient( receivedFrom );
 
                   // skip this header, process rest if any left
                   data.position (Constants.CA_MESSAGE_HEADER_SIZE);
                   if ( !data.hasRemaining () )
+                  {
                      continue;
+                  }
                }
                // beacon
                else if ( command == CA_PROTO_RSRV_IS_UP )
                {
                   // set address, if missing
-                  short address = data.getShort (AVAILABLE_OFFSET);
+                  final short address = data.getShort( AVAILABLE_OFFSET );
                   if ( address == 0 )
                   {
-                     data.putInt (AVAILABLE_OFFSET,
-                                  InetAddressUtil.ipv4AddressToInt (packet.getAddress ()));
+                     data.putInt (AVAILABLE_OFFSET, InetAddressUtil.ipv4AddressToInt (packet.getAddress ()));
                   }
                }
             }
@@ -507,7 +509,9 @@ public class CARepeater implements Runnable
       finally
       {
          if ( socket != null )
-            socket.close ();
+         {
+            socket.close();
+         }
       }
    }
 
@@ -517,22 +521,20 @@ public class CARepeater implements Runnable
     * @return default unbound datagram socket.
     * @throws SocketException socket exception
     */
-   protected static DatagramSocket createDatagramSocket()
-         throws SocketException
+   private static DatagramSocket createDatagramSocket() throws SocketException
    {
       return new DatagramSocket (null);
    }
 
    /**
-    * Constructs a atagram socket bound to the wildcard address on defined port.
+    * Constructs a datagram socket bound to the wildcard address on defined port.
     *
     * @param port         port
     * @param reuseAddress reuse address
     * @return default bounded datagram socket.
     * @throws SocketException socket exception
     */
-   protected static DatagramSocket createDatagramSocket( int port, boolean reuseAddress )
-         throws SocketException
+   private static DatagramSocket createDatagramSocket( int port, boolean reuseAddress ) throws SocketException
    {
       DatagramSocket socket = new DatagramSocket (null);
 
@@ -548,7 +550,7 @@ public class CARepeater implements Runnable
     * @param repeaterPort repeater port.
     * @return <code>true</code> if repeater is already running, <code>false</code> otherwise
     */
-   protected static boolean isRepeaterRunning( int repeaterPort )
+   private static boolean isRepeaterRunning( int repeaterPort )
    {
       // test if repeater is already running, by binding to its port
       try
@@ -561,11 +563,13 @@ public class CARepeater implements Runnable
       catch ( BindException be )
       {
          // bind failed, socket in use
+         logger.log( Level.WARNING, "Bind exception", be);
          return true;
       }
       catch ( SocketException se )
       {
          // Win7 "version" of: bind failed, socket in use
+         logger.log( Level.WARNING, "Socket exception", se);
          return true;
       }
       catch ( Throwable th )
@@ -588,7 +592,9 @@ public class CARepeater implements Runnable
    {
       // disable repeater check
       if ( System.getProperties ().containsKey (CA_DISABLE_REPEATER) )
+      {
          return;
+      }
 
       // force native repeater check
       if ( System.getProperties ().containsKey (CA_FORCE_NATIVE_REPEATER) )
@@ -598,56 +604,58 @@ public class CARepeater implements Runnable
       }
 
       if ( repeaterPort <= 0 )
-         throw new IllegalArgumentException ("port must be > 0");
+      {
+         throw new IllegalArgumentException("port must be > 0");
+      }
 
       // nothing to do, if repeater is already running
       if ( isRepeaterRunning (repeaterPort) )
+      {
          return;
+      }
 
-      PrivilegedAction action = new PrivilegedAction ()
+      PrivilegedAction action = () ->
       {
 
-         public Object run()
-         {
+         // java.home java.class.path
+         final String[] commandLine = new String[] {
+               System.getProperty ("java.home") + File.separator + "bin" + File.separator + "java",
+               "-classpath",
+               System.getProperty ("java.class.path"),
+               CARepeater.class.getName (),
+               "-p",
+               String.valueOf (repeaterPort)
+         };
 
-            // java.home java.class.path
-            final String[] commandLine = new String[] {
-                  System.getProperty ("java.home") + File.separator + "bin" + File.separator + "java",
-                  "-classpath",
-                  System.getProperty ("java.class.path"),
-                  CARepeater.class.getName (),
-                  "-p",
-                  String.valueOf (repeaterPort)
-            };
+         try
+         {
+            Runtime.getRuntime ().exec (commandLine);
+         }
+         catch ( Throwable th )
+         {
+            System.err.println ("Failed to exec '" + commandLine[ 0 ] + "', trying to start native repeater...");
+            logger.log( Level.SEVERE, "Failed to exec '" + commandLine[ 0 ] + "', trying to start native repeater...", th);
 
             try
             {
-               Runtime.getRuntime ().exec (commandLine);
+               //  fallback: try to run native repeater
+               JNIRepeater.repeaterInit ();
             }
-            catch ( Throwable th )
+            catch ( Throwable th2 )
             {
-               System.err.println ("Failed to exec '" + commandLine[ 0 ] + "', trying to start native repeater...");
-               logger.log( Level.SEVERE, "Failed to exec '" + commandLine[ 0 ] + "', trying to start native repeater...", th);
-
-               try
-               {
-                  //  fallback: try to run native repeater
-                  JNIRepeater.repeaterInit ();
-               }
-               catch ( Throwable th2 )
-               {
-                  System.err.println ("Failed to start native repeater.");
-                  logger.log( Level.SEVERE, "Failed to start native repeater.", th);
-               }
+               System.err.println ("Failed to start native repeater.");
+               logger.log( Level.SEVERE, "Failed to start native repeater.", th);
             }
-
-            return null;
          }
+
+         return null;
       };
 
-      Object res = AccessController.doPrivileged (action);
+      final Object res = AccessController.doPrivileged (action);
       if ( res != null )
-         throw new Exception ("Unable to init CA Repeater", (Throwable) res);
+      {
+         throw new Exception( "Unable to init CA Repeater", (Throwable) res );
+      }
 
    }
 
@@ -657,14 +665,13 @@ public class CARepeater implements Runnable
     *
     * @param argv arguments.
     */
-   public static void main( String argv[] )
+   public static void main( String[] argv )
    {
       CARepeater repeater;
 
       // check for port argument
       int port = -1;
-      if ( argv.length >= 2 &&
-            (argv[ 0 ].equals ("-p") || argv[ 0 ].equals ("--port")) )
+      if ( argv.length >= 2 && (argv[ 0 ].equals ("-p") || argv[ 0 ].equals ("--port")) )
       {
          try
          {
@@ -678,18 +685,21 @@ public class CARepeater implements Runnable
 
       // create repeater
       if ( port > 0 )
-         repeater = new CARepeater (port);
+      {
+         repeater = new CARepeater( port );
+      }
       else
-         repeater = new CARepeater ();
+      {
+         repeater = new CARepeater();
+      }
 
       // run, run, run...
-      repeater.run ();
+      repeater.run();
    }
 
 
    public static class JNIRepeater
    {
-
       /**
        * System JVM property key to disable JNI repeater.
        */
@@ -697,51 +707,46 @@ public class CARepeater implements Runnable
 
       static public void repeaterInit()
       {
-
          if ( System.getProperties ().containsKey (JNI_DISABLE_REPEATER) )
-            return;
-
-         PrivilegedAction action = new PrivilegedAction ()
          {
+            return;
+         }
 
-            public Object run()
+         final PrivilegedAction action = () -> {
+            try
             {
+               final String targetArch = JNIRepeater.getTargetArch();
+
+               // read JNI native config
+               final File caRepeaterPath = new File (System.getProperty ("org.epics.ca." + targetArch + ".caRepeater.path", ""));
+
                try
                {
-
-                  String targetArch = JNIRepeater.getTargetArch ();
-
-                  // read JNI native config
-                  File caRepeaterPath =
-                        new File (System.getProperty ("org.epics.ca." + targetArch + ".caRepeater.path", ""));
-
-                  try
+                  String caRepeater = "caRepeater";
+                  if ( caRepeaterPath.exists () )
                   {
-                     String caRepeater = "caRepeater";
-                     if ( caRepeaterPath.exists () )
-                     {
-                        caRepeater = (new File (caRepeaterPath, "caRepeater")).getAbsolutePath ();
-                     }
-                     Runtime.getRuntime ().exec (caRepeater);
+                     caRepeater = (new File (caRepeaterPath, "caRepeater") ).getAbsolutePath ();
                   }
-                  catch ( java.io.IOException ex )
-                  {
-                     Runtime.getRuntime ().exec ("caRepeater");
-                  }
-
+                  Runtime.getRuntime ().exec (caRepeater);
                }
-               catch ( Throwable ex2 )
+               catch ( java.io.IOException ex )
                {
-                  // noop
+                  Runtime.getRuntime ().exec ("caRepeater");
                }
 
-               return null;
             }
+            catch ( Throwable ex2 )
+            {
+               // noop
+            }
+            return null;
          };
 
          Object res = AccessController.doPrivileged (action);
          if ( res != null )
-            throw new RuntimeException ("Unable to init JNI CA Repeater", (Throwable) res);
+         {
+            throw new RuntimeException( "Unable to init JNI CA Repeater", (Throwable) res );
+         }
       }
 
 
@@ -750,10 +755,9 @@ public class CARepeater implements Runnable
        *
        * @return standard "system-arch" string.
        */
-      static public String getTargetArch()
+      private static String getTargetArch()
       {
-
-         String osname = System.getProperty ("os.name", "");
+         final String osname = System.getProperty ("os.name", "");
 
          float osversion = 0;
          try
@@ -767,9 +771,7 @@ public class CARepeater implements Runnable
 
          String osarch = System.getProperty ("os.arch", "");
 
-         if ( osarch.equals ("i386")
-               || osarch.equals ("i486")
-               || osarch.equals ("i586") )
+         if ( osarch.equals ("i386") || osarch.equals ("i486") || osarch.equals ("i586") )
          {
             osarch = "x86";
          }
