@@ -12,7 +12,10 @@ import com.cosylab.epics.caj.cas.util.DefaultServerImpl;
 import com.cosylab.epics.caj.cas.util.MemoryProcessVariable;
 import com.cosylab.epics.caj.cas.util.examples.CounterProcessVariable;
 
-public class CAJTestServer
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+public class EpicsChannelAccessTestServer
 {
    /**
     * JCA server context.
@@ -28,16 +31,17 @@ public class CAJTestServer
    {
 
       // Get the JCALibrary instance.
-      JCALibrary jca = JCALibrary.getInstance ();
+      final JCALibrary jca = JCALibrary.getInstance ();
 
       // Create server implementation
-      DefaultServerImpl server = new DefaultServerImpl ();
+      final DefaultServerImpl server = new DefaultServerImpl ();
 
       // Create a context with default configuration values.
+      System.setProperty( "EPICS_CA_ADDR_LIST", "localhost" );
       context = jca.createServerContext( JCALibrary.CHANNEL_ACCESS_SERVER_JAVA, server );
 
       // register process variables
-      registerProcessVariables (server);
+      registerProcessVariables( server );
    }
 
    /**
@@ -106,7 +110,9 @@ public class CAJTestServer
       // simple in-memory 1MB array
       final int[] arrayValue = new int[ 1024 * 1024 ];
       for ( int i = 0; i < arrayValue.length; i++ )
+      {
          arrayValue[ i ] = i;
+      }
       server.createMemoryProcessVariable ("large", DBR_Int.TYPE, arrayValue);
    }
 
@@ -115,13 +121,13 @@ public class CAJTestServer
     */
    void destroy()
    {
-
       try
       {
          // Destroy the context, check if never initialized.
          if ( context != null )
-            context.destroy ();
-
+         {
+            context.destroy();
+         }
       }
       catch ( Throwable th )
       {
@@ -162,15 +168,16 @@ public class CAJTestServer
 
    }
 
-   void runInSeparateThread()
+   Future<?> runInSeparateThread()
    {
+      final Future<?> myFuture;
       try
       {
          // initialize context
          initialize ();
 
-         // run server
-         new Thread (() -> {
+         // Run server
+         myFuture = Executors.newSingleThreadExecutor().submit( () -> {
             try
             {
                context.run (0);
@@ -179,13 +186,13 @@ public class CAJTestServer
             {
                th.printStackTrace ();
             }
-         }).start ();
-
+         } );
       }
       catch ( Throwable th )
       {
          throw new RuntimeException ("Failed to start CA server.", th);
       }
+      return myFuture;
    }
 
    /**
@@ -196,7 +203,7 @@ public class CAJTestServer
    public static void main( String[] args )
    {
       // execute
-      new CAJTestServer ().execute ();
+      new EpicsChannelAccessTestServer().execute ();
    }
 
 }
