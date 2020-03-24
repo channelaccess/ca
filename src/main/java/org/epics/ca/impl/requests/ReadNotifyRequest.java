@@ -53,15 +53,15 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
     */
    public ReadNotifyRequest( ChannelImpl<?> channel, Transport transport, int sid, TypeSupport<T> typeSupport )
    {
-
       this.channel = channel;
       this.sid = sid;
       this.typeSupport = typeSupport;
 
-      int dataCount = typeSupport.getForcedElementCount ();
+      final int minorRevision = channel.getTransport().getMinorRevision();
+      final int forcedElementCount = typeSupport.getForcedElementCount();
+      final int nativeElementCount = channel.getNativeElementCount();
 
-      if ( dataCount == 0 && channel.getTransport ().getMinorRevision () < 13 )
-         dataCount = channel.getNativeElementCount ();
+      final int dataCount = ( forcedElementCount == 0 ) && ( minorRevision < 13 ) ? nativeElementCount : forcedElementCount;
 
       context = transport.getContext ();
       ioid = context.registerResponseRequest (this);
@@ -86,16 +86,14 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
          Status caStatus = Status.forStatusCode (status);
          if ( caStatus == Status.NORMAL )
          {
-            T value = null;   // NOTE: reserved for "reuse" option
-            value = typeSupport.deserialize (dataPayloadBuffer, value, dataCount);
-
-            complete (value);
+            // NOTE: reserved for "reuse" option
+            final T value = typeSupport.deserialize( dataPayloadBuffer, null, dataCount);
+            complete( value );
          }
          else
          {
             completeExceptionally (caStatus, caStatus.getMessage ());
          }
-
       }
       finally
       {
