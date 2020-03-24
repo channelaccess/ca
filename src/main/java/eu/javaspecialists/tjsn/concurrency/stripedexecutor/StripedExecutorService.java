@@ -337,23 +337,29 @@ public class StripedExecutorService extends AbstractExecutorService {
      * Returns true if the wrapped ExecutorService terminates
      * within the allotted amount of time.
      */
-    public boolean awaitTermination(long timeout, TimeUnit unit)
-            throws InterruptedException {
+    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
         lock.lock();
-        try {
-            long waitUntil = System.nanoTime() + unit.toNanos(timeout);
+        try
+        {
+            final long waitUntil = System.nanoTime() + unit.toNanos(timeout);
             long remainingTime;
-            while ((remainingTime = waitUntil - System.nanoTime()) > 0
-                    && !executors.isEmpty()) {
+            while ((remainingTime = waitUntil - System.nanoTime()) > 0 && !executors.isEmpty())
+            {
                 terminating.awaitNanos(remainingTime);
             }
-            if (remainingTime <= 0) return false;
-            if (executors.isEmpty()) {
-                return executor.awaitTermination(
-                        remainingTime, TimeUnit.NANOSECONDS);
+            if (remainingTime <= 0)
+            {
+                return false;
+            }
+
+            if ( executors.isEmpty() )
+            {
+                return executor.awaitTermination( remainingTime, TimeUnit.NANOSECONDS);
             }
             return false;
-        } finally {
+        }
+        finally
+        {
             lock.unlock();
         }
     }
@@ -399,7 +405,7 @@ public class StripedExecutorService extends AbstractExecutorService {
      * which case the SerialExecutor will not be registered with
      * the Finalizer.
      */
-    private static boolean DEBUG = false;
+    private static final boolean DEBUG = false;
 
     /**
      * SerialExecutor is based on the construct with the same name
@@ -456,13 +462,14 @@ public class StripedExecutorService extends AbstractExecutorService {
         public void execute(final Runnable r) {
             lock.lock();
             try {
-                tasks.add(new Runnable() {
-                    public void run() {
-                        try {
-                            r.run();
-                        } finally {
-                            scheduleNext();
-                        }
+                tasks.add( () -> {
+                    try
+                    {
+                        r.run();
+                    }
+                    finally
+                    {
+                        scheduleNext();
                     }
                 });
                 if (active == null) {

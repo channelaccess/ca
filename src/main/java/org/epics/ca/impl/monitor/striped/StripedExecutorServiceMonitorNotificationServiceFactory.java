@@ -26,7 +26,7 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = Logger.getLogger( StripedExecutorServiceMonitorNotificationServiceFactory.class.getName() );
-   private final List<MonitorNotificationService> serviceList = new ArrayList<>();
+   private final List<MonitorNotificationService<?>> serviceList = new ArrayList<>();
 
    private final StripedExecutorService stripedExecutorService;
    private final  int numberOfThreads;
@@ -79,7 +79,7 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
    public void close()
    {
       logger.log(Level.FINEST, String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory is being closed with %d service entries...", getServiceCount() ) );
-      for ( MonitorNotificationService service : serviceList )
+      for ( MonitorNotificationService<?> service : serviceList )
       {
          service.close();
       }

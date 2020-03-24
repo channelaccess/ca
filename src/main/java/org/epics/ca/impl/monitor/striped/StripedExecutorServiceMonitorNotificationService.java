@@ -27,6 +27,7 @@ public class StripedExecutorServiceMonitorNotificationService<T> implements Moni
    // Get Logger
    private static final Logger logger = Logger.getLogger( StripedExecutorServiceMonitorNotificationService.class.getName() );
 
+   @SuppressWarnings( "FieldCanBeLocal" )
    private final StripedExecutorServiceMonitorNotificationServiceFactory factory;
    private final Consumer<? super T> consumer;
    private final ExecutorService executorService;
