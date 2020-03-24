@@ -31,7 +31,7 @@ public final class NamedLockPattern
    /**
     * Map of (named) locks.
     */
-   private final Map<Object, ReferenceCountingLock> namedLocks = new HashMap<Object, ReferenceCountingLock> ();
+   private final Map<Object, ReferenceCountingLock> namedLocks = new HashMap<> ();
 
    /**
     * Acquire synchronization lock for named object.
