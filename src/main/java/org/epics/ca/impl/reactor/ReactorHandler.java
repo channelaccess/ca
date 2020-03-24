@@ -13,6 +13,6 @@ public interface ReactorHandler
     *
     * @param key key to be processed.
     */
-   public void handleEvent( SelectionKey key );
+   void handleEvent( SelectionKey key );
 
 }
