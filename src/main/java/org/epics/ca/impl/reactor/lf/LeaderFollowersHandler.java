@@ -16,17 +16,17 @@ public class LeaderFollowersHandler implements ReactorHandler, Runnable
    /**
     * Reactor to serve.
     */
-   protected Reactor reactor;
+   protected final Reactor reactor;
 
    /**
     * Application-specific event processing handler.
     */
-   protected ReactorHandler handler;
+   protected final ReactorHandler handler;
 
    /**
     * Leader-followers thread pool.
     */
-   protected LeaderFollowersThreadPool threadPool;
+   protected final LeaderFollowersThreadPool threadPool;
 
    /**
     * Constructor.
