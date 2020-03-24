@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.Validate;
 import org.epics.ca.Constants;
 import org.epics.ca.Status;
 import org.epics.ca.util.net.InetAddressUtil;
@@ -31,7 +32,7 @@ public class ResponseHandlers
        * @param header        CA message header.
        * @param payloadBuffer payload buffer.
        */
-      public void handleResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer );
+      void handleResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer );
 
    }
 
@@ -90,27 +91,27 @@ public class ResponseHandlers
       logger.log ( Level.WARNING, "Unexpected response message (command = " + header.command + ") received from: " + responseFrom);
    }
 
+   @SuppressWarnings( "ParameterCanBeLocal" )
    public static void beaconResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
    {
       // NOTE: sequental IDs are implemented from v4.10+
-
-      long timestamp = System.currentTimeMillis ();
+      final long timestamp = System.currentTimeMillis();
 
       // old version servers do not supply port,
       // set default one
-      int port = header.dataCount;
-      if ( port == 0 )
-         port = (short) transport.getContext ().getServerPort ();
+      final int port = (header.dataCount == 0) ? (short) transport.getContext().getServerPort() : header.dataCount;
 
-      InetAddress addr = InetAddressUtil.intToIPv4Address (header.parameter2);
+      final InetAddress addr = InetAddressUtil.intToIPv4Address( header.parameter2 );
       responseFrom = new InetSocketAddress (addr, port);
 
-      BeaconHandler beaconHandler = transport.getContext ().getBeaconHandler (responseFrom);
+      final BeaconHandler beaconHandler = transport.getContext ().getBeaconHandler (responseFrom);
       if ( beaconHandler == null )
+      {
          return;
+      }
 
       // convert unsigned int to signed long
-      long sequentalID = header.parameter1 & 0x00000000FFFFFFFFL;
+      final long sequentalID = header.parameter1 & 0x00000000FFFFFFFFL;
 
       // dataType contains minor protocol revision
       // notify beacon handler
@@ -122,7 +123,12 @@ public class ResponseHandlers
    // at the following location: https://github.com/epics-base/jca.git
    public static void channelDisconnectedResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
    {
-      ChannelImpl<?> channel = transport.getContext ().getChannel( header.parameter1 );
+      Validate.notNull( responseFrom );
+      Validate.notNull( transport );
+      Validate.notNull( header );
+      Validate.notNull( payloadBuffer );
+
+      final ChannelImpl<?> channel = transport.getContext ().getChannel( header.parameter1 );
       if ( channel != null )
       {
          channel.disconnect( true );
@@ -131,15 +137,22 @@ public class ResponseHandlers
 
    public static void searchResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
    {
+      Validate.notNull( responseFrom );
+      Validate.notNull( transport );
+      Validate.notNull( header );
+      Validate.notNull( payloadBuffer );
+
       short minorVersion = Constants.CA_UNKNOWN_MINOR_PROTOCOL_REVISION;
 
       // Starting with CA V4.1 the minor version number is
       // appended to the end of each search reply.
       if ( header.payloadSize >= 2 /* short size = 2 bytes */ )
-         minorVersion = payloadBuffer.getShort ();
+      {
+         minorVersion = payloadBuffer.getShort();
+      }
 
       // signed short conversion -> signed int
-      int port = header.dataType & 0xFFFF;
+      final int port = header.dataType & 0xFFFF;
 
       // CA v4.8 or newer
       if ( minorVersion >= 8 )
@@ -169,15 +182,15 @@ public class ResponseHandlers
       // CA v4.2 or newer
       if ( minorVersion >= 2 )
       {
-         /** cid, sid, type, count, minorVersion, serverAddress */
-         transport.getContext ().searchResponse (header.parameter2, header.parameter1,
+         // cid, sid, type, count, minorVersion, serverAddress
+         transport.getContext().searchResponse ( header.parameter2, header.parameter1,
                                                  (short) -1, 0,
                                                  minorVersion, responseFrom);
       }
       else
       {
-         /** cid, sid, type, count, minorVersion, serverAddress */
-         transport.getContext ().searchResponse (header.parameter2, header.parameter1,
+         // cid, sid, type, count, minorVersion, serverAddress */
+         transport.getContext().searchResponse ( header.parameter2, header.parameter1,
                                                  header.dataType, header.dataCount,
                                                  minorVersion, responseFrom);
       }
@@ -185,36 +198,52 @@ public class ResponseHandlers
 
    public static void accessRightsResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
    {
-      ChannelImpl<?> channel = transport.getContext ().getChannel (header.parameter1);
+      final ChannelImpl<?> channel = transport.getContext ().getChannel (header.parameter1);
       if ( channel != null )
-         channel.setAccessRights (header.parameter2);
+      {
+         channel.setAccessRights(header.parameter2);
+      }
    }
 
    public static void channelCreateResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
    {
-      ChannelImpl<?> channel = transport.getContext ().getChannel (header.parameter1);
+      Validate.notNull( responseFrom );
+      Validate.notNull( transport );
+      Validate.notNull( header );
+      Validate.notNull( payloadBuffer );
+
+      final ChannelImpl<?> channel = transport.getContext ().getChannel (header.parameter1);
       if ( channel != null )
-         channel.connectionCompleted (header.parameter2, header.dataType, header.dataCount);
+      {
+         channel.connectionCompleted(header.parameter2, header.dataType, header.dataCount);
+      }
    }
 
    public static void notifyResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
    {
-      NotifyResponseRequest nrr = (NotifyResponseRequest) transport.getContext ().getResponseRequest (header.parameter2);
+      Validate.notNull( responseFrom );
+      Validate.notNull( transport );
+      Validate.notNull( header );
+      Validate.notNull( payloadBuffer );
+
+      NotifyResponseRequest nrr = (NotifyResponseRequest) transport.getContext().getResponseRequest( header.parameter2 );
       if ( nrr == null )
+      {
          return;
+      }
 
-      int status;
-      if ( transport.getMinorRevision () < 1 )
-         status = Status.NORMAL.getValue ();
-      else
-         status = header.parameter1;
-
-      nrr.response (status, header.dataType, header.dataCount, payloadBuffer);
+      final int status = ( transport.getMinorRevision () < 1 ) ? Status.NORMAL.getValue() : header.parameter1;
+      nrr.response ( status, header.dataType, header.dataCount, payloadBuffer );
    }
 
    public static void repeaterConfirmResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
    {
-      transport.getContext ().repeaterConfirm (responseFrom);
+      Validate.notNull( responseFrom );
+      Validate.notNull( transport );
+      Validate.notNull( header );
+      Validate.notNull( payloadBuffer );
+
+      transport.getContext().repeaterConfirm (responseFrom );
    }
 
    public static void exceptionResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
@@ -232,9 +261,13 @@ public class ResponseHandlers
          // extended message header check
          int originalHeaderSize;
          if ( originalHeaderPayloadSize == 0xFFFF )
+         {
             originalHeaderSize = Constants.CA_EXTENDED_MESSAGE_HEADER_SIZE;
+         }
          else
+         {
             originalHeaderSize = Constants.CA_MESSAGE_HEADER_SIZE;
+         }
 
          originalHeaderBuffer = payloadBuffer.slice ();
          originalHeaderBuffer.limit (originalHeaderSize);
@@ -243,7 +276,9 @@ public class ResponseHandlers
          int errorMessageStart = payloadStart + originalHeaderSize;
          int errorMessageEnd = errorMessageStart;
          while ( payloadBuffer.get (errorMessageEnd) != 0 )
+         {
             errorMessageEnd++;
+         }
          payloadBuffer.position (errorMessageStart);
          ByteBuffer errorMessageBuffer = payloadBuffer.slice ();
          errorMessageBuffer.limit (errorMessageEnd - errorMessageStart);
@@ -268,15 +303,15 @@ public class ResponseHandlers
       if ( commandID == 1 || commandID == 15 || commandID == 19 )
       {
          int ioid = originalHeaderBuffer.getInt (12);
-         ResponseRequest rr = (ResponseRequest) transport.getContext ().getResponseRequest (ioid);
+         ResponseRequest rr = transport.getContext ().getResponseRequest (ioid);
          if ( rr != null )
-            rr.exception (header.parameter2, errorMessage);
+         {
+            rr.exception(header.parameter2, errorMessage);
+         }
       }
       else
       {
          logger.log( Level.WARNING, "Exception message reported, code: " + Status.forStatusCode (header.parameter2) + ", message: '" + errorMessage + "'.");
       }
-
-
    }
 }
