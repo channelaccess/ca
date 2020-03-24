@@ -46,17 +46,12 @@ public class Channels
    public static <T> CompletableFuture<T> waitForValueAsync( Channel<T> channel, T value )
    {
       // Default comparator checking for equality
-      Comparator<T> comparator = new Comparator<T> ()
-      {
-         @Override
-         public int compare( T o, T o2 )
+      Comparator<T> comparator = ( o, o2 ) -> {
+         if ( o.equals (o2) )
          {
-            if ( o.equals (o2) )
-            {
-               return 0;
-            }
-            return -1;
+            return 0;
          }
+         return -1;
       };
       return waitForValueAsync (channel, value, comparator);
    }
@@ -106,7 +101,7 @@ public class Channels
       }
       try
       {
-         CompletableFuture.allOf (futures.toArray (new CompletableFuture<?>[ futures.size () ])).get ();
+         CompletableFuture.allOf (futures.toArray (new CompletableFuture<?>[ 0 ])).get ();
       }
       catch ( InterruptedException | ExecutionException e )
       {
@@ -125,7 +120,7 @@ public class Channels
     */
    public static void create( Context context, Object object )
    {
-      create (context, object, new HashMap<String, String> ());
+      create (context, object, new HashMap<> ());
 
    }
 
@@ -179,28 +174,27 @@ public class Channels
 
          // Set channels
          int ccount = 0;
-         for ( int fc = 0; fc < fieldList.size (); fc++ )
+         for ( Field f : fieldList )
          {
-            Field f = fieldList.get (fc);
-            boolean accessible = f.isAccessible ();
-            f.setAccessible (true);
-            int fsize = sizeMap.get (f);
-            if ( fsize == 1 && f.getType ().isAssignableFrom (Channel.class) )
+            boolean accessible = f.isAccessible();
+            f.setAccessible(true);
+            int fsize = sizeMap.get(f);
+            if ( fsize == 1 && f.getType().isAssignableFrom(Channel.class) )
             { // There might be a list of one element therefore we need the second check
-               f.set (object, channelList.get (ccount));
+               f.set(object, channelList.get(ccount));
                ccount++;
             }
             else
             {
-               List<Channel<?>> list = new ArrayList<Channel<?>> ();
-               for ( int i = 0; i < sizeMap.get (f); i++ )
+               List<Channel<?>> list = new ArrayList<>();
+               for ( int i = 0; i < sizeMap.get(f); i++ )
                {
-                  list.add (channelList.get (ccount));
+                  list.add(channelList.get(ccount));
                   ccount++;
                }
-               f.set (object, list);
+               f.set(object, list);
             }
-            f.setAccessible (accessible);
+            f.setAccessible(accessible);
          }
       }
       catch ( IllegalAccessException e )
@@ -268,7 +262,7 @@ public class Channels
       }
 
       final String fieldStart = "\\$\\{";
-      final String fieldEnd = "\\}";
+      final String fieldEnd = "}";
 
       final String regex = fieldStart + "([^}]+)" + fieldEnd;
       final Pattern pattern = Pattern.compile (regex);
