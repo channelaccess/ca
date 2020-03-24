@@ -105,3 +105,4 @@ This log describes the functionality of tagged versions within the repository.
   * [Issue #64](https://github.com/channelaccess/ca/issues/64) Refactor project according to IntelliJ inspection suggestions.
   * [Issue #65](https://github.com/channelaccess/ca/issues/65) Change name of CAJTestServer to EpicsChannelAccesstestServer.
   * [Issue #66](https://github.com/channelaccess/ca/issues/66) Update gradle to more recent build paradigms.
+  * [Issue #67](https://github.com/channelaccess/ca/issues/67) Switch tests to use of hamcrest matchers.
