@@ -69,7 +69,7 @@ public enum Status
    private final Severity severity;
    private final String message;
 
-   private Status( int value, Severity severity, String message )
+   Status( int value, Severity severity, String message )
    {
       this.value = value;
       this.severity = severity;
@@ -129,12 +129,12 @@ public enum Status
     * @param code EPICS status code.
     * @return status instance from EPICS status code.
     */
-   public static final Status forStatusCode( int code )
+   public static Status forStatusCode( int code )
    {
       return forValue ((code & CA_M_MSG_NO) >> CA_V_MSG_NO);
    }
 
-   public static final Status forValue( int value )
+   public static Status forValue( int value )
    {
       Status[] statusLUT = values ();
 
