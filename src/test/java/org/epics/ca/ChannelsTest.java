@@ -19,12 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ChannelsTest
 {
    private Context context;
-   private CAJTestServer server;
+   private EpicsChannelAccessTestServer server;
 
    @BeforeEach
    void setUp()
    {
-      server = new CAJTestServer ();
+      server = new EpicsChannelAccessTestServer();
       server.runInSeparateThread ();
       context = new Context ();
    }
@@ -109,7 +109,7 @@ class ChannelsTest
       assertEquals (ConnectionState.CLOSED, channel.getConnectionState ());
    }
 
-   class AnnotatedClass
+   static class AnnotatedClass
    {
       @CaChannel( name = "adc01", type = Double.class )
       private Channel<Double> doubleChannel;
@@ -137,7 +137,7 @@ class ChannelsTest
 
    }
 
-   class AnnotatedClassMacros
+   static class AnnotatedClassMacros
    {
       @CaChannel( name = "adc${MACRO1}", type = Double.class )
       private Channel<Double> doubleChannel;
