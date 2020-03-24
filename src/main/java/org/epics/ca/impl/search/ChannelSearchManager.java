@@ -160,17 +160,17 @@ public class ChannelSearchManager
    /**
     * Broadcast transport.
     */
-   private BroadcastTransport broadcastTransport;
+   private final BroadcastTransport broadcastTransport;
 
    /**
     * Search (datagram) sequence number.
     */
-   private volatile int sequenceNumber = 0;
+   private final AtomicInteger sequenceNumber = new AtomicInteger( 0 );
 
    /**
     * Send byte buffer (frame)
     */
-   private ByteBuffer sendBuffer;
+   private final ByteBuffer sendBuffer;
 
    /**
     * Constructor.
@@ -198,8 +198,8 @@ public class ChannelSearchManager
       sendBuffer.clear ();
 
       // put version message
-      sequenceNumber++;
-      Messages.generateVersionRequestMessage (broadcastTransport, sendBuffer, (short) 0, sequenceNumber, true);
+      sequenceNumber.incrementAndGet();
+      Messages.generateVersionRequestMessage (broadcastTransport, sendBuffer, (short) 0, sequenceNumber.get(), true);
    }
 
    /**
