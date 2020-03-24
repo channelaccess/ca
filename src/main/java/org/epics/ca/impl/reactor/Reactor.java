@@ -12,6 +12,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,7 +34,7 @@ public class Reactor
       /**
        * Process the request.
        */
-      public void process();
+      void process();
    }
 
    /**
@@ -41,20 +42,20 @@ public class Reactor
     */
    private class RegistrationRequest implements InternalRequest
    {
-      private SelectableChannel selectableChannel;
-      private int interestOps;
-      private ReactorHandler handler;
+      private final SelectableChannel selectableChannel;
+      private final int interestOps;
+      private final ReactorHandler handler;
 
-      private SelectionKey key = null;
-      private ClosedChannelException exception = null;
+      private SelectionKey key;
+      private ClosedChannelException exception;
       private boolean done = false;
 
       /**
        * Constructor.
        *
-       * @param selectableChannel
-       * @param interestOps
-       * @param handler
+       * @param selectableChannel the channel
+       * @param interestOps the operation of interest.
+       * @param handler the handler
        */
       public RegistrationRequest( SelectableChannel selectableChannel, int interestOps, ReactorHandler handler )
       {
@@ -119,7 +120,7 @@ public class Reactor
        * Checks if registration is done (or canceled).
        * Note: note synced to this.
        *
-       * @return
+       * @return true when done.
        */
       public boolean isDone()
       {
@@ -131,14 +132,14 @@ public class Reactor
    /**
     * Registration request to selector.
     */
-   private class DeregistrationRequest implements InternalRequest
+   private static class DeregistrationRequest implements InternalRequest
    {
-      private SelectionKey key = null;
+      private final SelectionKey key;
 
       /**
        * Constructor.
        *
-       * @param key
+       * @param key the key
        */
       public DeregistrationRequest( SelectionKey key )
       {
@@ -163,14 +164,14 @@ public class Reactor
    /**
     * Changing operation of interests request.
     */
-   private class InterestOpsChangeRequest implements InternalRequest
+   private static class InterestOpsChangeRequest implements InternalRequest
    {
-      private SelectionKey selectionKey;
-      private int interestOps;
+      private final SelectionKey selectionKey;
+      private final int interestOps;
 
       /**
-       * @param selectionKey
-       * @param interestOps
+       * @param selectionKey they key
+       * @param interestOps the operation of interest
        */
       public InterestOpsChangeRequest( SelectionKey selectionKey, int interestOps )
       {
@@ -200,32 +201,32 @@ public class Reactor
    /**
     * List of pending registration request(s).
     */
-   private Deque<RegistrationRequest> registrationRequests = new ArrayDeque<RegistrationRequest> (DEFAULT_ESTIMATED_MAX_REQUESTS);
+   private final Deque<RegistrationRequest> registrationRequests = new ArrayDeque<> (DEFAULT_ESTIMATED_MAX_REQUESTS);
 
    /**
     * List of pending registration request(s).
     */
-   private Deque<DeregistrationRequest> unregistrationRequests = new ArrayDeque<DeregistrationRequest> (DEFAULT_ESTIMATED_MAX_REQUESTS);
+   private final Deque<DeregistrationRequest> unregistrationRequests = new ArrayDeque<> (DEFAULT_ESTIMATED_MAX_REQUESTS);
 
    /**
     * List of pending registration request(s).
     */
-   private Deque<InterestOpsChangeRequest> interestOpsChangeRequests = new ArrayDeque<InterestOpsChangeRequest> (DEFAULT_ESTIMATED_MAX_REQUESTS);
+   private final Deque<InterestOpsChangeRequest> interestOpsChangeRequests = new ArrayDeque<> (DEFAULT_ESTIMATED_MAX_REQUESTS);
 
    /**
     * Map of disabled keys, pairs (SelectionKey key, Integer interestOps).
     */
-   private Map<SelectionKey, Integer> disabledKeys = new HashMap<SelectionKey, Integer> (DEFAULT_ESTIMATED_MAX_REQUESTS);
+   private final Map<SelectionKey, Integer> disabledKeys = new HashMap<> (DEFAULT_ESTIMATED_MAX_REQUESTS);
 
    /**
     * Selector status.
     */
-   private AtomicInteger selectorPending = new AtomicInteger (0);
+   private final AtomicInteger selectorPending = new AtomicInteger (0);
 
    /**
     * Shutdown status.
     */
-   private volatile boolean shutdown = false;
+   private final AtomicBoolean shutdown = new AtomicBoolean( false );
 
    /**
     * Shutdown monitor (condition variable).
@@ -263,13 +264,18 @@ public class Reactor
    {
       if ( !list.isEmpty () )
       {
+
+         // TODO: These days (2020) there are probably simpler synchronisation techniques available
+         // TODO: that could clean up this code. But not without some decent unit tests which we currently
+         // TODO: don't have.
+         //noinspection SynchronizationOnLocalVariableOrMethodParameter
          synchronized ( list )
          {
             while ( !list.isEmpty () )
             {
                try
                {
-                  list.removeFirst ().process ();
+                  list.removeFirst().process ();
                }
                catch ( Throwable th )
                {
@@ -289,13 +295,13 @@ public class Reactor
    public boolean process()
    {
       // do while reactor is open
-      if ( selector.isOpen () && !shutdown )
+      if ( selector.isOpen () && !shutdown.get() )
       {
          processInternal ();
       }
 
       // if closed, do the cleanup
-      if ( !selector.isOpen () || shutdown )
+      if ( !selector.isOpen () || shutdown.get() )
       {
          // cancel pending registration requests
          if ( !registrationRequests.isEmpty () )
@@ -303,13 +309,19 @@ public class Reactor
             synchronized ( registrationRequests )
             {
                while ( !registrationRequests.isEmpty () )
-                  ((RegistrationRequest) registrationRequests.removeFirst ()).cancelRegistration ();
+               {
+                  registrationRequests.removeFirst().cancelRegistration();
+               }
             }
          }
 
          // check pending unregistration requests (not to forget to close channels)
          processInternalRequest (unregistrationRequests);
 
+         // TODO: These days (2020) there are probably simpler synchronisation techniques available
+         // TODO: that could clean up this code. But not without some decent unit tests which we currently
+         // TODO: don't have.
+         //noinspection SynchronizeOnNonFinalField
          synchronized ( shutdownMonitor )
          {
             shutdownMonitor.notifyAll ();
@@ -338,7 +350,7 @@ public class Reactor
       {
 
          int numSelectedKeys = 0;
-         while ( numSelectedKeys == 0 && !shutdown )
+         while ( numSelectedKeys == 0 && !shutdown.get() )
          {
 
             // check pending unregistration requests
@@ -358,7 +370,9 @@ public class Reactor
                /* int */
                numSelectedKeys = selector.selectedKeys ().size ();
                if ( numSelectedKeys == 0 )
-                  numSelectedKeys = selector.select ();
+               {
+                  numSelectedKeys = selector.select();
+               }
             }
             finally
             {
@@ -366,7 +380,7 @@ public class Reactor
             }
 
             // check shutdown status
-            if ( shutdown )
+            if ( shutdown.get() )
             {
                selector.close ();
                return;
@@ -378,7 +392,7 @@ public class Reactor
          }
 
          // wake-up or forced selectNow()
-         if ( numSelectedKeys == 0 || shutdown )
+         if ( numSelectedKeys == 0 || shutdown.get() )
             return;
 
          //System.out.println();
@@ -392,7 +406,7 @@ public class Reactor
          // the definition of OP_WRITE in select agrees with the Unix definition, ie. not edge triggered like Win32
          // this means that you must add and remove OP_WRITE from the interestOps depending on the actual ability to write
          // clear SelectionKey.OP_WRITE here...
-         int ops = 0;
+         int ops;
          try
          {
             ops = selectedKey.interestOps ();
@@ -440,7 +454,7 @@ public class Reactor
       SelectionKey key = selectableChannel.keyFor (selector);
       synchronized ( unregistrationRequests )
       {
-         unregistrationRequests.add (new DeregistrationRequest (key));
+         unregistrationRequests.add (new DeregistrationRequest(key));
       }
       selector.wakeup ();
    }
@@ -454,10 +468,14 @@ public class Reactor
     * @return selector selection key.
     * @throws ClosedChannelException Channel closed
     */
-   public SelectionKey register( SelectableChannel selectableChannel, int interestOps, ReactorHandler handler )
-         throws ClosedChannelException
+   public SelectionKey register( SelectableChannel selectableChannel, int interestOps, ReactorHandler handler ) throws ClosedChannelException
    {
-      RegistrationRequest rr = new RegistrationRequest (selectableChannel, interestOps, handler);
+      final RegistrationRequest rr = new RegistrationRequest (selectableChannel, interestOps, handler);
+
+      // TODO: These days (2020) there are probably simpler synchronisation techniques available
+      // TODO: that could clean up this code. But not without some decent unit tests which we currently
+      // TODO: don't have.
+      //noinspection SynchronizationOnLocalVariableOrMethodParameter
       synchronized ( rr )
       {
          // pend registration request...
@@ -468,8 +486,10 @@ public class Reactor
 
          // check for shutdown status
          // NOTE: this has to be done in synchronization block after registering request
-         if ( shutdown )
-            throw new IllegalStateException ("Reactor is already shutdown.");
+         if ( shutdown.get() )
+         {
+            throw new IllegalStateException("Reactor is already shutdown.");
+         }
 
          // ... and wake-up selector to have this registration valid immediately
          selector.wakeup ();
@@ -478,14 +498,18 @@ public class Reactor
          // this is race-condition proof, since wake-up guarantees
          // that thread will we awaken immediately and will not select
          if ( selectorPending.get () == 0 )
-            rr.process ();
+         {
+            rr.process();
+         }
          else
          {
             // wait for completion
             try
             {
                while ( !rr.isDone () )
-                  rr.wait ();
+               {
+                  rr.wait();
+               }
             }
             catch ( InterruptedException ie )
             { /* noop */ }
@@ -493,14 +517,20 @@ public class Reactor
       }
 
       // registration during shutdown
-      if ( shutdown )
-         throw new IllegalStateException ("Reactor is shutting down.");
-         // exception occurred during registration
+      if ( shutdown.get() )
+      {
+         throw new IllegalStateException("Reactor is shutting down.");
+      }
+      // exception occurred during registration
       else if ( rr.getException () != null )
-         throw rr.getException ();
-         // return obtained key
+      {
+         throw rr.getException();
+      }
+      // return obtained key
       else
-         return rr.getKey ();
+      {
+         return rr.getKey();
+      }
    }
 
    /**
@@ -515,7 +545,7 @@ public class Reactor
       // selectionKey.interestOps(interestOps);
       synchronized ( interestOpsChangeRequests )
       {
-         interestOpsChangeRequests.add (new InterestOpsChangeRequest (selectionKey, interestOps));
+         interestOpsChangeRequests.add (new InterestOpsChangeRequest(selectionKey, interestOps));
       }
       selector.wakeup ();
    }
@@ -555,7 +585,9 @@ public class Reactor
       {
          Integer ops = disabledKeys.remove (key);
          if ( ops != null )
-            setInterestOpsInternal (key, ops.intValue ());
+         {
+            setInterestOpsInternal(key, ops);
+         }
       }
    }
 
@@ -576,8 +608,8 @@ public class Reactor
     * Change <code>SelectionKey</code> operations of interest.
     * If channel is disabled, it changes its stored interest ops.
     *
-    * @param selectionKey
-    * @param interestOps
+    * @param selectionKey the key.
+    * @param interestOps the operation of interest.
     */
    private void setInterestOps( SelectionKey selectionKey, int interestOps )
    {
@@ -585,7 +617,7 @@ public class Reactor
       {
          Integer ops = disabledKeys.get (selectionKey);
          if ( ops != null )
-            disabledKeys.put (selectionKey, new Integer (interestOps));
+            disabledKeys.put (selectionKey, interestOps );
          else
             setInterestOpsInternal (selectionKey, interestOps);
       }
@@ -596,12 +628,18 @@ public class Reactor
     */
    public void shutdown()
    {
-      if ( shutdown )
-         return;
-
-      synchronized ( shutdownMonitor )
+      if ( shutdown.get() )
       {
-         shutdown = true;
+         return;
+      }
+
+      // TODO: these days (2020) there are probably simpler synchronisation techniques available
+      // TODO: that could clean up this code. But not without some decent unit tests which we currently
+      // TODO: don't have.
+      //noinspection SynchronizeOnNonFinalField
+      synchronized( shutdownMonitor )
+      {
+         shutdown.set( true );
          selector.wakeup ();
 
          try
@@ -621,7 +659,7 @@ public class Reactor
     */
    public boolean isShutdown()
    {
-      return shutdown;
+      return shutdown.get();
    }
 }
 
