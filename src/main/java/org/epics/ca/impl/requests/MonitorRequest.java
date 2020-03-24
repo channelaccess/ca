@@ -53,12 +53,12 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
    /**
     * Reference to an object which will push out notifications to the Consumer.
     */
-   private MonitorNotificationService<T> monitorNotificationService;
+   private final MonitorNotificationService<T> monitorNotificationService;
 
    /**
     * Reference to an object which will consume monitor update events.
     */
-   protected Consumer<? super T> consumer;
+   protected final Consumer<? super T> consumer;
 
    /**
     * Closed flag.
