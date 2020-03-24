@@ -15,7 +15,7 @@ public class SearchTimer extends Thread
    /**
     * Tasks are maintained in a standard priority queue.
     **/
-   protected final Heap heap = new Heap (64);
+   protected final Heap heap = new Heap(64);
 
    protected final RunLoop runLoop = new RunLoop ();
 
@@ -71,7 +71,7 @@ public class SearchTimer extends Thread
       {
          long a = getTimeToRun ();
          long b = other.getTimeToRun ();
-         return (a < b) ? -1 : ((a == b) ? 0 : 1);
+         return Long.compare(a, b);
       }
 
       /**
@@ -239,7 +239,7 @@ public class SearchTimer extends Thread
             }
          }
       }
-      catch ( InterruptedException ex )
+      catch ( InterruptedException ignored )
       {
       } // fall through
 
@@ -301,7 +301,7 @@ public class SearchTimer extends Thread
     * in, for example, Sedgewick's Algorithms text. All methods are fully synchronized.
     **/
    @SuppressWarnings( { "unchecked", "rawtypes" } )
-   public class Heap
+   public static class Heap
    {
 
       /**
