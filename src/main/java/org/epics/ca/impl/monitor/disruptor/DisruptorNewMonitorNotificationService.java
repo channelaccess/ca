@@ -58,11 +58,7 @@ public class DisruptorNewMonitorNotificationService<T> implements MonitorNotific
 
       // Construct the Disruptor. The size of the ring buffer, must be a power of 2.
       disruptor = new Disruptor<>( Holder::new, NOTIFICATION_VALUE_BUFFER_SIZE, myThreadFactory );
-
-      // Could not find a way to eliminate this warning other than to suppress it !
-      @SuppressWarnings( "rawtypes" )
-      final EventHandler eventHandler = new MySpecialEventHandler<>(consumer );
-      disruptor.handleEventsWith( eventHandler );
+      disruptor.handleEventsWith( new MySpecialEventHandler<>(consumer ) );
 
       // Get the ring buffer from the Disruptor to be used for publishing.
       producer = new MySpecialEventProducer<>( disruptor.getRingBuffer() );
