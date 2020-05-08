@@ -187,7 +187,9 @@ public class InetAddressUtil
       InetSocketAddress[] isar = new InetSocketAddress[ al.size () + appendSize ];
       al.toArray (isar);
       if ( appendSize > 0 )
-         System.arraycopy (appendList, 0, isar, al.size (), appendSize);
+      {
+         System.arraycopy(appendList, 0, isar, al.size(), appendSize);
+      }
       return isar;
    }
 
