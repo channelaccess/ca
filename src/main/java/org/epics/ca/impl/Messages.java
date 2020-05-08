@@ -95,7 +95,7 @@ public final class Messages
    {
       Validate.notNull( buffer );
 
-      final int localAddress = InetAddressUtil.ipv4AddressToInt (InetAddress.getLoopbackAddress ());
+      final int localAddress = InetAddressUtil.ipv4AddressToInt( InetAddress.getLoopbackAddress () );
 
       buffer.putShort ((short) 24);
       // conversion int -> unsigned short is done right
@@ -131,7 +131,9 @@ public final class Messages
       int unalignedMessageSize = Constants.CA_MESSAGE_HEADER_SIZE + name.length () + 1;
       int alignedMessageSize = calculateAlignedSize (8, unalignedMessageSize);
       if ( buffer.remaining () < alignedMessageSize )
+      {
          return false;
+      }
 
       buffer.putShort ((short) 6);
       // conversion int -> unsigned short is done right
@@ -146,7 +148,9 @@ public final class Messages
       buffer.put (name.getBytes ());
       // terminate with 0 and pad
       for ( int i = alignedMessageSize - unalignedMessageSize + 1; i > 0; i-- )
-         buffer.put ((byte) 0);
+      {
+         buffer.put((byte) 0);
+      }
 
       return true;
    }
