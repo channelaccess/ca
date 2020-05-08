@@ -36,12 +36,12 @@ public class IntHashMap<T>
     *
     * @serial
     */
-   private float loadFactor;
+   private final float loadFactor;
 
    /**
     * Entry object pool.
     */
-   private transient EntryObjectPool pool;
+   private final transient EntryObjectPool pool;
 
    /**
     * <p>Inner class that acts as a data structure to create a new entry in the
