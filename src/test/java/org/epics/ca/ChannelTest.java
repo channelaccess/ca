@@ -436,13 +436,13 @@ class ChannelTest
       channel.connect();
       assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ) );
 
-      final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
-      TestConsumer.clearCurrentTotalNotificationCount();
-      TestConsumer.setExpectedTotalNotificationCount( 2 );
-      channel.addValueMonitor( testConsumer );
-      channel.addValueMonitor( testConsumer );
+      final NotificationConsumer<Integer> notificationConsumer = NotificationConsumer.getNormalConsumer();
+      NotificationConsumer.clearCurrentTotalNotificationCount();
+      NotificationConsumer.setExpectedTotalNotificationCount(2 );
+      channel.addValueMonitor(notificationConsumer);
+      channel.addValueMonitor(notificationConsumer);
       assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount() , is( 2L ) );
-      TestConsumer.awaitExpectedTotalNotificationCount();
+      NotificationConsumer.awaitExpectedTotalNotificationCount();
 
       context.close();
       assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ) );
@@ -463,13 +463,13 @@ class ChannelTest
 
          assertThat(MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ));
 
-         final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
-         TestConsumer.clearCurrentTotalNotificationCount();
-         TestConsumer.setExpectedTotalNotificationCount(2);
-         channel.addValueMonitor(testConsumer);
-         channel.addValueMonitor(testConsumer);
+         final NotificationConsumer<Integer> notificationConsumer = NotificationConsumer.getNormalConsumer();
+         NotificationConsumer.clearCurrentTotalNotificationCount();
+         NotificationConsumer.setExpectedTotalNotificationCount(2);
+         channel.addValueMonitor(notificationConsumer);
+         channel.addValueMonitor(notificationConsumer);
          assertThat(MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 2L ));
-         TestConsumer.awaitExpectedTotalNotificationCount();
+         NotificationConsumer.awaitExpectedTotalNotificationCount();
 
          // Note: closing a channel does NOT currently close the MonitorNotificationService.
          // Therefore the count of created instances is not reset to zero.
@@ -499,13 +499,13 @@ class ChannelTest
 
          assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ));
 
-         final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
-         TestConsumer.clearCurrentTotalNotificationCount();
-         TestConsumer.setExpectedTotalNotificationCount(2);
-         final Monitor<Integer> monitor1 = channel.addValueMonitor(testConsumer);
-         final Monitor<Integer> monitor2 = channel.addValueMonitor(testConsumer);
+         final NotificationConsumer<Integer> notificationConsumer = NotificationConsumer.getNormalConsumer();
+         NotificationConsumer.clearCurrentTotalNotificationCount();
+         NotificationConsumer.setExpectedTotalNotificationCount(2);
+         final Monitor<Integer> monitor1 = channel.addValueMonitor(notificationConsumer);
+         final Monitor<Integer> monitor2 = channel.addValueMonitor(notificationConsumer);
          assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 2L ));
-         TestConsumer.awaitExpectedTotalNotificationCount();
+         NotificationConsumer.awaitExpectedTotalNotificationCount();
 
          // Note: closing a channel does NOT currently close the MonitorNotificationService.
          // Therefore the count of created instances is not reset to zero.
