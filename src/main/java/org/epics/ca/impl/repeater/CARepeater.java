@@ -1,31 +1,38 @@
+/*- Package Declaration ------------------------------------------------------*/
 package org.epics.ca.impl.repeater;
 
-import java.io.File;
-import java.net.BindException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.SocketException;
+/*- Imported packages --------------------------------------------------------*/
+
+import java.net.*;
 import java.nio.ByteBuffer;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.text.NumberFormat;
-import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.Validate;
 import org.epics.ca.Constants;
 import org.epics.ca.util.net.InetAddressUtil;
+
+
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
 
 /**
  * CA repeater.
  */
-@SuppressWarnings( { "rawtypes", "unchecked" } )
-public class CARepeater implements Runnable
+public class CARepeater
 {
+
+/*- Public attributes --------------------------------------------------------*/
+/*- Private attributes -------------------------------------------------------*/
 
    // Get Logger
    private static final Logger logger = Logger.getLogger( CARepeater.class.getName () );
@@ -34,780 +41,539 @@ public class CARepeater implements Runnable
    {
       // force only IPv4 sockets, since EPICS does not work right with IPv6 sockets
       // see http://java.sun.com/j2se/1.5.0/docs/guide/net/properties.html
-      System.setProperty ("java.net.preferIPv4Stack", "true");
+      System.setProperty ( "java.net.preferIPv4Stack", "true" );
+      CARepeaterUtils.initializeLogger( logger );
    }
 
-   /**
-    * System JVM property key to force native repeater.
-    */
-   public static final String CA_FORCE_NATIVE_REPEATER = "CA_FORCE_NATIVE_REPEATER";
+   private final byte[] buffer;
+   private final ByteBuffer data;
+   private final AtomicBoolean shutdownRequest;
+   private final CARepeaterClientManager clientProxyManager;
+   private final DatagramSocket listeningSocket;
+
+
+/*- Main ---------------------------------------------------------------------*/
 
    /**
-    * System JVM property key to disable CA repeater.
-    */
-   public static final String CA_DISABLE_REPEATER = "CA_DISABLE_REPEATER";
-
-   /**
-    * CA repeater client.
-    */
-   static class Client
-   {
-
-      /**
-       * Client address.
-       */
-      private final InetSocketAddress clientAddress;
-
-      /**
-       * Client address.
-       */
-      private DatagramSocket clientSocket = null;
-
-      /**
-       * Constructor.
-       *
-       * @param clientAddress the client address.
-       */
-      public Client( InetSocketAddress clientAddress )
-      {
-         this.clientAddress = clientAddress;
-      }
-
-      /**
-       * Connect.
-       *
-       * @return success flag.
-       */
-      public boolean connect()
-      {
-         try
-         {
-            clientSocket = createDatagramSocket ();
-            clientSocket.connect (clientAddress);
-         }
-         catch ( Throwable th )
-         {
-            // failed to connect
-            logger.log( Level.FINEST, "Failed to connect to: " + clientAddress, th);
-            return false;
-         }
-         return true;
-      }
-
-      /**
-       * Destroy client (close socket).
-       */
-      public void destroy()
-      {
-         if ( clientSocket != null )
-            clientSocket.close ();
-      }
-
-      /**
-       * Client address.
-       *
-       * @return client address.
-       */
-      public InetSocketAddress getClientAddress()
-      {
-         return clientAddress;
-      }
-
-      /**
-       * Verify that the socket is not already in use.
-       *
-       * @return true if the socket is already open.
-       */
-      public boolean isClientListeningSocketClosed()
-      {
-         try
-         {
-            // this should fail, if client is listening
-            final DatagramSocket socket = createDatagramSocket( clientAddress.getPort (), false);
-            socket.close ();
-            logger.log( Level.FINEST, "Dead client detected: " + clientAddress);
-            return true;
-         }
-         catch ( Throwable th )
-         {
-            // this is OK
-            return false;
-         }
-      }
-
-      /**
-       * Send packet.
-       *
-       * @param packet the packet
-       * @return success status.
-       */
-      public boolean send( DatagramPacket packet )
-      {
-         packet.setSocketAddress (clientAddress);
-         try
-         {
-            logger.log( Level.FINEST, "Sending packet to: " + clientAddress);
-            clientSocket.send (packet);
-         }
-         catch ( Throwable th )
-         {
-            // failed to send
-            logger.log( Level.FINEST, "Failed to send packet to: " + clientAddress, th);
-            return false;
-         }
-         return true;
-      }
-
-      /**
-       * Send repeater confirm message.
-       *
-       * @return confirmation send success status.
-       */
-      public boolean sendConfirm()
-      {
-         // build REPEATER_CONFIRM message
-         byte[] message = new byte[ Constants.CA_MESSAGE_HEADER_SIZE ];
-         ByteBuffer buffer = ByteBuffer.wrap (message);
-         buffer.putShort (COMMAND_OFFSET, REPEATER_CONFIRM);
-         buffer.putInt (AVAILABLE_OFFSET, InetAddressUtil.ipv4AddressToInt (clientAddress.getAddress ()));
-
-         // send
-         DatagramPacket packet = new DatagramPacket (message, message.length);
-         return send (packet);
-      }
-   }
-
-   // message field codes
-   private static final int COMMAND_OFFSET = 0;
-   private static final int AVAILABLE_OFFSET = 12;
-
-   // message command codes
-   private static final short CA_PROTO_VERSION = 0;
-   private static final short REPEATER_REGISTER = 24;
-   private static final short REPEATER_CONFIRM = 17;
-   private static final short CA_PROTO_RSRV_IS_UP = 13;
-
-   /**
-    * Repeater port.
-    */
-   private int repeaterPort = Constants.CA_REPEATER_PORT;
-
-   /**
-    * Local unbounded DatagramSocket.
-    */
-   private DatagramSocket localDatagramSocket = null;
-
-   /**
-    * List of registered clients.
-    */
-   private final List<Client> clients = new ArrayList<> ();
-
-   /**
-    * Constructor.
-    */
-   public CARepeater()
-   {
-      // read configuration, repeater port
-      String port = System.getProperty ("EPICS_CA_REPEATER_PORT");
-      if ( port != null )
-      {
-         try
-         {
-            repeaterPort = Integer.parseInt (port);
-         }
-         catch ( NumberFormatException nfe )
-         {
-            logger.log( Level.FINE, "Failed to parse repeater port '" + port + "'.", nfe);
-         }
-      }
-   }
-
-   /**
-    * Constructor.
+    * Starts the CA Repeater from the command line.
     *
-    * @param repeaterPort repeater port.
-    */
-   public CARepeater( int repeaterPort )
-   {
-      this.repeaterPort = repeaterPort;
-   }
-
-   /**
-    * @see java.lang.Runnable#run()
-    */
-   public void run()
-   {
-      process ();
-   }
-
-   protected void registerNewClient( InetSocketAddress clientAddress )
-   {
-      logger.log( Level.FINE, "Registering client: " + clientAddress);
-
-      final int INADDR_LOOPBACK = 0x7F000001;
-      if ( InetAddressUtil.ipv4AddressToInt (clientAddress.getAddress ()) != INADDR_LOOPBACK )
-      {
-         // create local datagram socket
-         if ( localDatagramSocket == null )
-         {
-            try
-            {
-               localDatagramSocket = createDatagramSocket ();
-            }
-            catch ( Throwable th )
-            {
-               logger.log( Level.FINEST, "Failed to create local test datagram socket.", th);
-            }
-         }
-
-         // try to bind it to a unbounded clientAddress, if it is local it will succeed
-         if ( localDatagramSocket != null )
-         {
-            final int PORT_ANY = 0;
-
-            try
-            {
-               // try...
-               localDatagramSocket.bind (new InetSocketAddress (clientAddress.getAddress (), PORT_ANY));
-
-               // close on success
-               // multiple bounds not allowed by Java, so we will force recreate
-               localDatagramSocket.close ();
-               localDatagramSocket = null;
-
-            }
-            catch ( Throwable th )
-            {
-               // failed to connect, reject remote client
-               return;
-            }
-
-         }
-         else
-         {
-            // failed to do the test, reject remote (assumed) client
-            return;
-         }
-      }
-
-      Client client = null;
-      // check if already registered
-      synchronized ( clients )
-      {
-         // do not waste resources, if nobody to send
-         if ( clients.size () != 0 )
-         {
-            for ( Client c : clients )
-            {
-               if ( c.getClientAddress().getPort() == clientAddress.getPort() )
-               {
-                  client = c;
-                  break;
-               }
-            }
-         }
-      }
-
-      boolean newClient = false;
-
-      // create new, if necessary
-      if ( client == null )
-      {
-         client = new Client(clientAddress);
-         if ( !client.connect () )
-         {
-            client.destroy ();
-            return;
-         }
-
-         // add
-         synchronized ( clients )
-         {
-            clients.add (client);
-         }
-
-         newClient = true;
-      }
-
-      // send repeater confirm
-      if ( !client.sendConfirm () )
-      {
-         // add
-         synchronized ( clients )
-         {
-            clients.remove (client);
-         }
-         client.destroy ();
-      }
-
-      logger.log( Level.FINE, "Client registered: " + clientAddress);
-
-      // send noop message to all other clients, not to accumulate clients
-      // when there are no beacons
-      byte[] message = new byte[ Constants.CA_MESSAGE_HEADER_SIZE ];
-      ByteBuffer buffer = ByteBuffer.wrap (message);
-      buffer.putShort (COMMAND_OFFSET, CA_PROTO_VERSION);
-      fanOut (clientAddress, buffer);
-
-      // verify all clients
-      if ( newClient )
-         verifyClients ();
-
-   }
-
-   protected void fanOut( InetSocketAddress fromAddress, ByteBuffer buffer )
-   {
-      synchronized( clients )
-      {
-         // do not waste resources, if nobody to send
-         if ( clients.size () == 0 )
-         {
-            return;
-         }
-
-         // create packet to send, send address still needs to be set
-         DatagramPacket packetToSend = new DatagramPacket (buffer.array (), buffer.position (), buffer.limit ());
-
-         Iterator<Client> iter = clients.iterator ();
-         while ( iter.hasNext () )
-         {
-            Client client = iter.next ();
-
-            // don't reflect back to sender
-            if ( client.getClientAddress ().equals (fromAddress) )
-               continue;
-
-            // send, send, send...
-            if ( !client.send (packetToSend) )
-            {
-               // check if socket is valid
-               if ( client.isClientListeningSocketClosed() )
-               {
-                  // desroy and remove
-                  client.destroy ();
-                  iter.remove ();
-               }
-            }
-
-         }
-      }
-   }
-
-   /**
-    * Verify all the clients.
-    */
-   protected void verifyClients()
-   {
-      synchronized ( clients )
-      {
-         // do not waste resources, if nobody to send
-         if ( clients.size () == 0 )
-         {
-            return;
-         }
-
-         Iterator<Client> iter = clients.iterator ();
-         while ( iter.hasNext () )
-         {
-            Client client = iter.next ();
-
-            // check if socket is valid
-            if ( client.isClientListeningSocketClosed() )
-            {
-               // destroy and remove
-               client.destroy ();
-               iter.remove ();
-            }
-         }
-      }
-   }
-
-   /**
-    * Process UDP requests.
-    */
-   protected void process()
-   {
-      DatagramSocket socket = null;
-      try
-      {
-         logger.log( Level.FINE,"Initializing CA repeater.");
-
-         // Create a buffer to read datagrams into. If a packet is
-         // larger than this buffer, the excess will simply be discarded.
-         final byte[] buffer = new byte[ Constants.MAX_UDP_RECV ];
-         final ByteBuffer data = ByteBuffer.wrap( buffer );
-
-         // create a packet to receive data into the buffer
-         final DatagramPacket packet = new DatagramPacket (buffer, buffer.length);
-
-         // create and bind datagram socket
-         try
-         {
-            socket = createDatagramSocket (repeaterPort, true);
-         }
-         catch ( BindException be )
-         {
-            // notrify and finish
-            logger.log( Level.FINE, "Failed to bind.", be);
-            return;
-         }
-         logger.log( Level.FINE,"Binded to UDP socket: " + socket.getLocalSocketAddress ());
-         logger.log( Level.FINE,"CA repeater attached and initialized.");
-
-         //noinspection InfiniteLoopStatement
-         while( true )
-         {
-            // wait to receive a datagram
-            data.clear ();
-            socket.receive (packet);
-
-            final InetSocketAddress receivedFrom = (InetSocketAddress) packet.getSocketAddress();
-            final int bytesReceived = packet.getLength();
-            data.limit( bytesReceived );
-            if ( bytesReceived >= Constants.CA_MESSAGE_HEADER_SIZE )
-            {
-               final short command = data.getShort( COMMAND_OFFSET );
-               // register request message
-               if ( command == REPEATER_REGISTER )
-               {
-                  registerNewClient( receivedFrom );
-
-                  // skip this header, process rest if any left
-                  data.position (Constants.CA_MESSAGE_HEADER_SIZE);
-                  if ( !data.hasRemaining () )
-                  {
-                     continue;
-                  }
-               }
-               // beacon
-               else if ( command == CA_PROTO_RSRV_IS_UP )
-               {
-                  // set address, if missing
-                  final short address = data.getShort( AVAILABLE_OFFSET );
-                  if ( address == 0 )
-                  {
-                     data.putInt (AVAILABLE_OFFSET, InetAddressUtil.ipv4AddressToInt (packet.getAddress ()));
-                  }
-               }
-            }
-            // empty message request registers too
-            else if ( bytesReceived == 0 )
-            {
-               registerNewClient (receivedFrom);
-               continue;
-            }
-
-            // fan out packet
-            fanOut (receivedFrom, data);
-         }
-
-      }
-      catch ( Throwable th )
-      {
-         logger.log( Level.SEVERE, "Unexpected exception caught.", th);
-      }
-      finally
-      {
-         if ( socket != null )
-         {
-            socket.close();
-         }
-      }
-   }
-
-   /**
-    * Constructs an unbound datagram socket.
+    * If at least two arguments are provided and the first argument is "-p"
+    * or "--port" then an attempt will be made to parse the second argument
+    * as the port number to use when starting the repeater.
     *
-    * @return default unbound datagram socket.
-    * @throws SocketException socket exception
-    */
-   private static DatagramSocket createDatagramSocket() throws SocketException
-   {
-      return new DatagramSocket (null);
-   }
-
-   /**
-    * Constructs a datagram socket bound to the wildcard address on defined port.
-    *
-    * @param port         port
-    * @param reuseAddress reuse address
-    * @return default bounded datagram socket.
-    * @throws SocketException socket exception
-    */
-   private static DatagramSocket createDatagramSocket( int port, boolean reuseAddress ) throws SocketException
-   {
-      DatagramSocket socket = new DatagramSocket (null);
-
-      socket.bind (new InetSocketAddress (port));
-      socket.setReuseAddress (reuseAddress);
-
-      return socket;
-   }
-
-   /**
-    * Check if repeater is running.
-    *
-    * @param repeaterPort repeater port.
-    * @return <code>true</code> if repeater is already running, <code>false</code> otherwise
-    */
-   private static boolean isRepeaterRunning( int repeaterPort )
-   {
-      // test if repeater is already running, by binding to its port
-      try
-      {
-         DatagramSocket socket = createDatagramSocket (repeaterPort, true);
-         socket.close ();
-         // bind succeeded, repeater not running
-         return false;
-      }
-      catch ( BindException be )
-      {
-         // bind failed, socket in use
-         logger.log( Level.WARNING, "Bind exception", be);
-         return true;
-      }
-      catch ( SocketException se )
-      {
-         // Win7 "version" of: bind failed, socket in use
-         logger.log( Level.WARNING, "Socket exception", se);
-         return true;
-      }
-      catch ( Throwable th )
-      {
-         // unexpected error
-         logger.log( Level.WARNING, "", th);
-         return false;
-      }
-   }
-
-   /**
-    * Start repeater as detached process.
-    * First checks if repeater is already running, if not
-    * other JVM process is run.
-    *
-    * @param repeaterPort repeater port.
-    * @throws Throwable throwable
-    */
-   public static void startRepeater( final int repeaterPort ) throws Throwable
-   {
-      // disable repeater check
-      if ( System.getProperties ().containsKey (CA_DISABLE_REPEATER) )
-      {
-         return;
-      }
-
-      // force native repeater check
-      if ( System.getProperties ().containsKey (CA_FORCE_NATIVE_REPEATER) )
-      {
-         JNIRepeater.repeaterInit ();
-         return;
-      }
-
-      if ( repeaterPort <= 0 )
-      {
-         throw new IllegalArgumentException("port must be > 0");
-      }
-
-      // nothing to do, if repeater is already running
-      if ( isRepeaterRunning (repeaterPort) )
-      {
-         return;
-      }
-
-      PrivilegedAction action = () ->
-      {
-
-         // java.home java.class.path
-         final String[] commandLine = new String[] {
-               System.getProperty ("java.home") + File.separator + "bin" + File.separator + "java",
-               "-classpath",
-               System.getProperty ("java.class.path"),
-               CARepeater.class.getName (),
-               "-p",
-               String.valueOf (repeaterPort)
-         };
-
-         try
-         {
-            Runtime.getRuntime ().exec (commandLine);
-         }
-         catch ( Throwable th )
-         {
-            System.err.println ("Failed to exec '" + commandLine[ 0 ] + "', trying to start native repeater...");
-            logger.log( Level.SEVERE, "Failed to exec '" + commandLine[ 0 ] + "', trying to start native repeater...", th);
-
-            try
-            {
-               //  fallback: try to run native repeater
-               JNIRepeater.repeaterInit ();
-            }
-            catch ( Throwable th2 )
-            {
-               System.err.println ("Failed to start native repeater.");
-               logger.log( Level.SEVERE, "Failed to start native repeater.", th);
-            }
-         }
-
-         return null;
-      };
-
-      final Object res = AccessController.doPrivileged (action);
-      if ( res != null )
-      {
-         throw new Exception( "Unable to init CA Repeater", (Throwable) res );
-      }
-
-   }
-
-
-   /**
-    * Main entry-point.
+    * If the second argument is a valid port number (positive integer) then
+    * the repeater will be started on that port. If it isn't then the
+    * repeater will be started on the default port (which can be overriden
+    * by a System property 'EPICS_CA_REPEATER_PORT').
     *
     * @param argv arguments.
     */
    public static void main( String[] argv )
    {
-      CARepeater repeater;
+      final int DEFAULT_REPEATER_PORT = Constants.CA_REPEATER_PORT;
+      final boolean portArgumentSupplied = ( argv.length >= 2 && ( argv[ 0 ].equals ("-p") || argv[ 0 ].equals ("--port") ) );
+      final int port = portArgumentSupplied ? CARepeaterUtils.parseToInt( argv[ 1 ], DEFAULT_REPEATER_PORT ) : DEFAULT_REPEATER_PORT;
 
-      // check for port argument
-      int port = -1;
-      if ( argv.length >= 2 && (argv[ 0 ].equals ("-p") || argv[ 0 ].equals ("--port")) )
+      // Nothing to do, if a repeater instance is already running
+      if ( CARepeaterStarter.isRepeaterRunning( port ) )
+      {
+         System.out.println( "The repeater is already running and a new instance will not be started." );
+         return;
+      }
+
+      final CARepeater repeater;
+      try
+      {
+         if ( port == DEFAULT_REPEATER_PORT )
+         {
+            System.out.println( "Starting default repeater instance." );
+            repeater = new CARepeater();
+         }
+         else
+         {
+            System.out.println( "Starting repeater instance on port " + port + "." );
+            repeater = new CARepeater( port );
+         }
+      }
+      catch( CARepeater.CaRepeaterStartupException ex )
+      {
+         System.out.println( "An exception occurred when attempting to start the repeater." );
+         System.out.println( "The details were as shown below." );
+         ex.printStackTrace();
+         return;
+      }
+
+      // Run, run, run...
+      repeater.start();
+   }
+
+/*- Constructor --------------------------------------------------------------*/
+
+   /**
+    * Creates a new instance which will listen on either the default
+    * CA Repeater port (which depends on the supported CA Major Protocol
+    * Version) or the port specified through the system property
+    * 'EPICS_CA_REPEATER_PORT'.
+    *
+    * Note for CA Version 4.XX the default repoeater port is 5065.
+    *
+    * @throws CaRepeaterStartupException if the CA Repeater could not be started for any reason.
+    */
+   public CARepeater() throws CaRepeaterStartupException
+   {
+      this( CARepeaterUtils.parseToInt( System.getProperty( "EPICS_CA_REPEATER_PORT" ), Constants.CA_REPEATER_PORT ) );
+   }
+
+   /**
+    * Creates a new instance based on the specified port.
+    *
+    * @param repeaterPort positive integer specifying the port on which this CA Repeater
+    *    instance is expected to listen.
+    *
+    * @throws CaRepeaterStartupException if the CA Repeater could not be started for any reason.
+    * @throws IllegalArgumentException if the repeaterPort parameter was not within bounds.
+    */
+   public CARepeater( int repeaterPort ) throws CaRepeaterStartupException
+   {
+      Validate.isTrue(repeaterPort > 0, "The port must be a positive integer" );
+
+      // Make an entry in the log of all local IPV4 network addresses.
+      logger.log( Level.FINEST, "The following local interfaces have been discovered..." ) ;
+      final List<Inet4Address> addrList = this.getLocalNetworkInterfaceAddresses();
+      addrList.forEach( (ip) -> logger.log( Level.FINEST, ip.toString() ) );
+
+      logger.log( Level.INFO, "The CA repeater will listen to broadcasts on all local interfaces by binding to the wildcard address on port " + repeaterPort + "." ) ;
+
+      this.buffer = new byte[ Constants.MAX_UDP_RECV ];
+      this.data = ByteBuffer.wrap( buffer );
+      this.shutdownRequest = new AtomicBoolean( false );
+
+      try
+      {
+         this.listeningSocket = SocketUtilities.createBroadcastAwareListeningSocket( repeaterPort, false );
+      }
+      catch ( SocketException ex )
+      {
+         final String msg = "An unexpected exception has prevented the CA Repeater from starting.";
+         logger.log( Level.INFO, msg, ex );
+         throw new CaRepeaterStartupException( msg, ex );
+      }
+
+      clientProxyManager = new CARepeaterClientManager( (InetSocketAddress) listeningSocket.getLocalSocketAddress() );
+   }
+
+/*- Public methods -----------------------------------------------------------*/
+
+   /**
+    * Runs the CA repeater in a separate thread forever, or until a
+    * shutdown request is received.
+    *
+    * @return future which can be used to determine
+    */
+   public Future<?> start()
+   {
+      // Create a buffer to read datagrams into. If a packet is
+      // larger than this buffer, the excess will simply be discarded.
+      final ExecutorService executor = Executors.newSingleThreadExecutor();
+      return executor.submit(() -> {
+         try
+         {
+            processUdpDatagramPackets();
+         }
+         catch ( Exception ex )
+         {
+            logger.log( Level.INFO, "An unrecoverable exception has occurred which means this CA repeater will terminate.");
+         }
+         logger.log( Level.INFO, "The CA Repeater has terminated.");
+      } );
+   }
+
+   public void shutdown()
+   {
+      shutdownRequest.set( true );
+      listeningSocket.close();
+   }
+
+/*- Private methods ----------------------------------------------------------*/
+
+    /*
+     * Process UDP datagram packets from both CA clients and servers, forever,
+     * or until some unexpected fault condition arises.
+    */
+   private void processUdpDatagramPackets()
+   {
+      logger.log( Level.FINEST, "Processing incoming UDP datagrams..." );
+      while ( !shutdownRequest.get() )
       {
          try
          {
-            port = Integer.parseInt (argv[ 1 ]);
+            // Wait for a Datagram Packet to arrive.
+            logger.log( Level.FINEST, "Waiting for next datagram." );
+            final DatagramPacket inputPacket = waitForDatagram();
+            if ( shutdownRequest.get() )
+            {
+               logger.log( Level.FINEST, "The wait for the next datagram has terminated." );
+               logger.log( Level.FINEST, "The CA repeater has been shutdown. Will not process any more messages." );
+               return;
+            }
+            logger.log( Level.FINEST, "A new UDP datagram packet has been received. " );
+
+            // Process all the data in the datagram packet which may consist of one or several CA messages.
+            boolean unprocessedMessages = true;
+            DatagramPacket packetToProcess = inputPacket;
+            while ( unprocessedMessages )
+            {
+               logger.log( Level.FINEST, "Consuming next message in UDP datagram packet." );
+               logger.log( Level.FINEST, "The length of the UDP datagram is: " + packetToProcess.getLength() + " bytes."  );
+               final DatagramPacket residualMessagePacket = processOneMessage( packetToProcess,
+                                                                               // Zero Length message consumer
+                                                                               this::handleClientRegistrationRequest,
+                                                                               // CA Register message consumer
+                                                                               this::handleClientRegistrationRequest,
+                                                                               // CA Beacon message consumer
+                                                                               this::handleBeaconMessage,
+                                                                               // All other message consumer
+                                                                               this::handleAllOtherMessages );
+
+               logger.log( Level.FINEST, "After processing the length of the UDP datagram is: " + residualMessagePacket.getLength() + " bytes."  );
+               unprocessedMessages = residualMessagePacket.getLength() > 0;
+               packetToProcess = residualMessagePacket;
+            }
          }
-         catch ( NumberFormatException nfe )
+         catch( Exception ex)
          {
-            System.err.println ("Failed to parse repeater port '" + argv[ 1 ] + "'.");
+            logger.log( Level.WARNING, "An exception was thrown whilst waiting for a datagram.", ex );
+         }
+      }
+   }
+
+   /**
+    * Processes a single message from the supplied datagram packet and returns
+    * a shortened datagram packet containing any unprocessed messages.
+    *
+    * Datagrams with zero bytes payloads are processed by invoking the
+    * zeroLengthMessageHandler.
+    *
+    * Datagrams with at least 16 bytes payload are scanned and matched against
+    * the expected patterns for CA Client Registration request messages and/or
+    * CA Server Beacon messages. If a match is found the message is processed
+    * by invoking the relevant consumer.
+    *
+    * If none of the conditions above match the message is processed by
+    * invoking the defaultMessageHandler.
+    *
+    * @param inputPacket the datagram packet containing the message to consume.
+    * @param zeroLengthMessageHandler reference to a handler that will be
+    *    invoked for datagrams of zero length.
+    * @param clientRegistrationMessageHandler reference to a handler that will
+    *    be invoked for datagrams containing CA client registration request
+    *    messages.
+    * @param beaconMessageHandler reference to a handler that will be invoked
+    *   for datgrams containg server beacon messages.
+    * @param defaultMessageHandler reference to a handler that will be invoked
+    *   for all other messages.
+    * @return a datagram that is shortened to include any unprocessed messages
+    *    from the original datagram and additionally the socket address details
+    *    from the original.
+    * @throws NullPointerException if any of the message handlers were set to null.
+    */
+   private DatagramPacket processOneMessage( DatagramPacket inputPacket,
+                                             Consumer<DatagramPacket> zeroLengthMessageHandler,
+                                             Consumer<DatagramPacket> clientRegistrationMessageHandler,
+                                             Consumer<DatagramPacket> beaconMessageHandler,
+                                             Consumer<DatagramPacket> defaultMessageHandler )
+   {
+      Validate.notNull( zeroLengthMessageHandler );
+      Validate.notNull( clientRegistrationMessageHandler );
+      Validate.notNull( zeroLengthMessageHandler );
+      Validate.notNull( defaultMessageHandler );
+
+      logger.log( Level.FINEST, "Consuming one message." );
+
+      final int bytesReceived = inputPacket.getLength();
+      logger.log( Level.FINEST, "The length of the UDP datagram packet is " + bytesReceived + " bytes." );
+
+      final InetSocketAddress senderSocketAddress = (InetSocketAddress) inputPacket.getSocketAddress();
+      logger.log( Level.FINEST, "The message was sent from socket '" + senderSocketAddress  + "'" );
+
+      if ( bytesReceived == 0 )
+      {
+         logger.log( Level.FINEST, "Calling ZERO LENGTH MESSAGE consumer." );
+         zeroLengthMessageHandler.accept( inputPacket );
+         return inputPacket;
+      }
+      else if ( bytesReceived >= CARepeaterMessage.CA_MESSAGE_HEADER_SIZE )
+      {
+         final ByteBuffer buffer = ByteBuffer.wrap( inputPacket.getData() );
+         final short commandCode = buffer.getShort( CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value );
+         if ( commandCode == CARepeaterMessage.CaCommandCodes.CA_REPEATER_REGISTER.value )
+         {
+            logger.log( Level.FINEST, "Calling CLIENT REGISTRATION MESSAGE consumer." );
+            clientRegistrationMessageHandler.accept( inputPacket );
+
+            logger.log( Level.FINEST, "Removing processed CLIENT REGISTRATION MESSAGE." );
+            return removeProcessedMessage( inputPacket, Constants.CA_MESSAGE_HEADER_SIZE );
+
+         }
+         else if( commandCode == CARepeaterMessage.CaCommandCodes.CA_PROTO_RSRV_IS_UP.value  )
+         {
+            logger.log( Level.FINEST, "Calling BEACON MESSAGE consumer." );
+            beaconMessageHandler.accept( inputPacket );
+
+            logger.log( Level.FINEST, "Removing processed BEACON MESSAGE." );
+            return removeProcessedMessage( inputPacket, Constants.CA_MESSAGE_HEADER_SIZE );
          }
       }
 
-      // create repeater
-      if ( port > 0 )
+      logger.log( Level.FINEST, "Calling DEFAULT MESSAGE consumer." );
+      defaultMessageHandler.accept( inputPacket );
+
+      logger.log( Level.FINEST, "Removing processed DEFAULT MESSAGE of length " + inputPacket.getLength() + " bytes." );
+      return removeProcessedMessage( inputPacket, inputPacket.getLength() );
+   }
+
+   /**
+    * Processes an incoming CA Repeater Client Registration Request Message.
+    *
+    * @param packet the datagram packet containing the messsage.
+    */
+   private void handleClientRegistrationRequest( DatagramPacket packet )
+   {
+      Validate.notNull( packet );
+      Validate.isTrue( packet.getLength() == 0 || packet.getLength() >= Constants.CA_MESSAGE_HEADER_SIZE );
+
+      logger.log( Level.FINEST, "Handling CA Client Registration Message sent from socket '" + packet.getSocketAddress() + "'" );
+
+      final ByteBuffer buffer = ByteBuffer.wrap( packet.getData() );
+      final InetAddress serverInetAddress = InetAddressUtil.intToIPv4Address(buffer.getInt( CARepeaterMessage.CaHeaderOffsets.CA_HDR_INT_PARAM2_OFFSET.value ) );
+      final InetSocketAddress serverSocketAddress = new InetSocketAddress( serverInetAddress, packet.getPort() );
+      logger.log( Level.FINEST, "The server address encoded in the datagram was: '" + serverInetAddress + "'" );
+
+      // Reject registration requests that do not come from a local machine address.
+      if ( ! SocketUtilities.isThisMyIpAddress( packet.getAddress() ) )
       {
-         repeater = new CARepeater( port );
+         logger.log( Level.WARNING, "The internet address associated with the request datagram (" + packet.getAddress() + ") was not a local address.'" );
+         logger.log( Level.WARNING, "The CA repeater can only register clients on one of the local machine interfaces." );
+         return;
+      }
+
+      // Reject registration requests from clients that do not seem to be listening on the reported socket.
+      if ( CARepeaterClientProxy.isClientDead( (InetSocketAddress) packet.getSocketAddress() ) )
+      {
+         logger.log( Level.WARNING, "The CA repeater client (" + packet.getAddress() + ") reports that it is dead." );
+         logger.log( Level.WARNING, "The CA repeater only register clients that are alive." );
+         return;
+      }
+
+      // Reject registration requests from clients that are already registered.
+     if ( clientProxyManager.isListeningPortAlreadyAssigned( packet.getPort() ) )
+      {
+         logger.log( Level.WARNING, "The internet address associated with the request datagram (" + packet.getSocketAddress() + ") is already a registered client." );
+         logger.log( Level.WARNING, "Nothing further to do." );
+         return;
+      }
+
+      // Send the request to the Client Proxy Manager
+      final InetSocketAddress clientListeningSocket = new InetSocketAddress( packet.getAddress(), packet.getPort() );
+      clientProxyManager.registerNewClient( clientListeningSocket );
+   }
+
+   /**
+    * Processes an incoming CA Beacon Message from a CA Server.
+    *
+    * Incoming messages are sent to all registered CA Repeater clients with the
+    * possible exception of the client that originated the message.
+    *
+    * @param packet the datagram packet containing the message sender socket and payload.
+    */
+   private void handleBeaconMessage( DatagramPacket packet )
+   {
+      Validate.notNull( packet );
+      Validate.isTrue( packet.getLength() >= Constants.CA_MESSAGE_HEADER_SIZE );
+
+      logger.log( Level.FINEST, "Handling CA Beacon Message sent from socket '" + packet.getSocketAddress()  + "'." );
+
+      final ByteBuffer buffer = ByteBuffer.wrap( packet.getData() );
+      final short caServerVersionNumber = buffer.getShort( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_SHORT_BEACON_MSG_SERVER_PROTOCOL_MINOR_VERSION_OFFSET.value );
+      logger.log( Level.FINEST, "The CA Beacon Message indicates the server's protocol minor version number is: '" + caServerVersionNumber  + "'." );
+
+      final short serverListeningPort = buffer.getShort( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_SHORT_BEACON_MSG_SERVER_TCP_LISTENING_PORT_OFFSET.value );
+      logger.log( Level.FINEST, "The CA Beacon Message indicates the server's TCP listening port is: '" + serverListeningPort  + "'" );
+
+      final int serverBeaconId = buffer.getInt( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_INT_BEACON_MSG_SERVER_BEACON_ID_OFFSET.value );
+      logger.log( Level.FINEST, "The CA Beacon Message has the following Beacon ID '" + serverBeaconId  + "'." );
+
+      // Extract the socket address of the message sender. This will be excluded from the list of
+      // CA Repeater clients that the message will be forwarded to.
+      final InetSocketAddress excludeForwardingToSelfSocketAddress = (InetSocketAddress) packet.getSocketAddress();
+
+      // According to Channel Access Specification (see the docs section of this project) the server beacon message
+      // may or may not provide the address of the server which sent the message. In the case that this is not
+      // available then the specification suggests that the repeater substitutes it using the address information
+      // provided in the received Datagram Packet.
+      final int serverAddressEncodedInMessage = buffer.getInt( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_INT_BEACON_MSG_SERVER_ADDR_OFFSET.value );
+      final String serverAddressEncodedInMessageAsString = InetAddressUtil.intToIPv4Address( serverAddressEncodedInMessage ).toString();
+      logger.log( Level.FINEST, "The CA Beacon Message advertised the server's IP address as being: '" + serverAddressEncodedInMessageAsString  + "'." );
+
+      if ( serverAddressEncodedInMessage == 0 )
+      {
+         logger.log( Level.FINEST, "Using IP address from datagram sending socket (" + packet.getAddress() + ")." );
+         logger.log( Level.FINEST, "Forwarding Beacon Message...");
+
+         final InetAddress serverAddressEncodedInDatagram = packet.getAddress();
+         clientProxyManager.forwardBeacon( caServerVersionNumber,
+                                           serverListeningPort,
+                                           serverBeaconId,
+                                           serverAddressEncodedInDatagram,
+                                           excludeForwardingToSelfSocketAddress );
       }
       else
       {
-         repeater = new CARepeater();
+         logger.log( Level.FINEST, "Using IP address encoded in message (" + serverAddressEncodedInMessageAsString + ")." );
+         logger.log( Level.FINEST, "Forwarding Beacon Message...");
+         clientProxyManager.forwardBeacon( caServerVersionNumber,
+                                           serverListeningPort,
+                                           serverBeaconId,
+                                           InetAddressUtil.intToIPv4Address( serverAddressEncodedInMessage ),
+                                           excludeForwardingToSelfSocketAddress );
       }
-
-      // run, run, run...
-      repeater.run();
    }
 
-
-   public static class JNIRepeater
+   /**
+    * Processes all other incoming datagrams. Incoming messages are forwarded to all registered
+    * CA Repeater clients with the possible exception of the client that originated the
+    * message.
+    *
+    * @param packet the packet to be processed.
+    * @throws NullPointerException if the packet argument was null.
+    * @throws IllegalArgumentException if the socket address associated with the supplied
+    *    packet is not of type InetSocketAddress.
+    */
+   private void handleAllOtherMessages( DatagramPacket packet )
    {
-      /**
-       * System JVM property key to disable JNI repeater.
-       */
-      public static final String JNI_DISABLE_REPEATER = "JNI_DISABLE_REPEATER";
+      Validate.notNull( packet );
+      Validate.isTrue( packet.getSocketAddress() instanceof InetSocketAddress );
 
-      static public void repeaterInit()
-      {
-         if ( System.getProperties ().containsKey (JNI_DISABLE_REPEATER) )
-         {
-            return;
-         }
-
-         final PrivilegedAction action = () -> {
-            try
-            {
-               final String targetArch = JNIRepeater.getTargetArch();
-
-               // read JNI native config
-               final File caRepeaterPath = new File (System.getProperty ("org.epics.ca." + targetArch + ".caRepeater.path", ""));
-
-               try
-               {
-                  String caRepeater = "caRepeater";
-                  if ( caRepeaterPath.exists () )
-                  {
-                     caRepeater = (new File (caRepeaterPath, "caRepeater") ).getAbsolutePath ();
-                  }
-                  Runtime.getRuntime ().exec (caRepeater);
-               }
-               catch ( java.io.IOException ex )
-               {
-                  Runtime.getRuntime ().exec ("caRepeater");
-               }
-
-            }
-            catch ( Throwable ex2 )
-            {
-               // noop
-            }
-            return null;
-         };
-
-         Object res = AccessController.doPrivileged (action);
-         if ( res != null )
-         {
-            throw new RuntimeException( "Unable to init JNI CA Repeater", (Throwable) res );
-         }
-      }
-
-
-      /**
-       * Get standard "system-arch" string.
-       *
-       * @return standard "system-arch" string.
-       */
-      private static String getTargetArch()
-      {
-         final String osname = System.getProperty ("os.name", "");
-
-         float osversion = 0;
-         try
-         {
-            osversion = NumberFormat.getInstance ().parse (System.getProperty ("os.version", "")).floatValue ();
-         }
-         catch ( ParseException pe )
-         {
-            // noop
-         }
-
-         String osarch = System.getProperty ("os.arch", "");
-
-         if ( osarch.equals ("i386") || osarch.equals ("i486") || osarch.equals ("i586") )
-         {
-            osarch = "x86";
-         }
-
-         if ( osname.equals ("SunOS") )
-         {
-            if ( osversion >= 5 )
-            {
-               if ( osarch.equals ("sparc") )
-               {
-                  return "solaris-sparc";
-               }
-               else if ( osarch.equals ("x86") )
-               {
-                  return "solaris-x86";
-               }
-            }
-         }
-         else if ( osname.equals ("Linux") )
-         {
-            if ( osarch.equals ("x86") )
-            {
-               return "linux-x86";
-            }
-         }
-         else if ( osname.equals ("Mac OS X") )
-         {
-            return "darwin-ppc";
-         }
-         else if ( osname.startsWith ("Win") )
-         {
-            return "win32-x86";
-         }
-         return "unknown";
-      }
-
+      // Extract the socket address of the message sender. This will be excluded from the list of
+      // CA Repeater clients that the message will be forwarded to.
+      final InetSocketAddress excludeForwardingToSelfSocketAddress = (InetSocketAddress) packet.getSocketAddress();
+      clientProxyManager.forwardDatagram( packet, excludeForwardingToSelfSocketAddress );
    }
 
+   /**
+    * Block indefinitely until a new datagram has arrived or some unrecoverable
+    * exception has occurred.
+    *
+    * @return the datagram packet.
+    * @throws Exception the exception for which there is no reasonable recovery.
+    */
+   private DatagramPacket waitForDatagram() throws Exception
+   {
+      // Arm the data byte buffer ready to receive a new datagram.
+      data.clear();
+
+      // Create a new datagram packet to receive data into the buffer.
+      final DatagramPacket packet = new DatagramPacket( buffer, buffer.length );
+
+      // Wait for new data to arrive.
+      try
+      {
+         listeningSocket.receive( packet );
+      }
+      // The receive operation can potentially fail due to any of the following exceptions.
+      // IOException, SocketTimeoutException, PortUnreachableException, IllegalBlockingModeException -->
+      catch( Exception ex )
+      {
+         if ( shutdownRequest.get() )
+         {
+            logger.log( Level.FINEST, "The receive datagram operation terminated because the CA repeater was shutdown." );
+            return new DatagramPacket( new byte[] {}, 0  );
+         }
+         else
+         {
+            final String msg = "An unexpected exception has made it impossible to obtain a new datagram.";
+            logger.log( Level.FINEST, msg );
+            Thread.currentThread().interrupt();
+            throw new Exception(msg, ex);
+         }
+
+      }
+
+      logger.log( Level.FINEST, "" );
+      logger.log( Level.FINEST, "CA Repeater listening socket has received new data. Processing..." );
+      return packet;
+   }
+
+   /**
+    * Returns a copy of the input packet but with the data payload shortened to remove the message of
+    * specified length from the beginning.
+    *
+    * @param inputPacket the input datagram packet.
+    * @param messageToRemoveLength the number of bytes in the message to be removed.
+    * @return the output datagram packet whose data payload have been reduced by the specified length.
+    */
+   static DatagramPacket removeProcessedMessage( DatagramPacket inputPacket, int messageToRemoveLength )
+   {
+      Validate.notNull( inputPacket );
+      Validate.isTrue( messageToRemoveLength <= inputPacket.getLength() );
+
+      logger.log( Level.FINEST, "Removing message of length " + messageToRemoveLength + " bytes." );
+
+      final int newLength = inputPacket.getLength() - messageToRemoveLength;
+      final byte[] newPayload = Arrays.copyOfRange( inputPacket.getData(), messageToRemoveLength, inputPacket.getLength() );
+      final SocketAddress newSocketAddress = inputPacket.getSocketAddress();
+
+      final DatagramPacket outputPacket = new DatagramPacket( newPayload, newLength,newSocketAddress );
+      logger.log( Level.FINEST, "The datagram packet is now of length " + newLength + " bytes." );
+      return outputPacket;
+   }
+
+   /**
+    * Returns a list of any IPV4 internet addresses that have been assigned to the local interfaces.
+    *
+    * Credit: the algorithm below is a modified form of the version described here:
+    * https://stackoverflow.com/questions/494465/how-to-enumerate-ip-addresses-of-all-enabled-nic-cards-from-java
+    *
+    * @return the list, empty if the query fails or if there are none available.
+    */
+   private List<Inet4Address> getLocalNetworkInterfaceAddresses()
+   {
+      final List<Inet4Address> addrList = new ArrayList<>();
+      try
+      {
+         for( Enumeration<NetworkInterface> eni = NetworkInterface.getNetworkInterfaces(); eni.hasMoreElements(); )
+         {
+            final NetworkInterface ifc = eni.nextElement();
+            if( ifc.isUp() )
+            {
+               for (Enumeration<InetAddress> ena = ifc.getInetAddresses(); ena.hasMoreElements(); )
+               {
+                  final InetAddress addr = ena.nextElement();
+                  if ( addr instanceof Inet4Address)
+                  {
+                     addrList.add( (Inet4Address) addr );
+                  }
+               }
+            }
+         }
+      }
+      catch ( SocketException e )
+      {
+         logger.log( Level.WARNING, "Exception when querying local interfaces for registered IP4 addresses." );
+      }
+      return addrList;
+   }
+
+
+/*- Nested Classes -----------------------------------------------------------*/
+
+   public static class CaRepeaterStartupException extends Exception
+   {
+      public CaRepeaterStartupException( String message, Exception ex )
+      {
+         super( message, ex );
+      }
+   }
 }
+
+
