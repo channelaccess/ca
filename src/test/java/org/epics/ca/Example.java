@@ -17,31 +17,45 @@ public class Example
 
    public static void main( String[] args )
    {
-      System.out.println( "NOTE: To run this example you need to first start the CAJ Test Server running..." );
+      System.out.println( "NOTE: To run this example you need to first start the Epics Channel Access Test Server running..." );
 
       final Properties properties = new Properties();
-      properties.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "localhost" );
+      properties.setProperty( "CA_DEBUG", "1" );
+
+      properties.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
+      properties.setProperty( Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString(), "NO" );
 
       try ( Context context = new Context ( properties ) )
       {
+         // 1.0 Create a Channel
          final Channel<Double> adc = context.createChannel ("adc01", Double.class);
 
-         // add connection listener
-         final Listener cl = adc.addConnectionListener (( channel, state ) -> System.out.println (channel.getName () + " is connected? " + state));
-         // remove listener, or use try-catch-resources
-         cl.close();
+         // 2.0 Add a ConnectionListener
+         final Listener connectionListener = adc.addConnectionListener (( channel, state ) -> System.out.println (channel.getName () + " is connected? " + state));
 
-         final  Listener cl2 = adc.addAccessRightListener (( channel, rights ) -> System.out.println (channel.getName () + " is rights? " + rights));
-         // remove listener, or use try-catch-resources
-         cl2.close();
+         // 2.1 Remove a ConnectionListener.
+         // Note: this is achieved automatically if the listener is created using a try-catch-resources construct.
+         connectionListener.close();
 
-         // wait until connected or TimeoutException
+         // 2.2 Add an AccessRightsListener
+         final  Listener accessRightsListener = adc.addAccessRightListener (( channel, rights ) -> System.out.println (channel.getName () + " is rights? " + rights));
+
+         // 2.3 Remove an AccessRightsListener.
+         // Note: this is achieved automatically if the listener is created using a try-catch-resources construct.
+         accessRightsListener.close();
+
+         // 3.0 Connect asynchronously to the channel.
+         // Wait until connected or TimeoutException
          adc.connectAsync().get();
+
+         // 4.0 Asynchronously put a floating point value to the channel.
          adc.putNoWait (3.11 );
 
+         // 4.1 Asynchronously put a floating point value to the channel. Wait for completion.
          final CompletableFuture<Status> fp = adc.putAsync (12.8 );
          System.out.println (fp.get ());
 
+         // 5.0 Asynchronously get a floating point value from the channel.
          final CompletableFuture<Double> ffd = adc.getAsync ();
          System.out.println (ffd.get ());
 
