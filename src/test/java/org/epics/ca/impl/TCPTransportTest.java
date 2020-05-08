@@ -1,11 +1,10 @@
 /*- Package Declaration ------------------------------------------------------*/
 
-package org.epics.ca;
+package org.epics.ca.impl;
 
 /*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.epics.ca.impl.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -66,6 +65,7 @@ class TCPTransportTest
    }
 
    @BeforeEach
+   @SuppressWarnings( "unchecked" )
    void setupTcpTransport()
    {
       // Create a mock for the first argument of the TCPTransport constructor
