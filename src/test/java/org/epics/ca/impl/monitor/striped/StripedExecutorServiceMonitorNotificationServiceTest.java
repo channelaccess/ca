@@ -10,7 +10,7 @@ import java.util.Locale;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static org.epics.ca.TestConsumer.*;
+import static org.epics.ca.NotificationConsumer.*;
 
 /**
  * Tests all underlying implementations of the MonitorNotificationService.

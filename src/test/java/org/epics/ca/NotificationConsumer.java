@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 /*- Class Declaration --------------------------------------------------------*/
 
 @ThreadSafe
-public class TestConsumer<T> implements Consumer<T>
+public class NotificationConsumer<T> implements Consumer<T>
 {
    
 /*- Public attributes --------------------------------------------------------*/
@@ -35,7 +35,7 @@ public class TestConsumer<T> implements Consumer<T>
 
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( TestConsumer.class.getName() );
+   private static final Logger logger = Logger.getLogger( NotificationConsumer.class.getName() );
 
    private static CountDownLatch expectedTotalNotificationCountDetectionLatch;
    private static final AtomicLong expectedTotalNotificationCount = new AtomicLong();
@@ -58,7 +58,7 @@ public class TestConsumer<T> implements Consumer<T>
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 
-public TestConsumer( ConsumerType type, long delayTime, TimeUnit timeUnit )
+public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUnit )
 {
    Validate.notNull( type );
    Validate.isTrue(delayTime >= 0,"greater than zero" );
@@ -89,20 +89,20 @@ public TestConsumer( ConsumerType type, long delayTime, TimeUnit timeUnit )
 /*- Class methods ------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
 
-   public static <T> TestConsumer<T> getNormalConsumer()
+   public static <T> NotificationConsumer<T> getNormalConsumer()
    {
       final long notUsedValue = 0L;
-      return new TestConsumer<>( ConsumerType.NORMAL, notUsedValue, TimeUnit.SECONDS );
+      return new NotificationConsumer<>(ConsumerType.NORMAL, notUsedValue, TimeUnit.SECONDS );
    }
 
-   public static <T> TestConsumer<T> getThreadSleepingSlowConsumer( long delayTime, TimeUnit timeUnit )
+   public static <T> NotificationConsumer<T> getThreadSleepingSlowConsumer( long delayTime, TimeUnit timeUnit )
    {
-      return new TestConsumer<>( ConsumerType.SLOW_WITH_THREAD_SLEEP, delayTime, timeUnit );
+      return new NotificationConsumer<>(ConsumerType.SLOW_WITH_THREAD_SLEEP, delayTime, timeUnit );
    }
 
-   public static <T> TestConsumer<T> getBusyWaitingSlowConsumer( long delayTime, TimeUnit timeUnit )
+   public static <T> NotificationConsumer<T> getBusyWaitingSlowConsumer( long delayTime, TimeUnit timeUnit )
    {
-      return new TestConsumer<>( ConsumerType.SLOW_WITH_BUSY_WAIT, delayTime, timeUnit );
+      return new NotificationConsumer<>(ConsumerType.SLOW_WITH_BUSY_WAIT, delayTime, timeUnit );
    }
 
    public static long getCurrentTotalNotificationCount()
@@ -238,6 +238,7 @@ public TestConsumer( ConsumerType type, long delayTime, TimeUnit timeUnit )
       // Only tritgger the tests when the Type is either Integer or Long
       if ( ( lastNotificationValue.get() != null ) && ( lastNotificationValue.get() instanceof Integer ) && ( newValue instanceof Integer ) )
       {
+         //noinspection RedundantCast
          if ( (Integer) newValue < (Integer) lastNotificationValue.get() )
          {
             notificationSequenceWasMonotonic.set( false );
