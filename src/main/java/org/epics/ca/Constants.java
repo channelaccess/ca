@@ -93,6 +93,12 @@ public interface Constants
     */
    int CA_REPEATER_PORT = CA_PORT_BASE + 2 * CA_MAJOR_PROTOCOL_REVISION + 1;
 
+
+   /**
+    * CA Repeater attempted registration interval in seconds.
+    */
+    int CA_REPEATER_REGISTRATION_INTERVAL = 60;
+
    /**
     * CA protocol message header size.
     */
