@@ -1,7 +1,6 @@
 // Set up for bintray deployment to JCenter
 buildscript {
     repositories {
-        mavenCentral()
         jcenter()
     }
 }
@@ -9,9 +8,7 @@ buildscript {
 plugins {
     id "base"
     id "java"
-    id "maven"
-    id "signing"
-    id "com.jfrog.bintray" version "1.8.4"
+    id "com.jfrog.bintray" version "1.8.5"
     id "maven-publish"
 }
 
@@ -22,9 +19,9 @@ println "The Java version being used for this gradle build is: ${JavaVersion.cur
 // Define the coordinates for the build products.
 group = 'org.epics'
 archivesBaseName = 'ca'
-version = '1.2.3'
+version = '1.3.0'
 
-ext.isReleaseVersion = ! version.endsWith("SNAPSHOT")
+ext.isReleaseVersion = ! version.endsWith( "SNAPSHOT")
 
 // Define extra properties used to control build.
 // ext.deployOSS = "X" // Don't care about the value just whether its defined or not.
@@ -41,15 +38,14 @@ if (JavaVersion.current() != project.targetCompatibility) {
 
 compileJava {
     // The following options can be enabled for deeper introspection into the codebase...
-    //options.compilerArgs << '-Xlint:unchecked'
-    //options.compilerArgs << '-Xlint:deprecation'
+    options.compilerArgs << '-Xlint:unchecked'
+    options.compilerArgs << '-Xlint:deprecation'
 }
 
-jar {
-    manifest {
-        attributes 'Implementation-Title': 'Java EPICS CA',
-                   'Implementation-Version': getArchiveVersion()
-    }
+compileTestJava {
+    // The following options can be enabled for deeper introspection into the codebase...
+    options.compilerArgs << '-Xlint:unchecked'
+    options.compilerArgs << '-Xlint:deprecation'
 }
 
 sourceSets {
@@ -61,7 +57,7 @@ sourceSets {
 
     test {
         java {
-            srcDir 'src/test/java'
+            srcDirs 'src/test/java'
         }
     }
 }
@@ -75,35 +71,52 @@ repositories {
 }
 
 dependencies {
+
+    // Note in the dependencies below the javadoc versions are explicitly
+    // included to assist code development when viewing the project inside
+    // IDEs such as IntelliJ.
+
     // Supports Disruptor-based monitor notification implementation
-    compile 'com.lmax:disruptor:3.4.2'
-    compile 'com.lmax:disruptor:3.4.2:javadoc'
+    implementation 'com.lmax:disruptor:3.4.2'
+    implementation 'com.lmax:disruptor:3.4.2:javadoc'
 
     // Needed for parameter validation (also the stopwatch timing class
     // that is used in testing).
-    compile 'org.apache.commons:commons-lang3:3.9'
-    compile 'org.apache.commons:commons-lang3:3.9:javadoc'
+    implementation 'org.apache.commons:commons-lang3:3.9'
+    implementation 'org.apache.commons:commons-lang3:3.9:javadoc'
 
-    // Supports for documenting Thread-Safety
-    compile 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
+    // Support for documenting Thread-Safety
+    implementation 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
+    implementation 'com.github.stephenc.jcip:jcip-annotations:1.0-1:javadoc'
 
-    // Supports unit and integration tests
-    testCompile 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testCompile('org.junit.jupiter:junit-jupiter-api:5.6.0:javadoc')
-    testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
-    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.6.0:javadoc')
-    testCompile 'org.junit.jupiter:junit-jupiter-params:5.6.0'
-    testCompile 'org.junit.jupiter:junit-jupiter-params:5.6.0:javadoc'
-    testCompile 'org.mockito:mockito-core:3.3.3'
-    testCompile 'org.mockito:mockito-core:3.3.3:javadoc'
-    testCompile( 'org.hamcrest:hamcrest:2.2')
+    // Supports unit and integration tests.
+    // Note the following are compile dependencies because they need to
+    // be included in the fatJarWithTests jar file.
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+    testImplementation 'org.junit.platform:junit-platform-launcher:1.6.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.0'
+    testImplementation 'org.mockito:mockito-core:3.3.3'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0:javadoc'
+    testImplementation 'org.junit.platform:junit-platform-launcher:1.6.2:javadoc'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.0:javadoc'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0:javadoc'
+    testImplementation 'org.mockito:mockito-core:3.3.3:javadoc'
+    testImplementation 'org.hamcrest:hamcrest:2.2:javadoc'
 
     // Supports JCA-based test server
-    testCompile 'org.epics:jca:2.4.2:javadoc'
-    testCompile 'org.epics:jca:2.4.2'
+    testImplementation 'org.epics:caj:1.1.16-SNAPSHOT'
+    testImplementation 'org.epics:jca:2.3.6'
+    testImplementation 'org.epics:caj:1.1.16-SNAPSHOT:javadoc'
+    testImplementation 'org.epics:jca:2.3.6:javadoc'
+
+    // TODO: get the tests working with the latest JCA libraries.
+    // testCompile 'org.epics:jca:2.4.2:javadoc'
+    // testCompile 'org.epics:jca:2.4.2'
 }
 
 test {
+    enabled = false
     useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
@@ -114,7 +127,11 @@ test {
 }
 
 javadoc {
-   // options.addBooleanOption('html5', true)
+    // TODO: Re-evaluate situation after move to Java 11.
+    // Ideally we would like to generate HTML 5 javadoc files. But currently
+    // (2020-05-07) this will not  work with Java 8. Need to wait for upgrade
+    // to Java 11 then try again.
+    // options.addBooleanOption( 'html5', true)
     options.addStringOption( "tag", "implNote:a:Implementation Note:" )
 }
 
@@ -128,91 +145,70 @@ task sourcesJar(type: Jar) {
     from sourceSets.main.allSource
 }
 
+task Jar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'Java EPICS CA',
+                   'Implementation-Version': getArchiveVersion()
+    }
+    from sourceSets.main.output
+}
+
+task testJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'Java EPICS CA',
+                   'Implementation-Version': getArchiveVersion()
+    }
+
+    archiveClassifier.set( 'test' )
+    from sourceSets.test.output
+}
+
 task fatJar(type: Jar) {
     archiveClassifier.set( 'all' )
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    from {
+        manifest {
+            attributes 'Implementation-Title': 'Java EPICS CA',
+                       'Implementation-Version': getArchiveVersion()
+        }
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
     with jar
 }
 
-artifacts {
-    archives jar, fatJar, sourcesJar, javadocJar
-}
-
-signing {
-    required = { isReleaseVersion && gradle.taskGraph.hasTask("uploadArchives") }
-    sign configurations.archives
-}
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-            if ( project.hasProperty( "deployOSS") ) {
-
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-            }
-
-            if ( project.hasProperty( "deployPSI") ) {
-
-                repository(url: "https://artifacts.psi.ch/artifactory/libs-releases-local") {
-                    authentication(userName: mavenUser, password: mavenPassword)
-                }
-
-                snapshotRepository(url: "https://artifacts.psi.ch/artifactory/libs-snapshots-local") {
-                    authentication(userName: mavenUser, password: mavenPassword)
-                }
-            }
-
-            pom.project {
-                name = 'Example Application'
-                packaging = 'jar'
-                // optionally artifactId can be defined here
-                description = 'Java CA client implementation using a new API (not using JCA).'
-                url = 'https://github.com/channelaccess/ca'
-                licenses {
-                    license {
-                        name = 'GNU General Public License 3.0'
-                        url = 'http://www.gnu.org/licenses/gpl.txt'
-                        distribution = 'repo'
-                    }
-                }
-
-                developers {
-                    developer {
-                        name = 'Simon Rees'
-                        email = 'simon.rees@psi.ch'
-                        organization = 'Paul Scherrer Institute'
-                    }
-                }
-
-                scm {
-                    connection = 'scm:git:https://github.com/channelaccess/ca.git'
-                    developerConnection = 'scm:git:https://github.com/channelaccess/ca.git'
-                    url = 'https://github.com/channelaccess/ca'
-                }
-            }
-        }
+task fatJarWithTests(type: Jar) {
+    archiveClassifier.set( 'all-with-tests' )
+    manifest {
+        attributes 'Implementation-Title': 'Java EPICS CA',
+                   'Implementation-Version': getArchiveVersion()
     }
+    from {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    from { configurations.testRuntimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+    with testJar
 }
 
+// Define what will get published
+artifacts {
+    archives jar, fatJar, fatJarWithTests, sourcesJar, javadocJar, testJar
+}
 
 // Set up the bintray publishing
 publishing {
     publications {
-        MyPublication(MavenPublication) {
-            from components.java
+        MyPublication( MavenPublication ) {
             artifact sourcesJar
             artifact javadocJar
+            artifact testJar
+            artifact fatJar
+            artifact fatJarWithTests
             groupId group
             artifactId project.name
-            version version
+            version project.version
+            from components.java
         }
     }
 }
@@ -233,7 +229,3 @@ bintray {
         }
     }
 }
-
-
-
-
