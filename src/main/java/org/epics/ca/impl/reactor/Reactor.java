@@ -231,7 +231,7 @@ public class Reactor
    /**
     * Shutdown monitor (condition variable).
     */
-   private volatile Object shutdownMonitor = new Object ();
+   private final Object shutdownMonitor = new Object ();
 
    /**
     * Creates a new instance of reactor.
@@ -321,7 +321,6 @@ public class Reactor
          // TODO: These days (2020) there are probably simpler synchronisation techniques available
          // TODO: that could clean up this code. But not without some decent unit tests which we currently
          // TODO: don't have.
-         //noinspection SynchronizeOnNonFinalField
          synchronized ( shutdownMonitor )
          {
             shutdownMonitor.notifyAll ();
@@ -636,7 +635,6 @@ public class Reactor
       // TODO: these days (2020) there are probably simpler synchronisation techniques available
       // TODO: that could clean up this code. But not without some decent unit tests which we currently
       // TODO: don't have.
-      //noinspection SynchronizeOnNonFinalField
       synchronized( shutdownMonitor )
       {
          shutdown.set( true );
