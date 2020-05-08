@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 import org.epics.ca.Channel;
 import org.epics.ca.Constants;
 import org.epics.ca.Context;
-import org.epics.ca.Version;
+import org.epics.ca.LibraryVersion;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.epics.ca.impl.reactor.Reactor;
@@ -28,6 +28,7 @@ import org.epics.ca.impl.reactor.ReactorHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersThreadPool;
 import org.epics.ca.impl.repeater.CARepeater;
+import org.epics.ca.impl.repeater.CARepeaterStarter;
 import org.epics.ca.impl.search.ChannelSearchManager;
 import org.epics.ca.util.IntHashMap;
 import org.epics.ca.util.logging.ConsoleLogHandler;
@@ -228,17 +229,15 @@ public class ContextImpl implements AutoCloseable, Constants
       broadcastTransport.set (initializeUDPTransport ());
 
       // spawn repeater registration task
-      InetSocketAddress repeaterLocalAddress =
-            new InetSocketAddress (InetAddress.getLoopbackAddress (), repeaterPort);
-      repeaterRegistrationFuture = timer.scheduleWithFixedDelay (
-            new RepeaterRegistrationTask (repeaterLocalAddress),
-            0,
-            60,
-            TimeUnit.SECONDS);
+      InetSocketAddress repeaterLocalAddress = new InetSocketAddress (InetAddress.getLoopbackAddress (), repeaterPort);
+      repeaterRegistrationFuture = timer.scheduleWithFixedDelay ( new RepeaterRegistrationTask( repeaterLocalAddress ),
+                                                                  0,
+                                                                  CA_REPEATER_REGISTRATION_INTERVAL,
+                                                                  TimeUnit.SECONDS );
 
       try
       {
-         CARepeater.startRepeater (repeaterPort);
+         CARepeaterStarter.spawnRepeaterIfNotAlreadyRunning( repeaterPort );
       }
       catch ( Throwable th )
       { /* noop */ }
@@ -315,7 +314,7 @@ public class ContextImpl implements AutoCloseable, Constants
    protected void loadConfig( Properties properties )
    {
       // dump version
-      logger.log( Level.CONFIG, "Java CA v" + Version.getVersionString ());
+      logger.log( Level.CONFIG, "Java CA v" + LibraryVersion.getAsString() );
 
       addressList = readStringProperty (properties, Context.Configuration.EPICS_CA_ADDR_LIST.toString (), addressList);
       logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_ADDR_LIST.toString () + ": " + addressList);
