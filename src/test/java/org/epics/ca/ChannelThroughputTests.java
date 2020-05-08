@@ -143,14 +143,14 @@ class ChannelThroughputTests
          channel.connect();
 
          // Add a value monitor and wait for first notification of the initial value
-         final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
-         testConsumer.clearCurrentNotificationCount();
-         testConsumer.setExpectedNotificationCount(1);
-         final Monitor monitor = channel.addValueMonitor(testConsumer);
-         testConsumer.awaitExpectedNotificationCount();
+         final NotificationConsumer<Integer> notificationConsumer = NotificationConsumer.getNormalConsumer();
+         notificationConsumer.clearCurrentNotificationCount();
+         notificationConsumer.setExpectedNotificationCount(1);
+         final Monitor monitor = channel.addValueMonitor(notificationConsumer);
+         notificationConsumer.awaitExpectedNotificationCount();
 
          // Now send the requested number of puts
-         testConsumer.clearCurrentNotificationCount();
+         notificationConsumer.clearCurrentNotificationCount();
          final StopWatch notificationDeliveryMeasurementStopWatch = StopWatch.createStarted();
          for ( int i = 0; i < numberOfPuts; i++ )
          {
@@ -162,16 +162,16 @@ class ChannelThroughputTests
          // value in a sequence so we use this to detect the end of the notification sequence.
          // It's also convenient to measure the latency here too.
          final Integer endOfSequence = -1;
-         testConsumer.setExpectedNotificationValue(endOfSequence);
+         notificationConsumer.setExpectedNotificationValue(endOfSequence);
          final StopWatch latencyMeasurementStopWatch = StopWatch.createStarted();
          channel.put(endOfSequence);
-         testConsumer.awaitExpectedNotificationValue();
+         notificationConsumer.awaitExpectedNotificationValue();
 
          final long multipleNotificationDeliveryTimeInMilliseconds = notificationDeliveryMeasurementStopWatch.getTime(TimeUnit.MILLISECONDS);
          final long singleNotificationDeliveryLatencyInMicroseconds = latencyMeasurementStopWatch.getTime(TimeUnit.MICROSECONDS);
 
          logger.info("RESULTS:");
-         logger.log(Level.INFO, String.format("- The test consumer received: %d notifications", testConsumer.getCurrentNotificationCount()));
+         logger.log(Level.INFO, String.format("- The test consumer received: %d notifications", notificationConsumer.getCurrentNotificationCount()));
          logger.log(Level.INFO, String.format("- The delivery latency was typically %d us", singleNotificationDeliveryLatencyInMicroseconds));
          logger.log(Level.INFO, String.format("- Synchronous PutAndMonitor with %d puts took %s ms. Average: %3f ms.", numberOfPuts, multipleNotificationDeliveryTimeInMilliseconds, (float) multipleNotificationDeliveryTimeInMilliseconds / (float) numberOfPuts));
          logger.info("");
@@ -208,16 +208,16 @@ class ChannelThroughputTests
          final int numberOfMonitors = 1;
          for ( int i = 0; i < numberOfMonitors; i++ )
          {
-            final TestConsumer<Integer> testConsumer = TestConsumer.getNormalConsumer();
-            monitorList.add(channel.addValueMonitor(testConsumer));
+            final NotificationConsumer<Integer> notificationConsumer = NotificationConsumer.getNormalConsumer();
+            monitorList.add(channel.addValueMonitor(notificationConsumer));
          }
 
          final int totalNotificationCount = numberOfNotifications * numberOfMonitors;
-         TestConsumer.setExpectedTotalNotificationCount(totalNotificationCount);
-         TestConsumer.clearCurrentTotalNotificationCount();
+         NotificationConsumer.setExpectedTotalNotificationCount(totalNotificationCount);
+         NotificationConsumer.clearCurrentTotalNotificationCount();
 
          final StopWatch stopWatch = StopWatch.createStarted();
-         TestConsumer.awaitExpectedTotalNotificationCount();
+         NotificationConsumer.awaitExpectedTotalNotificationCount();
          final long elapsedTimeInMilliseconds = stopWatch.getTime(TimeUnit.MILLISECONDS);
 
          // Release references to monitor objects
@@ -225,7 +225,7 @@ class ChannelThroughputTests
          monitorList.clear();
 
          logger.info("RESULTS:");
-         logger.log(Level.INFO, String.format("- The test consumer received: %d notifications", TestConsumer.getCurrentTotalNotificationCount()));
+         logger.log(Level.INFO, String.format("- The test consumer received: %d notifications", NotificationConsumer.getCurrentTotalNotificationCount()));
          logger.log(Level.INFO, String.format("- FastCounterMonitor with %d notifications took %s ms. Average: %3f ms.", totalNotificationCount, elapsedTimeInMilliseconds, (float) elapsedTimeInMilliseconds / (float) totalNotificationCount));
          logger.info("");
       }
