@@ -5,11 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Properties;
 import java.util.stream.Stream;
-
-
-import org.epics.ca.Channel;
-import org.epics.ca.Constants;
-import org.epics.ca.Context;
 import org.junit.jupiter.api.Test;
 
 class ContextTest
