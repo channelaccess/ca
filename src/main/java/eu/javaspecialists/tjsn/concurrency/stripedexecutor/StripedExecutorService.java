@@ -84,7 +84,7 @@ public class StripedExecutorService extends AbstractExecutorService {
      */
     private State state = State.RUNNING;
 
-    private static enum State {
+    private enum State {
         RUNNING, SHUTDOWN
     }
 
