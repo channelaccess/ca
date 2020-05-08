@@ -118,7 +118,6 @@ public class BroadcastTransport implements ReactorHandler, Transport
     */
    protected void processRead()
    {
-
       try
       {
          while ( true )
