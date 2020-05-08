@@ -105,18 +105,12 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest:2.2:javadoc'
 
     // Supports JCA-based test server
-    testImplementation 'org.epics:caj:1.1.16-SNAPSHOT'
-    testImplementation 'org.epics:jca:2.3.6'
-    testImplementation 'org.epics:caj:1.1.16-SNAPSHOT:javadoc'
-    testImplementation 'org.epics:jca:2.3.6:javadoc'
-
-    // TODO: get the tests working with the latest JCA libraries.
-    // testCompile 'org.epics:jca:2.4.2:javadoc'
-    // testCompile 'org.epics:jca:2.4.2'
+    testImplementation 'org.epics:jca:2.4.4-j8'
+    testImplementation 'org.epics:jca:2.4.4-j8:javadoc'
 }
 
 test {
-    enabled = false
+    enabled = true
     useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
