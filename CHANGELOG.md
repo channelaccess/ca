@@ -83,14 +83,16 @@ This log describes the functionality of tagged versions within the repository.
    * [Issue #49](https://github.com/channelaccess/ca/issues/49) Library fails to detect IOC connection state changes when operating through a firewall.
    * [Issue #50](https://github.com/channelaccess/ca/issues/50) Switched to openjdk8. 
    
-* [1.2.3](https://github.com/channelaccess/ca/releases/tag/1.2.3) Released 2020-03-17
+* [1.3.0](https://github.com/channelaccess/ca/releases/tag/1.3.0) Released 2020-05-08.
   ###### Overview:
-  Release was triggered mainly by need to address problems when interoperating with EPICS 7 Channel Access (see Issue #58). 
+  Release was originally triggered mainly by need to address problems when interoperating with EPICS 7 Channel Access (see Issue #58). 
   But other changes to modernise build chain to use later tools.
   Also refactored lots of code following IntelliJ code inspection recommendations.
   Thanks to JL Muir for his contributions. :-)
+  Also CA Repeater was refactored for improved clarity resulting in the creation of many new unit tests to verify the behaviour.
+  
   ###### Change List:   
-  * [Issue #52](https://github.com/channelaccess/ca/issues/52)Fix readme Gradle fragment version. Credit JL Muir. :-)
+  * [Issue #52](https://github.com/channelaccess/ca/issues/52) Fix readme Gradle fragment version. Credit JL Muir. :-)
   * [Issue #53](https://github.com/channelaccess/ca/issues/53) README unclear about supported listeners. Credit JL Muir. :-)
   * [Issue #54](https://github.com/channelaccess/ca/issues/54) Fix readme typo in Compatibility section. Credit JL Muir. :-)
   * [Issue #55](https://github.com/channelaccess/ca/issues/55) Remove nonexistent Travis build status from readme. Credit JL Muir. :-)
@@ -98,7 +100,7 @@ This log describes the functionality of tagged versions within the repository.
   * [Issue #57](https://github.com/channelaccess/ca/issues/57) Improve robustness of some tests.
   * [Issue #58](https://github.com/channelaccess/ca/issues/58) Library does not interoperate with CA in EPICS 7.0 - "client version too old".
   * [Issue #59](https://github.com/channelaccess/ca/issues/59) Transition away from 'travis-ci.org' site to newer 'travis-ci.com' site.
-  * [Issue #60](https://github.com/channelaccess/ca/issues/60) Create software release 1.2.3. 
+  * [Issue #60](https://github.com/channelaccess/ca/issues/60) Create software release 1.2.3. Note: this was never publicly released.
   * [Issue #61](https://github.com/channelaccess/ca/issues/61) Get the Example Program Working. 
   * [Issue #62](https://github.com/channelaccess/ca/issues/62) Update CA test server to use more recent JCA release
   * [Issue #63](https://github.com/channelaccess/ca/issues/63) Update dependencies to later versions.
@@ -106,3 +108,18 @@ This log describes the functionality of tagged versions within the repository.
   * [Issue #65](https://github.com/channelaccess/ca/issues/65) Change name of CAJTestServer to EpicsChannelAccesstestServer.
   * [Issue #66](https://github.com/channelaccess/ca/issues/66) Update gradle to more recent build paradigms.
   * [Issue #67](https://github.com/channelaccess/ca/issues/67) Switch tests to use of hamcrest matchers.
+  * [Issue #68](https://github.com/channelaccess/ca/issues/68) Modernise build.
+  * [Issue #69](https://github.com/channelaccess/ca/issues/69) Update .gitignore file using output from generator tool.
+  * [Issue #70](https://github.com/channelaccess/ca/issues/70) Refactor CA Repeater for improved clarity.
+  * [Issue #71](https://github.com/channelaccess/ca/issues/71) Refactor Version integration for better clarity.
+  * [Issue #72](https://github.com/channelaccess/ca/issues/72) Add support for running tests from command-line when deployed on target platform.
+  * [Issue #73](https://github.com/channelaccess/ca/issues/73) Create Tool for sniffing UDP datagram packets.
+  * [Issue #74](https://github.com/channelaccess/ca/issues/74) Cleanup code formatting (no change of behaviour).
+  * [Issue #75](https://github.com/channelaccess/ca/issues/75) Add constant for CA Repeater Registration Interval (60 seconds).
+  * [Issue #76](https://github.com/channelaccess/ca/issues/76) Implement IntelliJ code improvement suggestions.
+  * [Issue #77](https://github.com/channelaccess/ca/issues/77) Change README.xx files to upper case (for better consistency with other repos).
+  * [Issue #78](https://github.com/channelaccess/ca/issues/78) Update Channel Access Test Server to use latest from JCA project.
+  * [Issue #79](https://github.com/channelaccess/ca/issues/79) Miscellaneous improvements to unit tests.
+  * [Issue #80](https://github.com/channelaccess/ca/issues/80) Update CHANGELOG with details of software release 1.3.0.
+ 
+  
