@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 import org.epics.ca.Constants;
 import org.epics.ca.impl.ResponseHandlers.ResponseHandler;
 import org.epics.ca.impl.reactor.ReactorHandler;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 /**
  * CA UDP transport implementation.
@@ -21,7 +22,7 @@ public class BroadcastTransport implements ReactorHandler, Transport
 {
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger( BroadcastTransport.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( BroadcastTransport.class );
 
    /**
     * Context instance.

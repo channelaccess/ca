@@ -11,6 +11,7 @@ import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.impl.TypeSupports;
 import org.epics.ca.impl.monitor.MonitorNotificationService;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
@@ -27,8 +28,7 @@ public class BlockingQueueMonitorNotificationService<T> implements MonitorNotifi
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   // Get Logger
-   private static final Logger logger = Logger.getLogger( BlockingQueueMonitorNotificationService.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( BlockingQueueMonitorNotificationService.class );
 
    private final ThreadPoolExecutor executor;
    private final Consumer<? super T> consumer;
