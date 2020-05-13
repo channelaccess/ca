@@ -5,6 +5,7 @@ package org.epics.ca;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +29,7 @@ class ChannelThroughputTests
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( ChannelThroughputTests.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger(ChannelThroughputTests.class );
 
    private EpicsChannelAccessTestServer server;
 
@@ -146,7 +147,7 @@ class ChannelThroughputTests
          final NotificationConsumer<Integer> notificationConsumer = NotificationConsumer.getNormalConsumer();
          notificationConsumer.clearCurrentNotificationCount();
          notificationConsumer.setExpectedNotificationCount(1);
-         final Monitor monitor = channel.addValueMonitor(notificationConsumer);
+         final Monitor<Integer> monitor = channel.addValueMonitor(notificationConsumer);
          notificationConsumer.awaitExpectedNotificationCount();
 
          // Now send the requested number of puts
@@ -200,7 +201,7 @@ class ChannelThroughputTests
       {
          final Channel<Integer> channel = context.createChannel("fastCounter", Integer.class );
          channel.connect();
-         final List<Monitor> monitorList = new ArrayList<>();
+         final List<Monitor<Integer>> monitorList = new ArrayList<>();
 
          // Can optionally set here the number of monitors that will simultaneously deliver
          // notifications to the CA library TCP/IP socket and thus explore the performance of
@@ -242,7 +243,7 @@ class ChannelThroughputTests
       final List<String> serviceImpls = MonitorNotificationServiceFactoryCreator.getAllServiceImplementations();
       final List<Integer> numberOfPuts = Arrays.asList( 100, 2000 );
 
-      return serviceImpls.stream().map( s -> numberOfPuts.stream().map( n -> Arguments.of(s, n) ) ).flatMap(s -> s);
+      return serviceImpls.stream().flatMap(s -> numberOfPuts.stream().map(n -> Arguments.of(s, n) ) );
    }
 
    /**
@@ -254,7 +255,7 @@ class ChannelThroughputTests
       final List<String> serviceImpls = MonitorNotificationServiceFactoryCreator.getAllServiceImplementations();
       final List<Integer> notifications = Arrays.asList( 100, 2000 );
 
-      return serviceImpls.stream().map( s -> notifications.stream().map(n -> Arguments.of(s, n) ) ).flatMap( s -> s);
+      return serviceImpls.stream().flatMap(s -> notifications.stream().map(n -> Arguments.of(s, n) ) );
    }
 
 /*- Nested Classes -----------------------------------------------------------*/
