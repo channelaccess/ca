@@ -1,4 +1,8 @@
+/*- Package Declaration ------------------------------------------------------*/
+
 package org.epics.ca.impl;
+
+/*- Imported packages --------------------------------------------------------*/
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -13,7 +17,6 @@ import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,16 +30,22 @@ import org.epics.ca.impl.reactor.Reactor;
 import org.epics.ca.impl.reactor.ReactorHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersThreadPool;
-import org.epics.ca.impl.repeater.CARepeater;
 import org.epics.ca.impl.repeater.CARepeaterStarter;
 import org.epics.ca.impl.search.ChannelSearchManager;
 import org.epics.ca.util.IntHashMap;
-import org.epics.ca.util.logging.ConsoleLogHandler;
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.epics.ca.util.net.InetAddressUtil;
 import org.epics.ca.util.sync.NamedLockPattern;
 
+
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
+
 public class ContextImpl implements AutoCloseable, Constants
 {
+
+/*- Public attributes --------------------------------------------------------*/
+/*- Private attributes -------------------------------------------------------*/
 
    static
    {
@@ -47,7 +56,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Context logger.
     */
-   private static final Logger logger = Logger.getLogger( ContextImpl.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( ContextImpl.class );
 
    /**
     * Debug level, turns on low-level debugging.
@@ -162,7 +171,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Map of channels (keys are CIDs).
     */
-   protected final IntHashMap<ChannelImpl<?>> channelsByCID = new IntHashMap<ChannelImpl<?>> ();
+   protected final IntHashMap<ChannelImpl<?>> channelsByCID = new IntHashMap<>();
 
    /**
     * Last IOID cache.
@@ -172,7 +181,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Map of requests (keys are IOID).
     */
-   protected final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<ResponseRequest> ();
+   protected final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<>();
 
    /**
     * Cached hostname.
@@ -194,6 +203,10 @@ public class ContextImpl implements AutoCloseable, Constants
     */
    protected final Map<InetSocketAddress, BeaconHandler> beaconHandlers = new HashMap<> ();
 
+
+/*- Main ---------------------------------------------------------------------*/
+/*- Constructor --------------------------------------------------------------*/
+
    public ContextImpl()
    {
       this (System.getProperties ());
@@ -202,10 +215,12 @@ public class ContextImpl implements AutoCloseable, Constants
    public ContextImpl( Properties properties )
    {
       if ( properties == null )
-         throw new IllegalArgumentException ("null properties");
+      {
+         throw new IllegalArgumentException( "null properties" );
+      }
 
-      initializeLogger (properties);
-      loadConfig (properties);
+      initializeLogger( properties );
+      loadConfig( properties );
 
       hostName = InetAddressUtil.getHostName ();
       userName = System.getProperty ("user.name", "nobody");
@@ -224,28 +239,310 @@ public class ContextImpl implements AutoCloseable, Constants
       leaderFollowersThreadPool = new LeaderFollowersThreadPool ();
 
       // spawn initial leader
-      leaderFollowersThreadPool.promoteLeader (() -> reactor.process ());
+      leaderFollowersThreadPool.promoteLeader (reactor::process);
 
       broadcastTransport.set (initializeUDPTransport ());
 
-      // spawn repeater registration task
-      InetSocketAddress repeaterLocalAddress = new InetSocketAddress (InetAddress.getLoopbackAddress (), repeaterPort);
+      // Start task to register with CA Repeater
+      final InetSocketAddress repeaterLocalAddress = new InetSocketAddress (InetAddress.getLoopbackAddress (), repeaterPort );
       repeaterRegistrationFuture = timer.scheduleWithFixedDelay ( new RepeaterRegistrationTask( repeaterLocalAddress ),
                                                                   0,
                                                                   CA_REPEATER_REGISTRATION_INTERVAL,
                                                                   TimeUnit.SECONDS );
 
+      // Attempt to spawn the CA Repeater if not already running.
       try
       {
-         CARepeaterStarter.spawnRepeaterIfNotAlreadyRunning( repeaterPort );
+         CARepeaterStarter.startRepeaterIfNotAlreadyRunning( repeaterPort );
       }
-      catch ( Throwable th )
-      { /* noop */ }
+      catch ( RuntimeException ex )
+      {
+         logger.log( Level.WARNING, "Failed to start CA Repeater on port " + repeaterPort, ex ) ;
+      }
 
-      channelSearchManager = new ChannelSearchManager (broadcastTransport.get() );
-
-      monitorNotificationServiceFactory = MonitorNotificationServiceFactoryCreator.create(monitorNotifierConfigImpl );
+      channelSearchManager = new ChannelSearchManager( broadcastTransport.get() );
+      monitorNotificationServiceFactory = MonitorNotificationServiceFactoryCreator.create( monitorNotifierConfigImpl );
    }
+
+
+/*- Public methods -----------------------------------------------------------*/
+
+   /**
+    * Searches for a response request with given channel IOID.
+    *
+    * @param ioid I/O ID.
+    * @return request response with given I/O ID.
+    */
+   public ResponseRequest getResponseRequest( int ioid )
+   {
+      synchronized ( responseRequests )
+      {
+         return responseRequests.get (ioid);
+      }
+   }
+
+   /**
+    * Register response request.
+    *
+    * @param request request to register.
+    * @return request ID (IOID).
+    */
+   public int registerResponseRequest( ResponseRequest request )
+   {
+      synchronized ( responseRequests )
+      {
+         int ioid = generateIOID ();
+         responseRequests.put (ioid, request);
+         return ioid;
+      }
+   }
+
+   /**
+    * Unregister response request.
+    *
+    * @param request the request.
+    * @return removed object, can be <code>null</code>
+    */
+   public ResponseRequest unregisterResponseRequest( ResponseRequest request )
+   {
+      synchronized ( responseRequests )
+      {
+         return responseRequests.remove (request.getIOID ());
+      }
+   }
+
+   /**
+    * Searches for a channel with given channel ID.
+    *
+    * @param channelID CID.
+    * @return channel with given CID, <code>null</code> if non-existent.
+    */
+   public ChannelImpl<?> getChannel( int channelID )
+   {
+      synchronized ( channelsByCID )
+      {
+         return channelsByCID.get (channelID);
+      }
+   }
+
+   public ChannelSearchManager getChannelSearchManager()
+   {
+      return channelSearchManager;
+   }
+
+   public BroadcastTransport getBroadcastTransport()
+   {
+      return broadcastTransport.get ();
+   }
+
+   public int getServerPort()
+   {
+      return serverPort;
+   }
+
+   public float getConnectionTimeout()
+   {
+      return connectionTimeout;
+   }
+
+   public int getMaxArrayBytes()
+   {
+      return maxArrayBytes;
+   }
+
+   public TransportRegistry getTransportRegistry()
+   {
+      return transportRegistry;
+   }
+
+   public LeaderFollowersThreadPool getLeaderFollowersThreadPool()
+   {
+      return leaderFollowersThreadPool;
+   }
+
+   /**
+    * Search response from server (channel found).
+    *
+    * @param cid           client channel ID.
+    * @param sid           server channel ID.
+    * @param type          channel native type code.
+    * @param count         channel element count.
+    * @param minorRevision server minor CA revision.
+    * @param serverAddress server address.
+    */
+   public void searchResponse( int cid, int sid, short type, int count, short minorRevision, InetSocketAddress serverAddress )
+   {
+      final ChannelImpl<?> channel = getChannel( cid );
+      if ( channel == null )
+      {
+         return;
+      }
+
+      logger.log ( Level.FINER, "Search response for channel " + channel.getName () + " received.");
+
+      // check for multiple responses
+      synchronized( channel )
+      {
+         TCPTransport transport = channel.getTransport ();
+         if ( transport != null )
+         {
+            // multiple defined PV or reconnect request (same server address)
+            if ( !transport.getRemoteAddress ().equals (serverAddress) )
+            {
+               logger.log( Level.INFO,"More than one PVs with name '" + channel.getName () +
+                     "' detected, additional response from: " + serverAddress);
+               return;
+            }
+         }
+
+         // do not search anymore (also unregisters)
+         channelSearchManager.searchResponse (channel);
+
+         transport = getTransport (channel, serverAddress, minorRevision, channel.getPriority ());
+         if ( transport == null )
+         {
+            channel.createChannelFailed ();
+            return;
+         }
+
+         // create channel
+         channel.createChannel (transport, sid, type, count);
+      }
+   }
+
+   public void repeaterConfirm( InetSocketAddress responseFrom )
+   {
+      logger.log( Level.FINE, "Repeater registration confirmed from: " + responseFrom );
+
+      ScheduledFuture<?> sf = repeaterRegistrationFuture;
+      if ( sf != null )
+         sf.cancel (false);
+   }
+
+   public boolean enqueueStatefullEvent( StatefullEventSource event )
+   {
+      if ( event.allowEnqueue () )
+      {
+         executorService.execute (event);
+         return true;
+      }
+      else
+         return false;
+   }
+
+   public void beaconAnomalyNotify()
+   {
+      if ( channelSearchManager != null )
+      {
+         channelSearchManager.beaconAnomalyNotify ();
+      }
+   }
+
+   /**
+    * Get (and if necessary create) beacon handler.
+    *
+    * @param responseFrom remote source address of received beacon.
+    * @return beacon handler for particular server.
+    */
+   public BeaconHandler getBeaconHandler( InetSocketAddress responseFrom )
+   {
+      synchronized ( beaconHandlers )
+      {
+         BeaconHandler handler = beaconHandlers.get (responseFrom);
+         if ( handler == null )
+         {
+            handler = new BeaconHandler (this, responseFrom);
+            beaconHandlers.put (responseFrom, handler);
+         }
+         return handler;
+      }
+   }
+
+   public ScheduledExecutorService getScheduledExecutor()
+   {
+      return timer;
+   }
+
+
+   public <T> Channel<T> createChannel( String channelName, Class<T> channelType )
+   {
+      return createChannel (channelName, channelType, CHANNEL_PRIORITY_DEFAULT);
+   }
+
+   public <T> Channel<T> createChannel( String channelName, Class<T> channelType, int priority )
+   {
+      if ( closed.get () )
+      {
+         throw new RuntimeException("context closed");
+      }
+
+      if ( channelName == null || channelName.length () == 0 )
+      {
+         throw new IllegalArgumentException("null or empty channel name");
+      }
+      else if ( channelName.length () > Math.min (MAX_UDP_SEND - CA_MESSAGE_HEADER_SIZE, UNREASONABLE_CHANNEL_NAME_LENGTH) )
+      {
+         throw new IllegalArgumentException("name too long");
+      }
+
+      if ( channelType == null )
+      {
+         throw new IllegalArgumentException("null channel type");
+      }
+
+      if ( !TypeSupports.isNativeType (channelType) && !channelType.equals (Object.class) )
+      {
+         throw new IllegalArgumentException("invalid channel native type");
+      }
+
+      if ( priority < CHANNEL_PRIORITY_MIN || priority > CHANNEL_PRIORITY_MAX )
+      {
+         throw new IllegalArgumentException("priority out of bounds");
+      }
+
+      return new ChannelImpl<>(this, channelName, channelType, priority);
+   }
+
+   @Override
+   public void close()
+   {
+
+      if ( closed.getAndSet (true) )
+      {
+         return;
+      }
+
+      channelSearchManager.cancel ();
+      broadcastTransport.get ().close ();
+
+      // this will also close all CA transports
+      destroyAllChannels ();
+
+      reactor.shutdown ();
+      leaderFollowersThreadPool.shutdown ();
+      timer.shutdown ();
+
+      // Dispose of the monitor service factory and all services which it has created
+      monitorNotificationServiceFactory.close();
+
+      executorService.shutdown ();
+      try
+      {
+         executorService.awaitTermination (3, TimeUnit.SECONDS);
+      }
+      catch ( InterruptedException e )
+      {
+         // noop
+      }
+      executorService.shutdownNow ();
+   }
+
+   public Reactor getReactor()
+   {
+      return reactor;
+   }
+
+/*- Protected methods --------------------------------------------------------*/
 
    protected MonitorNotificationServiceFactory getMonitorNotificationServiceFactory()
    {
@@ -264,9 +561,13 @@ public class ContextImpl implements AutoCloseable, Constants
       if ( sValue != null )
       {
          if ( sValue.equalsIgnoreCase ("YES") )
+         {
             return true;
+         }
          else if ( sValue.equalsIgnoreCase ("NO") )
+         {
             return false;
+         }
          else
          {
             logger.log( Level.CONFIG, "Failed to parse boolean value for property " + key + ": \"" + sValue + "\", \"YES\" or \"NO\" expected.");
@@ -274,7 +575,9 @@ public class ContextImpl implements AutoCloseable, Constants
          }
       }
       else
+      {
          return defaultValue;
+      }
    }
 
    protected float readFloatProperty( Properties properties, String key, float defaultValue )
@@ -348,58 +651,15 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Initialize context logger.
     *
-    * @param properties the properties to be used for the logger.logge
+    * @param properties the properties to be used for the logger.
     */
    protected void initializeLogger( Properties properties )
    {
-      debugLevel = readIntegerProperty (properties, CA_DEBUG, debugLevel);
+      debugLevel = readIntegerProperty( properties, CA_DEBUG, debugLevel );
 
       if ( debugLevel > 0 )
       {
-         logger.setLevel (Level.ALL);
-
-         // install console logger only if there is no already installed
-         Logger inspectedLogger = logger;
-         boolean found = false;
-         while ( inspectedLogger != null )
-         {
-            for ( Handler handler : inspectedLogger.getHandlers () )
-               if ( handler instanceof ConsoleLogHandler )
-               {
-                  found = true;
-                  break;
-               }
-            inspectedLogger = inspectedLogger.getParent ();
-         }
-
-         if ( !found )
-            logger.addHandler (new ConsoleLogHandler ());
-      }
-   }
-
-   private class RepeaterRegistrationTask implements Runnable
-   {
-
-      private final InetSocketAddress repeaterLocalAddress;
-      private final ByteBuffer buffer = ByteBuffer.allocate (Constants.CA_MESSAGE_HEADER_SIZE);
-
-      RepeaterRegistrationTask( InetSocketAddress repeaterLocalAddress )
-      {
-         this.repeaterLocalAddress = repeaterLocalAddress;
-
-         Messages.generateRepeaterRegistration (buffer);
-      }
-
-      public void run()
-      {
-         try
-         {
-            getBroadcastTransport ().send (buffer, repeaterLocalAddress);
-         }
-         catch ( Throwable th )
-         {
-            logger.log (Level.FINE, th, () -> "Failed to send repeater registration message to: " + repeaterLocalAddress);
-         }
+         logger.setLevel( Level.ALL );
       }
    }
 
@@ -411,17 +671,25 @@ public class ContextImpl implements AutoCloseable, Constants
       {
          // if auto is true, add it to specified list
          InetSocketAddress[] appendList = null;
-         if ( autoAddressList == true )
-            appendList = InetAddressUtil.getBroadcastAddresses (serverPort);
+         if ( autoAddressList )
+         {
+            appendList = InetAddressUtil.getBroadcastAddresses( serverPort );
+         }
 
-         InetSocketAddress[] list = InetAddressUtil.getSocketAddressList (addressList, serverPort, appendList);
-         if ( list != null && list.length > 0 )
+         final InetSocketAddress[] list = InetAddressUtil.getSocketAddressList( addressList, serverPort, appendList );
+         if ( list.length > 0 )
+         {
             broadcastAddressList = list;
+         }
       }
-      else if ( autoAddressList == false )
+      else if ( !autoAddressList )
+      {
          logger.log ( Level.WARNING, "Empty broadcast search address list, all connects will fail.");
+      }
       else
+      {
          broadcastAddressList = InetAddressUtil.getBroadcastAddresses (serverPort);
+      }
 
       if ( logger.isLoggable (Level.CONFIG) && broadcastAddressList != null )
          for ( int i = 0; i < broadcastAddressList.length; i++ )
@@ -469,101 +737,10 @@ public class ContextImpl implements AutoCloseable, Constants
 
          throw new RuntimeException ("Failed to connect to '" + connectAddress + "'.", th);
       }
-
    }
 
-   public <T> Channel<T> createChannel( String channelName, Class<T> channelType )
-   {
-      return createChannel (channelName, channelType, CHANNEL_PRIORITY_DEFAULT);
-   }
 
-   public <T> Channel<T> createChannel( String channelName, Class<T> channelType, int priority )
-   {
-      if ( closed.get () )
-         throw new RuntimeException ("context closed");
-
-      if ( channelName == null || channelName.length () == 0 )
-         throw new IllegalArgumentException ("null or empty channel name");
-      else if ( channelName.length () > Math.min (MAX_UDP_SEND - CA_MESSAGE_HEADER_SIZE, UNREASONABLE_CHANNEL_NAME_LENGTH) )
-         throw new IllegalArgumentException ("name too long");
-
-      if ( channelType == null )
-         throw new IllegalArgumentException ("null channel type");
-
-      if ( !TypeSupports.isNativeType (channelType) && !channelType.equals (Object.class) )
-         throw new IllegalArgumentException ("invalid channel native type");
-
-      if ( priority < CHANNEL_PRIORITY_MIN || priority > CHANNEL_PRIORITY_MAX )
-         throw new IllegalArgumentException ("priority out of bounds");
-
-      return new ChannelImpl<T> (this, channelName, channelType, priority);
-   }
-
-   @Override
-   public void close()
-   {
-
-      if ( closed.getAndSet (true) )
-         return;
-
-      channelSearchManager.cancel ();
-      broadcastTransport.get ().close ();
-
-      // this will also close all CA transports
-      destroyAllChannels ();
-
-      reactor.shutdown ();
-      leaderFollowersThreadPool.shutdown ();
-      timer.shutdown ();
-
-      // Dispose of the monitor service factory and all services which it has created
-      monitorNotificationServiceFactory.close();
-
-      executorService.shutdown ();
-      try
-      {
-         executorService.awaitTermination (3, TimeUnit.SECONDS);
-      }
-      catch ( InterruptedException e )
-      {
-         // noop
-      }
-      executorService.shutdownNow ();
-   }
-
-   /**
-    * Destroy all channels.
-    */
-   private void destroyAllChannels()
-   {
-
-      ChannelImpl<?>[] channels;
-      synchronized ( channelsByCID )
-      {
-         channels = (ChannelImpl<?>[]) new ChannelImpl[ channelsByCID.size () ];
-         channelsByCID.toArray (channels);
-         channelsByCID.clear ();
-      }
-
-      for ( int i = 0; i < channels.length; i++ )
-      {
-         try
-         {
-            if ( channels[ i ] != null )
-               channels[ i ].close ();
-         }
-         catch ( Throwable th )
-         {
-            logger.log (Level.SEVERE, "Unexpected exception caught while closing a channel", th);
-         }
-      }
-   }
-
-   public Reactor getReactor()
-   {
-      return reactor;
-   }
-
+/*- Package-level methods ----------------------------------------------------*/
 
    /**
     * Generate Client channel ID (CID).
@@ -575,7 +752,11 @@ public class ContextImpl implements AutoCloseable, Constants
       synchronized ( channelsByCID )
       {
          // search first free (theoretically possible loop of death)
-         while ( channelsByCID.containsKey (++lastCID) ) ;
+         while ( channelsByCID.containsKey (++lastCID) )
+         {
+            // Intentionally left blank
+         }
+
          // reserve CID
          channelsByCID.put (lastCID, null);
          return lastCID;
@@ -585,7 +766,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Register channel.
     *
-    * @param channel
+    * @param channel the channel.
     */
    void registerChannel( ChannelImpl<?> channel )
    {
@@ -598,7 +779,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Unregister channel.
     *
-    * @param channel
+    * @param channel the channel.
     */
    void unregisterChannel( ChannelImpl<?> channel )
    {
@@ -608,47 +789,32 @@ public class ContextImpl implements AutoCloseable, Constants
       }
    }
 
-   /**
-    * Searches for a response request with given channel IOID.
-    *
-    * @param ioid I/O ID.
-    * @return request response with given I/O ID.
-    */
-   public ResponseRequest getResponseRequest( int ioid )
-   {
-      synchronized ( responseRequests )
-      {
-         return responseRequests.get (ioid);
-      }
-   }
+/*- Private methods ----------------------------------------------------------*/
 
    /**
-    * Register response request.
-    *
-    * @param request request to register.
-    * @return request ID (IOID).
+    * Destroy all channels.
     */
-   public int registerResponseRequest( ResponseRequest request )
+   private void destroyAllChannels()
    {
-      synchronized ( responseRequests )
+      ChannelImpl<?>[] channels;
+      synchronized ( channelsByCID )
       {
-         int ioid = generateIOID ();
-         responseRequests.put (ioid, request);
-         return ioid;
+         channels = (ChannelImpl<?>[]) new ChannelImpl[ channelsByCID.size () ];
+         channelsByCID.toArray (channels);
+         channelsByCID.clear ();
       }
-   }
 
-   /**
-    * Unregister response request.
-    *
-    * @param request the request.
-    * @return removed object, can be <code>null</code>
-    */
-   public ResponseRequest unregisterResponseRequest( ResponseRequest request )
-   {
-      synchronized ( responseRequests )
+      for ( ChannelImpl<?> channel : channels )
       {
-         return responseRequests.remove (request.getIOID ());
+         try
+         {
+            if ( channel != null )
+               channel.close();
+         }
+         catch ( Throwable th )
+         {
+            logger.log(Level.SEVERE, "Unexpected exception caught while closing a channel", th);
+         }
       }
    }
 
@@ -662,7 +828,10 @@ public class ContextImpl implements AutoCloseable, Constants
       synchronized ( responseRequests )
       {
          // search first free (theoretically possible loop of death)
-         while ( responseRequests.containsKey (++lastIOID) ) ;
+         while ( responseRequests.containsKey (++lastIOID) )
+         {
+            // Intentionally left blank
+         }
          // reserve IOID
          responseRequests.put (lastIOID, null);
          return lastIOID;
@@ -670,108 +839,6 @@ public class ContextImpl implements AutoCloseable, Constants
    }
 
    /**
-    * Searches for a channel with given channel ID.
-    *
-    * @param channelID CID.
-    * @return channel with given CID, <code>null</code> if non-existent.
-    */
-   public ChannelImpl<?> getChannel( int channelID )
-   {
-      synchronized ( channelsByCID )
-      {
-         return channelsByCID.get (channelID);
-      }
-   }
-
-   public ChannelSearchManager getChannelSearchManager()
-   {
-      return channelSearchManager;
-   }
-
-   public BroadcastTransport getBroadcastTransport()
-   {
-      return broadcastTransport.get ();
-   }
-
-   public int getServerPort()
-   {
-      return serverPort;
-   }
-
-   public float getConnectionTimeout()
-   {
-      return connectionTimeout;
-   }
-
-   public int getMaxArrayBytes()
-   {
-      return maxArrayBytes;
-   }
-
-   public TransportRegistry getTransportRegistry()
-   {
-      return transportRegistry;
-   }
-
-   public LeaderFollowersThreadPool getLeaderFollowersThreadPool()
-   {
-      return leaderFollowersThreadPool;
-   }
-
-   /**
-    * Search response from server (channel found).
-    *
-    * @param cid           client channel ID.
-    * @param sid           server channel ID.
-    * @param type          channel native type code.
-    * @param count         channel element count.
-    * @param minorRevision server minor CA revision.
-    * @param serverAddress server address.
-    */
-   public void searchResponse(
-         int cid, int sid, short type, int count,
-         short minorRevision, InetSocketAddress serverAddress
-   )
-   {
-      ChannelImpl<?> channel = getChannel (cid);
-      if ( channel == null )
-         return;
-
-      logger.log ( Level.FINER, "Search response for channel " + channel.getName () + " received.");
-
-      // check for multiple responses
-      synchronized ( channel )
-      {
-         TCPTransport transport = channel.getTransport ();
-         if ( transport != null )
-         {
-            // multiple defined PV or reconnect request (same server address)
-            if ( !transport.getRemoteAddress ().equals (serverAddress) )
-            {
-               logger.log( Level.INFO,"More than one PVs with name '" + channel.getName () +
-                     "' detected, additional response from: " + serverAddress);
-               return;
-            }
-         }
-
-         // do not search anymore (also unregisters)
-         channelSearchManager.searchResponse (channel);
-
-         transport = getTransport (channel, serverAddress, minorRevision, channel.getPriority ());
-         if ( transport == null )
-         {
-            channel.createChannelFailed ();
-            return;
-         }
-
-         // create channel
-         channel.createChannel (transport, sid, type, count);
-      }
-
-   }
-
-   /**
-    * g
     * Get, or create if necessary, transport of given server address.
     *
     * @param priority process priority.
@@ -785,7 +852,7 @@ public class ContextImpl implements AutoCloseable, Constants
       TCPTransport transport = (TCPTransport) transportRegistry.get (address, priority);
       if ( transport != null )
       {
-         logger.log ( Level.FINER,"Reusing existant connection to CA server: " + address);
+         logger.log ( Level.FINER,"Reusing existing connection to CA server: " + address);
          if ( transport.acquire (client) )
             return transport;
       }
@@ -799,9 +866,11 @@ public class ContextImpl implements AutoCloseable, Constants
             transport = (TCPTransport) transportRegistry.get (address, priority);
             if ( transport != null )
             {
-               logger.log ( Level.FINER,"Reusing existant connection to CA server: " + address);
+               logger.log ( Level.FINER,"Reusing existing connection to CA server: " + address);
                if ( transport.acquire (client) )
+               {
                   return transport;
+               }
             }
 
             logger.log ( Level.FINER, "Connecting to CA server: " + address);
@@ -818,12 +887,13 @@ public class ContextImpl implements AutoCloseable, Constants
             socket.socket ().setKeepAlive (true);
 
             // create transport
-            transport = new TCPTransport (this, client, ResponseHandlers::handleResponse,
-                                          socket, minorRevision, priority);
+            transport = new TCPTransport (this, client, ResponseHandlers::handleResponse, socket, minorRevision, priority );
 
             ReactorHandler handler = transport;
             if ( leaderFollowersThreadPool != null )
+            {
                handler = new LeaderFollowersHandler (reactor, handler, leaderFollowersThreadPool);
+            }
 
             // register to reactor
             reactor.register (socket, SelectionKey.OP_READ, handler);
@@ -908,55 +978,36 @@ public class ContextImpl implements AutoCloseable, Constants
       throw lastException;
    }
 
-   public void repeaterConfirm( InetSocketAddress responseFrom )
-   {
-      logger.log( Level.FINE, "Repeater registration confirmed from: " + responseFrom );
-
-      ScheduledFuture<?> sf = repeaterRegistrationFuture;
-      if ( sf != null )
-         sf.cancel (false);
-   }
-
-   public boolean enqueueStatefullEvent( StatefullEventSource event )
-   {
-      if ( event.allowEnqueue () )
-      {
-         executorService.execute (event);
-         return true;
-      }
-      else
-         return false;
-   }
-
-   public void beaconAnomalyNotify()
-   {
-      if ( channelSearchManager != null )
-         channelSearchManager.beaconAnomalyNotify ();
-   }
+/*- Nested classes -----------------------------------------------------------*/
 
    /**
-    * Get (and if necessary create) beacon handler.
-    *
-    * @param responseFrom remote source address of received beacon.
-    * @return beacon handler for particular server.
+    * RepeaterRegistrationTask
     */
-   public BeaconHandler getBeaconHandler( InetSocketAddress responseFrom )
+   private class RepeaterRegistrationTask implements Runnable
    {
-      synchronized ( beaconHandlers )
-      {
-         BeaconHandler handler = beaconHandlers.get (responseFrom);
-         if ( handler == null )
-         {
-            handler = new BeaconHandler (this, responseFrom);
-            beaconHandlers.put (responseFrom, handler);
-         }
-         return handler;
-      }
-   }
+      private final InetSocketAddress repeaterLocalAddress;
+      private final ByteBuffer buffer = ByteBuffer.allocate (Constants.CA_MESSAGE_HEADER_SIZE);
 
-   public ScheduledExecutorService getScheduledExecutor()
-   {
-      return timer;
+      RepeaterRegistrationTask( InetSocketAddress repeaterLocalAddress )
+      {
+         this.repeaterLocalAddress = repeaterLocalAddress;
+
+         Messages.generateRepeaterRegistration( buffer );
+      }
+
+      public void run()
+      {
+         try
+         {
+            logger.fine( "Attempting to register with repeater at address: '" + repeaterLocalAddress + "'." );
+            getBroadcastTransport ().send( buffer, repeaterLocalAddress );
+            logger.fine( "Repeater registration message sent ok." );
+         }
+         catch ( Throwable th )
+         {
+            logger.log( Level.FINE, th, () -> "Failed to send repeater registration message to: " + repeaterLocalAddress);
+         }
+      }
    }
 
 }
