@@ -1,4 +1,8 @@
+/*- Package Declaration ------------------------------------------------------*/
+
 package org.epics.ca.impl;
+
+/*- Imported packages --------------------------------------------------------*/
 
 import com.lmax.disruptor.EventFactory;
 import org.epics.ca.*;
@@ -11,6 +15,7 @@ import org.epics.ca.impl.requests.ReadNotifyRequest;
 import org.epics.ca.impl.requests.WriteNotifyRequest;
 import org.epics.ca.util.Holder;
 import org.epics.ca.util.IntHashMap;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -25,10 +30,17 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
+
 public class ChannelImpl<T> implements Channel<T>, TransportClient
 {
-   // Get Logger
-   private static final Logger logger = Logger.getLogger( ChannelImpl.class.getName() );
+
+/*- Public attributes --------------------------------------------------------*/
+/*- Protected attributes -----------------------------------------------------*/
+
+   protected final Map<AccessRightsListener, BiConsumer<Channel<T>, AccessRights>> accessRightsListeners = new HashMap<>();
 
    protected final ContextImpl context;
    protected final String name;
@@ -45,70 +57,36 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    protected final Map<String, Object> properties = new HashMap<> ();
 
    protected final AtomicReference<ConnectionState> connectionState = new AtomicReference<>( ConnectionState.NEVER_CONNECTED );
+   protected final AtomicReference<AccessRights> accessRights = new AtomicReference<>( AccessRights.NO_RIGHTS );
+   protected final AtomicReference<Object> timerIdRef = new AtomicReference<>();
 
-   protected final AtomicReference<AccessRights> accessRights = new AtomicReference<> (AccessRights.NO_RIGHTS);
+   protected final AccessRightsStatefullEventSource accessRightsEventSource = new AccessRightsStatefullEventSource ();
 
    protected final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<> ();
 
    protected final TypeSupport<T> typeSupport;
 
-   protected final AtomicBoolean connectIssueed = new AtomicBoolean (false);
+   protected final AtomicBoolean connectIssued = new AtomicBoolean (false);
    protected final AtomicReference<CompletableFuture<Channel<T>>> connectFuture = new AtomicReference<> ();
+
+   protected final ConnectionStateStatefullEventSource connectionStateEventSource = new ConnectionStateStatefullEventSource();
+   protected final Map<ConnectionListener, BiConsumer<Channel<T>, Boolean>> connectionListeners =  new HashMap<>();
 
    protected boolean allowCreation = false;
 
    protected volatile int nativeElementCount = 0;
 
+
+/*- Private attributes -------------------------------------------------------*/
+
    // on every connection loss the value gets incremented
    private final AtomicInteger connectionLossId = new AtomicInteger ();
 
-   @SuppressWarnings( "unchecked" )
-   private class DynamicTypeSupport implements TypeSupports.TypeSupport<T>
-   {
-      @SuppressWarnings( "rawtypes" )
-      private final AtomicReference<TypeSupport> delegate = new AtomicReference<> ();
+   private static final Logger logger = LibraryLogManager.getLogger( ChannelImpl.class );
 
-      public void setDelegate( @SuppressWarnings( "rawtypes" ) TypeSupport typeSupport )
-      {
-         delegate.set (typeSupport);
-      }
 
-      @Override
-      public T newInstance()
-      {
-         return (T) delegate.get ().newInstance ();
-      }
-
-      @Override
-      public int getDataType()
-      {
-         return delegate.get ().getDataType ();
-      }
-
-      @Override
-      public T deserialize( ByteBuffer buffer, T object, int count )
-      {
-         return (T) delegate.get ().deserialize (buffer, object, count);
-      }
-
-      @Override
-      public int getForcedElementCount()
-      {
-         return delegate.get ().getForcedElementCount ();
-      }
-
-      @Override
-      public void serialize( ByteBuffer buffer, T object, int count )
-      {
-         delegate.get ().serialize (buffer, object, count);
-      }
-
-      @Override
-      public int serializeSize( T object, int count )
-      {
-         return delegate.get ().serializeSize (object, count);
-      }
-   }
+/*- Main ---------------------------------------------------------------------*/
+/*- Constructor --------------------------------------------------------------*/
 
    @SuppressWarnings( "unchecked" )
    public ChannelImpl( ContextImpl context, String name, Class<T> channelType, int priority )
@@ -130,25 +108,208 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       context.registerChannel (this);
    }
 
-   private TypeSupport<?> getTypeSupport( Class<?> metaTypeClass, Class<?> typeClass )
-   {
-      TypeSupport<?> metaTypeSupport = TypeSupports.getTypeSupportForMetatypeAndType(metaTypeClass, typeClass);
-      if ( metaTypeSupport == null )
-      {
-         // dynamic (generic channel) support
-         if ( typeSupport instanceof ChannelImpl.DynamicTypeSupport )
-         {
-            Class<?> nativeType = (Class<?>) properties.get (Constants.ChannelProperties.nativeType.name ());
-            metaTypeSupport = TypeSupports.getTypeSupportForMetatypeAndType(metaTypeClass, nativeType);
-         }
 
-         if ( metaTypeSupport == null )
+/*- Public methods -----------------------------------------------------------*/
+
+   public void setConnectionState( ConnectionState state )
+   {
+      final ConnectionState previousCS = connectionState.getAndSet( state );
+      if ( previousCS != state )
+      {
+         CompletableFuture<Channel<T>> cf = connectFuture.getAndSet (null );
+         if ( cf != null )
          {
-            throw new RuntimeException("unsupported channel metadata type " + metaTypeClass + "<" + typeClass + ">");
+            cf.complete(this);
          }
+         context.enqueueStatefullEvent( connectionStateEventSource );
+      }
+   }
+
+   public void resubscribeSubscriptions( Transport transport )
+   {
+      ResponseRequest[] requests;
+      synchronized ( responseRequests )
+      {
+         int count = responseRequests.size ();
+         if ( count == 0 )
+            return;
+         requests = new ResponseRequest[ count ];
+         requests = responseRequests.toArray (requests);
       }
 
-      return metaTypeSupport;
+      for ( ResponseRequest request : requests )
+      {
+         try
+         {
+            if ( request instanceof MonitorRequest<?> )
+            {
+               ((MonitorRequest<?>) request).resubscribe(transport);
+            }
+         }
+         catch ( Throwable th )
+         {
+            logger.log( Level.WARNING, "Unexpected exception caught during resubscription notification.", th );
+         }
+      }
+   }
+
+   /**
+    * Called when channel created succeeded on the server.
+    * <code>sid</code> might not be valid, this depends on protocol revision.
+    *
+    * @param sid the CA server ID.
+    * @param typeCode the CA DBR typecode.
+    * @param elementCount the number of elements to be associated with each CA get/put/monitor operation.
+    *
+    * @throws IllegalStateException if the channel was in an unexpected stated.
+    */
+   public synchronized void connectionCompleted( int sid, short typeCode, int elementCount ) throws IllegalStateException
+   {
+      // do this silently
+      if ( connectionState.get () == ConnectionState.CLOSED )
+      {
+         return;
+      }
+
+      // revision < v4.1 do not have access rights, grant all
+      if ( transport.getMinorRevision () < 1 )
+      {
+         setAccessRights(AccessRights.READ_WRITE);
+      }
+
+      // revision < v4.4 supply this info already now
+      if ( transport.getMinorRevision () >= 4 )
+      {
+         this.sid = sid;
+         this.nativeElementCount = elementCount;
+         properties.put (Constants.ChannelProperties.nativeTypeCode.name (), typeCode);
+         properties.put (Constants.ChannelProperties.nativeElementCount.name (), elementCount);
+      }
+
+      // dynamic (generic channel) support
+      if ( typeSupport instanceof ChannelImpl.DynamicTypeSupport )
+      {
+         TypeSupport<?> nativeTypeSupport = TypeSupports.getTypeSupport (typeCode, elementCount);
+         if ( nativeTypeSupport == null )
+         {
+            logger.log( Level.SEVERE, "Type support for typeCode=" + typeCode + ", elementCount=" + elementCount + " is not supported, switching to String/String[]");
+            if ( elementCount > 1 )
+            {
+               nativeTypeSupport = TypeSupports.getTypeSupportForType( String[].class );
+            }
+            else
+            {
+               nativeTypeSupport = TypeSupports.getTypeSupportForType( String.class );
+            }
+         }
+
+         ((DynamicTypeSupport) typeSupport).setDelegate (nativeTypeSupport);
+      }
+
+      properties.put (Constants.ChannelProperties.nativeType.name (), typeSupport.newInstance ().getClass ());
+
+      // user might create monitors in listeners, so this has to be done before this can happen
+      // however, it would not be nice if events would come before connection event is fired
+      // but this cannot happen since transport (TCP) is serving in this thread
+      resubscribeSubscriptions (transport);
+      setConnectionState (ConnectionState.CONNECTED);
+   }
+
+   public void createChannelFailed()
+   {
+      // ... and search again
+      initiateSearch();
+   }
+
+   /**
+    * Send search message.
+    *
+    * @param transport the transport.
+    * @param buffer the buffer to send.
+    *
+    * @return success status.
+    */
+   public boolean generateSearchRequestMessage( Transport transport, ByteBuffer buffer )
+   {
+      return Messages.generateSearchRequestMessage (transport, buffer, name, cid);
+   }
+
+   public synchronized TCPTransport getTransport()
+   {
+      return transport;
+   }
+
+   public int getPriority()
+   {
+      return priority;
+   }
+
+   public int getNativeElementCount()
+   {
+      return nativeElementCount;
+   }
+
+   @Override
+   public void transportClosed()
+   {
+      disconnect(true );
+   }
+
+   public synchronized void disconnect( boolean reconnect )
+   {
+      if ( connectionState.get () != ConnectionState.CONNECTED && transport == null )
+      {
+         return;
+      }
+
+      setConnectionState( ConnectionState.DISCONNECTED );
+
+      connectionLossId.incrementAndGet ();
+
+      disconnectPendingIO (false);
+
+      // release transport
+      if ( transport != null )
+      {
+         transport.release (this);
+         transport = null;
+      }
+
+      if ( reconnect )
+      {
+         initiateSearch();
+      }
+   }
+
+   /**
+    * Register a response request.
+    *
+    * @param responseRequest response request to register.
+    */
+   public void registerResponseRequest( ResponseRequest responseRequest )
+   {
+      synchronized ( responseRequests )
+      {
+         responseRequests.put (responseRequest.getIOID (), responseRequest);
+      }
+   }
+
+   /**
+    * Unregister a response request.
+    *
+    * @param responseRequest response request to unregister.
+    */
+   public void unregisterResponseRequest( ResponseRequest responseRequest )
+   {
+      synchronized ( responseRequests )
+      {
+         responseRequests.remove (responseRequest.getIOID ());
+      }
+   }
+
+   public TypeSupport<T> getTypeSupport()
+   {
+      return typeSupport;
    }
 
    @Override
@@ -219,7 +380,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    @Override
    public CompletableFuture<Channel<T>> connectAsync()
    {
-      if ( !connectIssueed.getAndSet (true) )
+      if ( !connectIssued.getAndSet (true) )
       {
          // this has to be submitted immediately
          initiateSearch ();
@@ -245,29 +406,11 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       }
    }
 
-   protected final Map<ConnectionListener, BiConsumer<Channel<T>, Boolean>> connectionListeners =
-         new HashMap<> ();
-
-   class ConnectionListener implements Listener
-   {
-
-      @Override
-      public void close()
-      {
-         synchronized ( connectionListeners )
-         {
-            connectionListeners.remove (this);
-         }
-      }
-   }
-
    @Override
-   public Listener addConnectionListener(
-         BiConsumer<Channel<T>, Boolean> handler
-   )
+   public Listener addConnectionListener( BiConsumer<Channel<T>, Boolean> handler )
    {
 
-      ConnectionListener cl = new ConnectionListener ();
+      final ConnectionListener cl = new ConnectionListener ();
       synchronized ( connectionListeners )
       {
          connectionListeners.put (cl, handler);
@@ -276,34 +419,14 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       return cl;
    }
 
-   protected final Map<AccessRightsListener, BiConsumer<Channel<T>, AccessRights>> accessRightsListeners =
-         new HashMap<> ();
-
-   class AccessRightsListener implements Listener
-   {
-
-      @Override
-      public void close()
-      {
-         synchronized ( accessRightsListeners )
-         {
-            accessRightsListeners.remove (this);
-         }
-      }
-   }
-
    @Override
-   public Listener addAccessRightListener(
-         BiConsumer<Channel<T>, AccessRights> handler
-   )
+   public Listener addAccessRightListener( BiConsumer<Channel<T>, AccessRights> handler )
    {
-
-      AccessRightsListener arl = new AccessRightsListener ();
+      final AccessRightsListener arl = new AccessRightsListener ();
       synchronized ( accessRightsListeners )
       {
          accessRightsListeners.put (arl, handler);
       }
-
       return arl;
    }
 
@@ -341,18 +464,20 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    @Override
    public void putNoWait( T value )
    {
-
       TCPTransport t = connectionRequiredCheck ();
 
       // check read access
       AccessRights currentRights = getAccessRights ();
-      if ( currentRights != AccessRights.WRITE &&
-            currentRights != AccessRights.READ_WRITE )
-         throw new IllegalStateException ("No write rights.");
+      if ( currentRights != AccessRights.WRITE && currentRights != AccessRights.READ_WRITE )
+      {
+         throw new IllegalStateException("No write rights.");
+      }
 
       int count = typeSupport.getForcedElementCount ();
       if ( count == 0 )
-         count = Array.getLength (value);
+      {
+         count = Array.getLength(value);
+      }
 
       Messages.writeMessage (t, sid, cid, typeSupport, value, count);
       transport.flush ();
@@ -361,7 +486,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    @Override
    public CompletableFuture<T> getAsync()
    {
-
       final TCPTransport t = connectionRequiredCheck();
 
       // check read access
@@ -377,7 +501,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    @Override
    public CompletableFuture<Status> putAsync( T value )
    {
-
       final TCPTransport t = connectionRequiredCheck();
 
       // check read access
@@ -389,7 +512,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
       int count = typeSupport.getForcedElementCount ();
       if ( count == 0 )
-         count = Array.getLength (value);
+      {
+         count = Array.getLength(value);
+      }
 
       return new WriteNotifyRequest<>(this, t, sid, typeSupport, value, count);
    }
@@ -425,20 +550,15 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       return new ReadNotifyRequest<>(this, t, sid, metaTypeSupport);
    }
 
-   static class HolderEventFactory<TT> implements EventFactory<Holder<TT>>
+   public void setAccessRights( AccessRights rights )
    {
-      private final TypeSupport<TT> typeSupport;
-      public HolderEventFactory( TypeSupport<TT> typeSupport )
+      AccessRights previousRights = accessRights.getAndSet (rights);
+      if ( previousRights != rights )
       {
-         this.typeSupport = typeSupport;
-      }
-
-      @Override
-      public Holder<TT> newInstance()
-      {
-         return new Holder<>(typeSupport.newInstance());
+         context.enqueueStatefullEvent (accessRightsEventSource);
       }
    }
+
 
    @Override
    public Monitor<T> addValueMonitor( Consumer<? super T> handler, int mask )
@@ -483,8 +603,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       return properties;
    }
 
-   protected final AtomicReference<Object> timerIdRef = new AtomicReference<> ();
-
    public void setTimerId( Object timerId )
    {
       timerIdRef.set (timerId);
@@ -522,7 +640,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       {
          // do not allow duplicate creation to the same transport
          if ( !allowCreation )
+         {
             return;
+         }
          allowCreation = false;
 
          // check existing transport
@@ -573,6 +693,70 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       setAccessRights (AccessRights.values ()[ rightsCode ]);
    }
 
+
+/*- Protected methods --------------------------------------------------------*/
+
+   protected TCPTransport connectionRequiredCheck()
+   {
+      final TCPTransport t = getTransport ();
+      if ( connectionState.get () != ConnectionState.CONNECTED || t == null )
+      {
+         throw new IllegalStateException("Channel not connected.");
+      }
+      return t;
+   }
+
+/*- Private methods ----------------------------------------------------------*/
+
+   private TypeSupport<?> getTypeSupport( Class<?> metaTypeClass, Class<?> typeClass )
+   {
+      TypeSupport<?> metaTypeSupport = TypeSupports.getTypeSupportForMetatypeAndType(metaTypeClass, typeClass);
+      if ( metaTypeSupport == null )
+      {
+         // dynamic (generic channel) support
+         if ( typeSupport instanceof ChannelImpl.DynamicTypeSupport )
+         {
+            Class<?> nativeType = (Class<?>) properties.get (Constants.ChannelProperties.nativeType.name ());
+            metaTypeSupport = TypeSupports.getTypeSupportForMetatypeAndType(metaTypeClass, nativeType);
+         }
+
+         if ( metaTypeSupport == null )
+         {
+            throw new RuntimeException("unsupported channel metadata type " + metaTypeClass + "<" + typeClass + ">");
+         }
+      }
+
+      return metaTypeSupport;
+   }
+
+
+   private void disconnectPendingIO( boolean destroy )
+   {
+      Status status = destroy ? Status.CHANDESTROY : Status.DISCONN;
+
+      ResponseRequest[] requests;
+      synchronized ( responseRequests )
+      {
+         requests = new ResponseRequest[ responseRequests.size () ];
+         requests = responseRequests.toArray (requests);
+      }
+
+      for ( ResponseRequest request : requests )
+      {
+         try
+         {
+            request.exception(status.getStatusCode(), null);
+         }
+         catch ( Throwable th )
+         {
+            logger.log( Level.WARNING, "Unexpected exception caught during disconnect/destroy notification.", th);
+         }
+      }
+   }
+
+
+/*- Nested classes -----------------------------------------------------------*/
+
    class AccessRightsStatefullEventSource extends StatefullEventSource
    {
       @SuppressWarnings( "unchecked" )
@@ -599,21 +783,49 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
             }
             catch ( Throwable th )
             {
-               logger.log(Level.WARNING, "Unexpected exception caught when dispatching access rights listener event.", th);
+               logger.log( Level.WARNING, "Unexpected exception caught when dispatching access rights listener event.", th);
             }
          }
       }
    }
 
-   protected final AccessRightsStatefullEventSource accessRightsEventSource =
-         new AccessRightsStatefullEventSource ();
-
-   public void setAccessRights( AccessRights rights )
+   static class HolderEventFactory<TT> implements EventFactory<Holder<TT>>
    {
-      AccessRights previousRights = accessRights.getAndSet (rights);
-      if ( previousRights != rights )
+      private final TypeSupport<TT> typeSupport;
+      public HolderEventFactory( TypeSupport<TT> typeSupport )
       {
-         context.enqueueStatefullEvent (accessRightsEventSource);
+         this.typeSupport = typeSupport;
+      }
+
+      @Override
+      public Holder<TT> newInstance()
+      {
+         return new Holder<>(typeSupport.newInstance());
+      }
+   }
+
+   class AccessRightsListener implements Listener
+   {
+      @Override
+      public void close()
+      {
+         synchronized ( accessRightsListeners )
+         {
+            accessRightsListeners.remove (this);
+         }
+      }
+   }
+
+   class ConnectionListener implements Listener
+   {
+
+      @Override
+      public void close()
+      {
+         synchronized ( connectionListeners )
+         {
+            connectionListeners.remove (this);
+         }
       }
    }
 
@@ -623,7 +835,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       @Override
       public void dispatch()
       {
-
          final boolean connected = (getConnectionState () == ConnectionState.CONNECTED);
 
          // copy listeners
@@ -643,237 +854,58 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
             }
             catch ( Throwable th )
             {
-               logger.log(Level.WARNING, "Unexpected exception caught when dispatching connection listener event.", th);
+               logger.log( Level.WARNING, "Unexpected exception caught when dispatching connection listener event.", th);
             }
          }
       }
    }
 
-   protected final ConnectionStateStatefullEventSource connectionStateEventSource =
-         new ConnectionStateStatefullEventSource ();
-
-   public void setConnectionState( ConnectionState state )
+   @SuppressWarnings( "unchecked" )
+   private class DynamicTypeSupport implements TypeSupports.TypeSupport<T>
    {
-      ConnectionState previousCS = connectionState.getAndSet (state);
-      if ( previousCS != state )
-      {
-         CompletableFuture<Channel<T>> cf = connectFuture.getAndSet (null);
-         if ( cf != null )
-         {
-            cf.complete(this);
-         }
+      @SuppressWarnings( "rawtypes" )
+      private final AtomicReference<TypeSupport> delegate = new AtomicReference<> ();
 
-         context.enqueueStatefullEvent( connectionStateEventSource );
+      public void setDelegate( @SuppressWarnings( "rawtypes" ) TypeSupport typeSupport )
+      {
+         delegate.set (typeSupport);
+      }
+
+      @Override
+      public T newInstance()
+      {
+         return (T) delegate.get ().newInstance ();
+      }
+
+      @Override
+      public int getDataType()
+      {
+         return delegate.get ().getDataType ();
+      }
+
+      @Override
+      public T deserialize( ByteBuffer buffer, T object, int count )
+      {
+         return (T) delegate.get ().deserialize (buffer, object, count);
+      }
+
+      @Override
+      public int getForcedElementCount()
+      {
+         return delegate.get ().getForcedElementCount ();
+      }
+
+      @Override
+      public void serialize( ByteBuffer buffer, T object, int count )
+      {
+         delegate.get ().serialize (buffer, object, count);
+      }
+
+      @Override
+      public int serializeSize( T object, int count )
+      {
+         return delegate.get ().serializeSize (object, count);
       }
    }
 
-   protected TCPTransport connectionRequiredCheck()
-   {
-      TCPTransport t = getTransport ();
-      if ( connectionState.get () != ConnectionState.CONNECTED || t == null )
-         throw new IllegalStateException ("Channel not connected.");
-      return t;
-   }
-
-   public void resubscribeSubscriptions( Transport transport )
-   {
-      ResponseRequest[] requests;
-      synchronized ( responseRequests )
-      {
-         int count = responseRequests.size ();
-         if ( count == 0 )
-            return;
-         requests = new ResponseRequest[ count ];
-         requests = responseRequests.toArray (requests);
-      }
-
-      for ( ResponseRequest request : requests )
-      {
-         try
-         {
-            if ( request instanceof MonitorRequest<?> )
-               ((MonitorRequest<?>) request).resubscribe(transport);
-         }
-         catch ( Throwable th )
-         {
-            logger.log(Level.WARNING, "Unexpected exception caught during resubscription notification.", th);
-         }
-      }
-   }
-
-   /**
-    * Called when channel created succeeded on the server.
-    * <code>sid</code> might not be valid, this depends on protocol revision.
-    *
-    * @param sid the CA server ID.
-    * @param typeCode the CA DBR typecode.
-    * @param elementCount the number of elements to be associated with each CA get/put/monitor operation.
-    *
-    * @throws IllegalStateException if the channel was in an unexpected stated.
-    */
-   public synchronized void connectionCompleted( int sid, short typeCode, int elementCount ) throws IllegalStateException
-   {
-      // do this silently
-      if ( connectionState.get () == ConnectionState.CLOSED )
-         return;
-
-      // revision < v4.1 do not have access rights, grant all
-      if ( transport.getMinorRevision () < 1 )
-         setAccessRights (AccessRights.READ_WRITE);
-
-      // revision < v4.4 supply this info already now
-      if ( transport.getMinorRevision () >= 4 )
-      {
-         this.sid = sid;
-         this.nativeElementCount = elementCount;
-         properties.put (Constants.ChannelProperties.nativeTypeCode.name (), typeCode);
-         properties.put (Constants.ChannelProperties.nativeElementCount.name (), elementCount);
-      }
-
-      // dynamic (generic channel) support
-      if ( typeSupport instanceof ChannelImpl.DynamicTypeSupport )
-      {
-         TypeSupport<?> nativeTypeSupport = TypeSupports.getTypeSupport (typeCode, elementCount);
-         if ( nativeTypeSupport == null )
-         {
-            logger.log( Level.SEVERE, "Type support for typeCode=" + typeCode + ", elementCount=" + elementCount + " is not supported, switching to String/String[]");
-            if ( elementCount > 1 )
-            {
-               nativeTypeSupport = TypeSupports.getTypeSupportForType( String[].class );
-            }
-            else
-            {
-               nativeTypeSupport = TypeSupports.getTypeSupportForType( String.class );
-            }
-         }
-
-         ((DynamicTypeSupport) typeSupport).setDelegate (nativeTypeSupport);
-      }
-
-      properties.put (Constants.ChannelProperties.nativeType.name (), typeSupport.newInstance ().getClass ());
-
-      // user might create monitors in listeners, so this has to be done before this can happen
-      // however, it would not be nice if events would come before connection event is fired
-      // but this cannot happen since transport (TCP) is serving in this thread
-      resubscribeSubscriptions (transport);
-      setConnectionState (ConnectionState.CONNECTED);
-   }
-
-   public void createChannelFailed()
-   {
-      // ... and search again
-      initiateSearch ();
-   }
-
-   /**
-    * Send search message.
-    *
-    * @param transport the transport.
-    * @param buffer the buffer to send.
-    *
-    * @return success status.
-    */
-   public boolean generateSearchRequestMessage( Transport transport, ByteBuffer buffer )
-   {
-      return Messages.generateSearchRequestMessage (transport, buffer, name, cid);
-   }
-
-   public synchronized TCPTransport getTransport()
-   {
-      return transport;
-   }
-
-   public int getPriority()
-   {
-      return priority;
-   }
-
-   public int getNativeElementCount()
-   {
-      return nativeElementCount;
-   }
-
-   @Override
-   public void transportClosed()
-   {
-      disconnect (true);
-   }
-
-   public synchronized void disconnect( boolean reconnect )
-   {
-      if ( connectionState.get () != ConnectionState.CONNECTED && transport == null )
-         return;
-
-      setConnectionState (ConnectionState.DISCONNECTED);
-
-      connectionLossId.incrementAndGet ();
-
-      disconnectPendingIO (false);
-
-      // release transport
-      if ( transport != null )
-      {
-         transport.release (this);
-         transport = null;
-      }
-
-      if ( reconnect )
-         initiateSearch ();
-
-   }
-
-   private void disconnectPendingIO( boolean destroy )
-   {
-      Status status = destroy ? Status.CHANDESTROY : Status.DISCONN;
-
-      ResponseRequest[] requests;
-      synchronized ( responseRequests )
-      {
-         requests = new ResponseRequest[ responseRequests.size () ];
-         requests = responseRequests.toArray (requests);
-      }
-
-      for ( ResponseRequest request : requests )
-      {
-         try
-         {
-            request.exception(status.getStatusCode(), null);
-         }
-         catch ( Throwable th )
-         {
-            logger.log(Level.WARNING, "Unexpected exception caught during disconnect/destroy notification.", th);
-         }
-      }
-   }
-
-   /**
-    * Register a response request.
-    *
-    * @param responseRequest response request to register.
-    */
-   public void registerResponseRequest( ResponseRequest responseRequest )
-   {
-      synchronized ( responseRequests )
-      {
-         responseRequests.put (responseRequest.getIOID (), responseRequest);
-      }
-   }
-
-   /**
-    * Unregister a response request.
-    *
-    * @param responseRequest response request to unregister.
-    */
-   public void unregisterResponseRequest( ResponseRequest responseRequest )
-   {
-      synchronized ( responseRequests )
-      {
-         responseRequests.remove (responseRequest.getIOID ());
-      }
-   }
-
-   public TypeSupport<T> getTypeSupport()
-   {
-      return typeSupport;
-   }
 }
