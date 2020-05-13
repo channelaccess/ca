@@ -6,6 +6,7 @@ package org.epics.ca.impl.repeater;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.net.*;
 import java.util.logging.Level;
@@ -26,14 +27,13 @@ class CARepeaterClientProxy implements AutoCloseable
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( CARepeaterClientProxy.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( CARepeaterClientProxy.class );
 
    static
    {
       // force only IPv4 sockets, since EPICS does not work right with IPv6 sockets
       // see http://java.sun.com/j2se/1.5.0/docs/guide/net/properties.html
       System.setProperty ( "java.net.preferIPv4Stack", "true" );
-      CARepeaterUtils.initializeLogger( logger );
    }
 
    private final InetSocketAddress clientListeningSocketAddress;
@@ -77,7 +77,7 @@ class CARepeaterClientProxy implements AutoCloseable
       final InetAddress inetAddress = clientListeningSocketAddress.getAddress();
       Validate.isTrue( SocketUtilities.isThisMyIpAddress( inetAddress ), "The 'clientListeningSocketAddress' specified a socket which was not local ('" + inetAddress + "')."  );
 
-      logger.log( Level.FINEST, "Creating new CA Repeater client for client socket with listening address: '" + clientListeningSocketAddress + "'..." );
+      logger.log( Level.FINEST, "Creating new CA Repeater Client Proxy for client socket with listening address: '" + clientListeningSocketAddress + "'..." );
       this.clientListeningSocketAddress = clientListeningSocketAddress;
 
       // SocketException -->
