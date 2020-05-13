@@ -5,10 +5,7 @@ package org.epics.ca.impl.repeater;
 
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -17,8 +14,10 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.Constants;
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.epics.ca.util.net.InetAddressUtil;
 
 
@@ -28,125 +27,52 @@ import org.epics.ca.util.net.InetAddressUtil;
 /**
  * CA repeater.
  */
-public class CARepeater
+@ThreadSafe
+class CARepeater
 {
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   // Get Logger
-   private static final Logger logger = Logger.getLogger( CARepeater.class.getName () );
+   private static final Logger logger = LibraryLogManager.getLogger( CARepeater.class );
 
    static
    {
       // force only IPv4 sockets, since EPICS does not work right with IPv6 sockets
       // see http://java.sun.com/j2se/1.5.0/docs/guide/net/properties.html
       System.setProperty ( "java.net.preferIPv4Stack", "true" );
-      CARepeaterUtils.initializeLogger( logger );
    }
 
    private final byte[] buffer;
    private final ByteBuffer data;
+
+   private final ExecutorService executorService;
    private final AtomicBoolean shutdownRequest;
    private final CARepeaterClientManager clientProxyManager;
    private final DatagramSocket listeningSocket;
 
 
 /*- Main ---------------------------------------------------------------------*/
-
-   /**
-    * Starts the CA Repeater from the command line.
-    *
-    * If at least two arguments are provided and the first argument is "-p"
-    * or "--port" then an attempt will be made to parse the second argument
-    * as the port number to use when starting the repeater.
-    *
-    * If the second argument is a valid port number (positive integer) then
-    * the repeater will be started on that port. If it isn't then the
-    * repeater will be started on the default port (which can be overriden
-    * by a System property 'EPICS_CA_REPEATER_PORT').
-    *
-    * @param argv arguments.
-    */
-   public static void main( String[] argv )
-   {
-      final int DEFAULT_REPEATER_PORT = Constants.CA_REPEATER_PORT;
-      final boolean portArgumentSupplied = ( argv.length >= 2 && ( argv[ 0 ].equals ("-p") || argv[ 0 ].equals ("--port") ) );
-      final int port = portArgumentSupplied ? CARepeaterUtils.parseToInt( argv[ 1 ], DEFAULT_REPEATER_PORT ) : DEFAULT_REPEATER_PORT;
-
-      // Nothing to do, if a repeater instance is already running
-      if ( CARepeaterStarter.isRepeaterRunning( port ) )
-      {
-         System.out.println( "The repeater is already running and a new instance will not be started." );
-         return;
-      }
-
-      final CARepeater repeater;
-      try
-      {
-         if ( port == DEFAULT_REPEATER_PORT )
-         {
-            System.out.println( "Starting default repeater instance." );
-            repeater = new CARepeater();
-         }
-         else
-         {
-            System.out.println( "Starting repeater instance on port " + port + "." );
-            repeater = new CARepeater( port );
-         }
-      }
-      catch( CARepeater.CaRepeaterStartupException ex )
-      {
-         System.out.println( "An exception occurred when attempting to start the repeater." );
-         System.out.println( "The details were as shown below." );
-         ex.printStackTrace();
-         return;
-      }
-
-      // Run, run, run...
-      repeater.start();
-   }
-
 /*- Constructor --------------------------------------------------------------*/
 
    /**
-    * Creates a new instance which will listen on either the default
-    * CA Repeater port (which depends on the supported CA Major Protocol
-    * Version) or the port specified through the system property
-    * 'EPICS_CA_REPEATER_PORT'.
+    * Creates a new instance which will listen on the specified port.
     *
-    * Note for CA Version 4.XX the default repoeater port is 5065.
-    *
-    * @throws CaRepeaterStartupException if the CA Repeater could not be started for any reason.
-    */
-   public CARepeater() throws CaRepeaterStartupException
-   {
-      this( CARepeaterUtils.parseToInt( System.getProperty( "EPICS_CA_REPEATER_PORT" ), Constants.CA_REPEATER_PORT ) );
-   }
-
-   /**
-    * Creates a new instance based on the specified port.
-    *
-    * @param repeaterPort positive integer specifying the port on which this CA Repeater
-    *    instance is expected to listen.
-    *
-    * @throws CaRepeaterStartupException if the CA Repeater could not be started for any reason.
+    * @param repeaterPort specifies the port to listen on in the range 1-65535.
     * @throws IllegalArgumentException if the repeaterPort parameter was not within bounds.
-    */
-   public CARepeater( int repeaterPort ) throws CaRepeaterStartupException
-   {
-      Validate.isTrue(repeaterPort > 0, "The port must be a positive integer" );
+    * @throws CaRepeaterStartupException if the CA Repeater could not be started for any reason.
 
-      // Make an entry in the log of all local IPV4 network addresses.
-      logger.log( Level.FINEST, "The following local interfaces have been discovered..." ) ;
-      final List<Inet4Address> addrList = this.getLocalNetworkInterfaceAddresses();
-      addrList.forEach( (ip) -> logger.log( Level.FINEST, ip.toString() ) );
+    */
+   CARepeater( int repeaterPort ) throws CaRepeaterStartupException
+   {
+      Validate.inclusiveBetween(1, 65535, repeaterPort, "The port must be in the range 1-65535." );
 
       logger.log( Level.INFO, "The CA repeater will listen to broadcasts on all local interfaces by binding to the wildcard address on port " + repeaterPort + "." ) ;
 
       this.buffer = new byte[ Constants.MAX_UDP_RECV ];
       this.data = ByteBuffer.wrap( buffer );
       this.shutdownRequest = new AtomicBoolean( false );
+      this.executorService = Executors.newSingleThreadExecutor();
 
       try
       {
@@ -159,23 +85,30 @@ public class CARepeater
          throw new CaRepeaterStartupException( msg, ex );
       }
 
-      clientProxyManager = new CARepeaterClientManager( (InetSocketAddress) listeningSocket.getLocalSocketAddress() );
+      final InetSocketAddress repeaterListeningSocketAddress = (InetSocketAddress)  listeningSocket.getLocalSocketAddress();
+      logger.log( Level.FINEST, "The repeater will advertise its availability on the socket with address : '" + repeaterListeningSocketAddress ) ;
+      clientProxyManager = new CARepeaterClientManager( repeaterListeningSocketAddress );
    }
 
 /*- Public methods -----------------------------------------------------------*/
 
    /**
-    * Runs the CA repeater in a separate thread forever, or until a
-    * shutdown request is received.
+    * Returns immediately after starting a task which runs this CA Repeater
+    * instance in a separate thread.
     *
-    * @return future which can be used to determine
+    * @throws IllegalStateException if a shutdown request has already been
+    *    made on this CA Repeater instance.
     */
-   public Future<?> start()
+   void start()
    {
-      // Create a buffer to read datagrams into. If a packet is
-      // larger than this buffer, the excess will simply be discarded.
-      final ExecutorService executor = Executors.newSingleThreadExecutor();
-      return executor.submit(() -> {
+      if ( executorService.isShutdown() )
+      {
+         throw new IllegalStateException( "This CA Repeater instance has been shutdown and cannot be restarted." );
+      }
+
+      // Create and run a task which processes UDP packets  until the
+      // processing loop detects a shutdown request.
+      final Future<?> task = executorService.submit(() -> {
          try
          {
             processUdpDatagramPackets();
@@ -188,10 +121,24 @@ public class CARepeater
       } );
    }
 
-   public void shutdown()
+   /**
+    * Returns immediately after registering a request to shutdown the CA
+    * repeater (which may or may not have been previously started) and
+    * freeing up any resources.
+    *
+    * @throws IllegalStateException if a shutdown request has already been
+    *    made on this CA Repeater instance.
+    */
+   void shutdown()
    {
+      if ( executorService.isShutdown() )
+      {
+         throw new IllegalStateException( "This CA Repeater instance has already been shutdown." );
+      }
+
       shutdownRequest.set( true );
       listeningSocket.close();
+      executorService.shutdown();
    }
 
 /*- Private methods ----------------------------------------------------------*/
@@ -528,42 +475,6 @@ public class CARepeater
       return outputPacket;
    }
 
-   /**
-    * Returns a list of any IPV4 internet addresses that have been assigned to the local interfaces.
-    *
-    * Credit: the algorithm below is a modified form of the version described here:
-    * https://stackoverflow.com/questions/494465/how-to-enumerate-ip-addresses-of-all-enabled-nic-cards-from-java
-    *
-    * @return the list, empty if the query fails or if there are none available.
-    */
-   private List<Inet4Address> getLocalNetworkInterfaceAddresses()
-   {
-      final List<Inet4Address> addrList = new ArrayList<>();
-      try
-      {
-         for( Enumeration<NetworkInterface> eni = NetworkInterface.getNetworkInterfaces(); eni.hasMoreElements(); )
-         {
-            final NetworkInterface ifc = eni.nextElement();
-            if( ifc.isUp() )
-            {
-               for (Enumeration<InetAddress> ena = ifc.getInetAddresses(); ena.hasMoreElements(); )
-               {
-                  final InetAddress addr = ena.nextElement();
-                  if ( addr instanceof Inet4Address)
-                  {
-                     addrList.add( (Inet4Address) addr );
-                  }
-               }
-            }
-         }
-      }
-      catch ( SocketException e )
-      {
-         logger.log( Level.WARNING, "Exception when querying local interfaces for registered IP4 addresses." );
-      }
-      return addrList;
-   }
-
 
 /*- Nested Classes -----------------------------------------------------------*/
 
@@ -574,6 +485,5 @@ public class CARepeater
          super( message, ex );
       }
    }
+
 }
-
-
