@@ -15,6 +15,7 @@ import org.apache.commons.lang3.Validate;
 import org.epics.ca.impl.TypeSupports;
 import org.epics.ca.impl.monitor.MonitorNotificationService;
 import org.epics.ca.util.Holder;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadFactory;
@@ -30,7 +31,7 @@ public class DisruptorNewMonitorNotificationService<T> implements MonitorNotific
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( DisruptorNewMonitorNotificationService.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger(DisruptorNewMonitorNotificationService.class );
 
    // The size of the ring buffer, must be power of 2.
    private static final int NOTIFICATION_VALUE_BUFFER_SIZE = 2;

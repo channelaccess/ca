@@ -1,5 +1,7 @@
 package org.epics.ca.impl.reactor.lf;
 
+import org.epics.ca.util.logging.LibraryLogManager;
+
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -12,9 +14,7 @@ import java.util.logging.Logger;
  */
 public class LeaderFollowersThreadPool
 {
-
-   // Get Logger
-   private static final Logger logger = Logger.getLogger( LeaderFollowersThreadPool.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( LeaderFollowersThreadPool.class );
 
    /**
     * Default thread pool size.

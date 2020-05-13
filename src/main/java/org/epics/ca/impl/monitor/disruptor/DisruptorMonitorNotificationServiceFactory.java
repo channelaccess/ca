@@ -7,6 +7,7 @@ package org.epics.ca.impl.monitor.disruptor;
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.epics.ca.impl.monitor.MonitorNotificationService;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +24,7 @@ public class DisruptorMonitorNotificationServiceFactory implements MonitorNotifi
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( DisruptorMonitorNotificationServiceFactory.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger(DisruptorMonitorNotificationServiceFactory.class );
    private final List<MonitorNotificationService<?>> serviceList = new ArrayList<>();
    private final boolean oldImpl;
 
