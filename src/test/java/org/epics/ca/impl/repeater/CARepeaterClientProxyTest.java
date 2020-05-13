@@ -73,7 +73,7 @@ class CARepeaterClientProxyTest
    }
 
    @Test
-   void testSendUdpPacket_throwsIllegalArgumentException_whenDatagramPortIsConfigured() throws UnknownHostException, SocketException
+   void testSendUdpPacket_throwsIllegalArgumentException_whenDatagramPortIsConfigured() throws SocketException
    {
       try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress(0 ) ) )
       {
@@ -85,7 +85,7 @@ class CARepeaterClientProxyTest
    }
 
    @Test
-   void testSendUdpPacket_throwsIllegalArgumentException_whenDatagramInetAddressIsConfigured() throws UnknownHostException, SocketException
+   void testSendUdpPacket_throwsIllegalArgumentException_whenDatagramInetAddressIsConfigured() throws SocketException
    {
       try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( 0 ) ) )
       {
@@ -229,6 +229,7 @@ class CARepeaterClientProxyTest
       // may have been truncated.
       private static final int BUFSIZE = CARepeaterMessage.CA_MESSAGE_HEADER_SIZE + 1;
 
+      @SuppressWarnings( "SameParameterValue" )
       private Future<DatagramPacket> arm( int port )
       {
          final ExecutorService executor = Executors.newSingleThreadExecutor();
