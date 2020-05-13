@@ -5,6 +5,7 @@ package org.epics.ca.impl.monitor.striped;
 import eu.javaspecialists.tjsn.concurrency.stripedexecutor.StripedRunnable;
 import net.jcip.annotations.Immutable;
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -28,7 +29,7 @@ class StripedMonitorNotificationTask<T> implements StripedRunnable
 /*- Private attributes -------------------------------------------------------*/
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger( StripedMonitorNotificationTask.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger(StripedMonitorNotificationTask.class );
 
    private final T value;
    private final Consumer<? super T> valueConsumer;

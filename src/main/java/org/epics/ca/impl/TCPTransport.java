@@ -20,6 +20,7 @@ import org.epics.ca.Constants;
 import org.epics.ca.impl.ResponseHandlers.ResponseHandler;
 import org.epics.ca.impl.reactor.ReactorHandler;
 import org.epics.ca.util.ResettableLatch;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 /**
  * CA transport implementation.
@@ -27,8 +28,7 @@ import org.epics.ca.util.ResettableLatch;
 public class TCPTransport implements Transport, ReactorHandler, Runnable
 {
 
-   // Get Logger
-   private static final Logger logger = Logger.getLogger( TCPTransport.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger(TCPTransport.class );
 
    /**
     * Connection status.

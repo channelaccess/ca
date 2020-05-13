@@ -3,6 +3,8 @@ package org.epics.ca.impl.repeater;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.util.logging.LibraryLogManager;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -33,14 +35,13 @@ public class UdpMessageSniffer
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-private static final Logger logger = Logger.getLogger( UdpMessageSniffer.class.getName () );
+private static final Logger logger = LibraryLogManager.getLogger( UdpMessageSniffer.class );
 
 static
 {
    // force only IPv4 sockets, since EPICS does not work right with IPv6 sockets
    // see http://java.sun.com/j2se/1.5.0/docs/guide/net/properties.html
    System.setProperty ( "java.net.preferIPv4Stack", "true" );
-   CARepeaterUtils.initializeLogger( logger );
 }
 
 /*- Main ---------------------------------------------------------------------*/

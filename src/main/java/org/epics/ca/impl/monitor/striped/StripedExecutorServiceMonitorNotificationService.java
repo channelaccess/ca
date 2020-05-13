@@ -7,6 +7,7 @@ package org.epics.ca.impl.monitor.striped;
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.impl.TypeSupports;
 import org.epics.ca.impl.monitor.MonitorNotificationService;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
@@ -24,8 +25,7 @@ public class StripedExecutorServiceMonitorNotificationService<T> implements Moni
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   // Get Logger
-   private static final Logger logger = Logger.getLogger( StripedExecutorServiceMonitorNotificationService.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( StripedExecutorServiceMonitorNotificationService.class );
 
    @SuppressWarnings( "FieldCanBeLocal" )
    private final StripedExecutorServiceMonitorNotificationServiceFactory factory;

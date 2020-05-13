@@ -9,6 +9,7 @@ import org.apache.commons.lang3.Validate;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.epics.ca.impl.monitor.MonitorNotificationService;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,7 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( StripedExecutorServiceMonitorNotificationServiceFactory.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger(StripedExecutorServiceMonitorNotificationServiceFactory.class);
    private final List<MonitorNotificationService<?>> serviceList = new ArrayList<>();
 
    private final StripedExecutorService stripedExecutorService;

@@ -5,6 +5,7 @@ package org.epics.ca.impl;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,7 +47,7 @@ class TCPTransportTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( TCPTransportTest.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( TCPTransportTest.class );
 
    private SocketChannel channel;
    private TCPTransport transport;

@@ -1,6 +1,7 @@
 package org.epics.ca.impl.monitor.striped;
 
 import org.epics.ca.impl.monitor.MonitorNotificationServiceTest;
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -18,7 +19,7 @@ import static org.epics.ca.NotificationConsumer.*;
 class StripedExecutorServiceMonitorNotificationServiceTest
 {
    // Get Logger
-   private static final Logger logger = Logger.getLogger( MonitorNotificationServiceTest.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger(MonitorNotificationServiceTest.class );
 
    @BeforeAll
    static void beforeAll()
