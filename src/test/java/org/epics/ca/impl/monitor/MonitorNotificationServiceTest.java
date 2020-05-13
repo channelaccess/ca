@@ -7,6 +7,7 @@ package org.epics.ca.impl.monitor;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.NotificationConsumer;
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -36,7 +37,7 @@ public class MonitorNotificationServiceTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( MonitorNotificationServiceTest.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( MonitorNotificationServiceTest.class );
 
 
 /*- Main ---------------------------------------------------------------------*/

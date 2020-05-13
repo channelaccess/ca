@@ -6,6 +6,7 @@ package org.epics.ca;
 
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +36,7 @@ public class NotificationConsumer<T> implements Consumer<T>
 
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( NotificationConsumer.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( NotificationConsumer.class );
 
    private static CountDownLatch expectedTotalNotificationCountDetectionLatch;
    private static final AtomicLong expectedTotalNotificationCount = new AtomicLong();

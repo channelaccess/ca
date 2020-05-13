@@ -6,6 +6,7 @@ package org.epics.ca.impl.repeater;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.net.*;
 import java.util.*;
@@ -28,13 +29,13 @@ class CARepeaterClientManager
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( CARepeaterClientManager.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( CARepeaterClientManager.class );
+
    static
    {
       // force only IPv4 sockets, since EPICS does not work right with IPv6 sockets
       // see http://java.sun.com/j2se/1.5.0/docs/guide/net/properties.html
       System.setProperty ( "java.net.preferIPv4Stack", "true" );
-      CARepeaterUtils.initializeLogger( logger );
    }
 
    private final Map<InetSocketAddress,CARepeaterClientProxy> clientMap = Collections.synchronizedMap( new HashMap<>() );
@@ -43,6 +44,13 @@ class CARepeaterClientManager
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 
+   /**
+    * Constructs a new instance which will advertise the CA Repeater's
+    * availability at the specified socket.
+    *
+    * @param repeaterListeningSocketAddress the socket on which the CA
+    *    repeater will advertise it is listening.
+    */
    public CARepeaterClientManager( InetSocketAddress repeaterListeningSocketAddress )
    {
       this.repeaterListeningSocketAddress = Validate.notNull( repeaterListeningSocketAddress );

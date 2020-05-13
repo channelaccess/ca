@@ -6,6 +6,7 @@ package org.epics.ca.impl.monitor.blockingqueue;
 
 import net.jcip.annotations.Immutable;
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -30,7 +31,7 @@ class MonitorNotificationTask<T> implements Runnable
 /*- Private attributes -------------------------------------------------------*/
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger( MonitorNotificationTask.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( MonitorNotificationTask.class );
 
    private final Supplier<? extends T> valueSupplier;
    private final Consumer<? super T> valueConsumer;

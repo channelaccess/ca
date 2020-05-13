@@ -10,13 +10,12 @@ import java.util.logging.Logger;
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.Constants;
 import org.epics.ca.Status;
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.epics.ca.util.net.InetAddressUtil;
 
 public class ResponseHandlers
 {
-
-   // Get Logger
-   private static final Logger logger = Logger.getLogger( ResponseHandlers.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( ResponseHandlers.class );
 
    /**
     * Interface defining response handler.

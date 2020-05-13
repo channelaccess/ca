@@ -3,6 +3,7 @@ package org.epics.ca.impl.monitor;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -29,17 +30,18 @@ class MonitorNotificationServiceFactoryCreatorTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger(MonitorNotificationServiceTest.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger(MonitorNotificationServiceTest.class );
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public attributes --------------------------------------------------------*/
-@BeforeAll
-static void beforeAll()
-{
-   System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s  %5$s%6$s%n");
-   Locale.setDefault(Locale.ROOT );
-}
+
+   @BeforeAll
+   static void beforeAll()
+   {
+      System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s  %5$s%6$s%n");
+      Locale.setDefault( Locale.ROOT );
+   }
 
    @Test
    void testCreateMonitorNotificationServiceFactory_ThrowsNullPointerExceptionWhenServiceImplConfigurationNull()

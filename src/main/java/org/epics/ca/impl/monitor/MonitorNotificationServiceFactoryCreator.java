@@ -9,6 +9,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.epics.ca.impl.monitor.blockingqueue.BlockingQueueMonitorNotificationServiceFactory;
 import org.epics.ca.impl.monitor.disruptor.DisruptorMonitorNotificationServiceFactory;
 import org.epics.ca.impl.monitor.striped.StripedExecutorServiceMonitorNotificationServiceFactory;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,8 +111,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
 
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = Logger.getLogger( MonitorNotificationServiceFactoryCreator.class.getName() );
-
+   private static final Logger logger = LibraryLogManager.getLogger( MonitorNotificationServiceFactoryCreator.class );
    private static final List<MonitorNotificationServiceFactory> serviceFactoryList = new ArrayList<>();
 
 
