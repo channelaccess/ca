@@ -262,7 +262,6 @@ public class SearchTimer extends Thread
     * class need not implement Runnable, which would allow others to directly
     * invoke run, which is not supported.
     **/
-
    protected class RunLoop implements Runnable
    {
       public void run()
