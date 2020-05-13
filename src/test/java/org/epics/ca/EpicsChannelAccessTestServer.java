@@ -1,5 +1,9 @@
+/*- Package Declaration ------------------------------------------------------*/
 
 package org.epics.ca;
+
+
+/*- Imported packages --------------------------------------------------------*/
 
 import gov.aps.jca.CAException;
 import gov.aps.jca.JCALibrary;
@@ -15,12 +19,91 @@ import com.cosylab.epics.caj.cas.util.examples.CounterProcessVariable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
+
+/**
+ * Provides a test server to support integration testing of the PSI CA library.
+ *
+ * The current implementation uses the EPICS-community Java CA Server library.
+ */
 public class EpicsChannelAccessTestServer
 {
+
+/*- Public attributes --------------------------------------------------------*/
+/*- Private attributes -------------------------------------------------------*/
+
    /**
     * JCA server context.
     */
    private volatile ServerContext context = null;
+
+/*- Main ---------------------------------------------------------------------*/
+
+   /**
+    * Program entry point.
+    *
+    * @param args command-line arguments
+    */
+   public static void main( String[] args )
+   {
+      // execute
+      new EpicsChannelAccessTestServer().execute ();
+   }
+
+/*- Constructor --------------------------------------------------------------*/
+/*- Public methods -----------------------------------------------------------*/
+
+   public Future<?> runInSeparateThread()
+   {
+      final Future<?> myFuture;
+      try
+      {
+         // initialize context
+         initialize ();
+
+         // Run server
+         myFuture = Executors.newSingleThreadExecutor().submit( () -> {
+            try
+            {
+               context.run (0);
+            }
+            catch ( Throwable th )
+            {
+               th.printStackTrace ();
+            }
+         } );
+      }
+      catch ( Throwable th )
+      {
+         throw new RuntimeException( "Failed to start CA server.", th );
+      }
+      return myFuture;
+   }
+
+   /**
+    * Destroy JCA server context.
+    */
+   public void destroy()
+   {
+      try
+      {
+         // Destroy the context, check if never initialized.
+         if ( context != null )
+         {
+            context.destroy();
+         }
+      }
+      catch ( Throwable th )
+      {
+         th.printStackTrace ();
+      }
+   }
+
+
+/*- Package-level methods ----------------------------------------------------*/
+/*- Private methods ----------------------------------------------------------*/
 
    /**
     * Initialize JCA context.
@@ -51,8 +134,7 @@ public class EpicsChannelAccessTestServer
     */
    private void registerProcessVariables( DefaultServerImpl server )
    {
-
-      // simple in-memory PV
+      // Simple in-memory PV
       server.createMemoryProcessVariable ("simple", DBR_Int.TYPE, new int[] { 1, 2, 3 });
 
       // PV supporting all GR/CTRL info
@@ -116,26 +198,6 @@ public class EpicsChannelAccessTestServer
       server.createMemoryProcessVariable ("large", DBR_Int.TYPE, arrayValue);
    }
 
-   /**
-    * Destroy JCA server  context.
-    */
-   void destroy()
-   {
-      try
-      {
-         // Destroy the context, check if never initialized.
-         if ( context != null )
-         {
-            context.destroy();
-         }
-      }
-      catch ( Throwable th )
-      {
-         th.printStackTrace ();
-      }
-   }
-
-
    private void execute()
    {
       try
@@ -165,45 +227,9 @@ public class EpicsChannelAccessTestServer
          // always finalize
          destroy ();
       }
-
    }
 
-   Future<?> runInSeparateThread()
-   {
-      final Future<?> myFuture;
-      try
-      {
-         // initialize context
-         initialize ();
 
-         // Run server
-         myFuture = Executors.newSingleThreadExecutor().submit( () -> {
-            try
-            {
-               context.run (0);
-            }
-            catch ( Throwable th )
-            {
-               th.printStackTrace ();
-            }
-         } );
-      }
-      catch ( Throwable th )
-      {
-         throw new RuntimeException ("Failed to start CA server.", th);
-      }
-      return myFuture;
-   }
-
-   /**
-    * Program entry point.
-    *
-    * @param args command-line arguments
-    */
-   public static void main( String[] args )
-   {
-      // execute
-      new EpicsChannelAccessTestServer().execute ();
-   }
+/*- Nested Classes -----------------------------------------------------------*/
 
 }
