@@ -12,6 +12,7 @@ import org.epics.ca.Status;
 import org.epics.ca.impl.*;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
 import org.epics.ca.impl.monitor.MonitorNotificationService;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 /**
  * CA monitor for Type T.
@@ -19,9 +20,7 @@ import org.epics.ca.impl.monitor.MonitorNotificationService;
  */
 public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
 {
-
-   // Get Logger
-   private static final Logger logger = Logger.getLogger( MonitorRequest.class.getName() );
+   private static final Logger logger = LibraryLogManager.getLogger( MonitorRequest.class );
 
    private int bufferOverrunWarningCount = 0;
 
