@@ -66,7 +66,9 @@ class SocketUtilitiesTest
    {
       assertThat( Arrays.toString( InetAddress.getAllByName("0.0.0.0") ), is ("[/0.0.0.0]" ) );
       assertThat( Arrays.toString( InetAddress.getAllByName(null ) ), is ("[localhost/127.0.0.1]" ) );
-      assertThat( Arrays.toString( InetAddress.getAllByName("localhost" ) ), is ("[localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1]" ) );
+      // On a Mac platform this test returns also the IPV6 addreses which may not be available on other target platforms.
+      final InetAddress[] localInetAddresses = InetAddress.getAllByName( "localhost" );
+      Arrays.stream( localInetAddresses ).map( InetAddress::toString).forEach( ( i) -> assertThat(i, anyOf(is ("localhost/127.0.0.1" ), is("localhost/0:0:0:0:0:0:0:1" ) ) ));
    }
 
    @Test
@@ -306,7 +308,7 @@ class SocketUtilitiesTest
       assertThat( SocketUtilities.isSocketAvailable( localHostSocketAddress ), is( true ) );
 
       // Note: socket is opened using try-with-resources to ensure that the socket gets autoclosed regardless of outcome
-      // Note: the socket-in-use is also bound to the loopback socket address.
+      // Note: the socket-in-use is also bound to the localhost socket address.
       try ( final DatagramSocket socketInUse = SocketUtilities.createUnboundSendSocket() )
       {
          socketInUse.setReuseAddress( shareable );
@@ -584,7 +586,7 @@ class SocketUtilitiesTest
    @Test
    void testSocketSend_investigateNobodyListening() throws UnknownHostException, SocketException
    {
-      // Create a datagram destined for the blackhole internet address
+      // Create a datagram destined for the IPV6 blackhole internet address
       final DatagramPacket packet = new DatagramPacket( new byte[] { (byte) 0xAA } , 1, InetAddress.getByName( "100::" ), 44231 );
 
       // Create a socket which is not broadcast enabled.
@@ -593,9 +595,10 @@ class SocketUtilitiesTest
       {
          exception = assertThrows( IOException.class, () -> sendSocket.send( packet ) );
       }
-      assertThat( exception.getClass(), is( IOException.class ) );
       assertThat( exception.getMessage(), anyOf( containsString( "Network is unreachable"),
-                                                 containsString( "No route to host (sendto failed)" ) ) );
+                                                 containsString( "No route to host (sendto failed)" ),
+                                                 containsString( "No buffer space available (sendto failed)" ),
+                                                 containsString( "Protocol family unavailable" ) ) );
       System.out.println( "The exception message details were: '" +  exception.getMessage() + "'." );
    }
 
@@ -608,40 +611,46 @@ class SocketUtilitiesTest
    @ValueSource( booleans = { true, false } )
    void testCreateBroadcastAwareListeningSocket_DefaultProperties( boolean shareable ) throws SocketException
    {
-      try( DatagramSocket socket = SocketUtilities.createBroadcastAwareListeningSocket(1234, false ) )
+      try( DatagramSocket socket = SocketUtilities.createBroadcastAwareListeningSocket(1234, shareable ) )
       {
-
          // Verify that the socket is not closed.
-         assertThat(socket.isClosed(), is(false));
+         assertThat( socket.isClosed(), is(false ) );
 
          // Verify that the socket is configured for compatibility with broadcasts.
-         assertThat(socket.getBroadcast(), is(true));
+         assertThat( socket.getBroadcast(), is(true ) );
 
          // Verify that the socket is not connected. That means that it will not perform
          // any filtering on the packets it received, nor add any destination information
          // to datagram packets that it is asked to send.
-         assertThat(socket.isConnected(), is(false));
+         assertThat( socket.isConnected(), is(false ) );
+
+         // Verify that the socket's reuseability mode is as requested.
+         // Note: socket reuse may not be enabled on some platforms.
+         // See the excellent article on Stack Exchange:
+         // https://stackoverflow.com/questions/14388706/how-do-so-reuseaddr-and-so-reuseport-differ
+         final String reason = "The socket reuse mode was not as configured. Perhaps it is not available on the current runtime platform.";
+         assertThat( reason, socket.getReuseAddress(), is( shareable) );
 
          // Verify that the local state of socket shows that it is bound to Port 1234 on the wildcard address.
-         assertThat(socket.isBound(), is(true));
-         assertThat(socket.getLocalSocketAddress().toString(), is("0.0.0.0/0.0.0.0:1234"));
-         assertThat(socket.getLocalAddress().toString(), is("0.0.0.0/0.0.0.0"));
-         assertThat(socket.getLocalPort(), is(1234));
+         assertThat( socket.isBound(), is(true ) );
+         assertThat( socket.getLocalSocketAddress().toString(), is("0.0.0.0/0.0.0.0:1234"));
+         assertThat( socket.getLocalAddress().toString(), is("0.0.0.0/0.0.0.0"));
+         assertThat( socket.getLocalPort(), is(1234 ) );
 
          // Verify the size of the receive buffer on this platform.
          // On a MacBook Pro vintage 2017 this is 65507.
-         assertThat(socket.getReceiveBufferSize(), is(greaterThan(16384)));
+         assertThat( socket.getReceiveBufferSize(), is(greaterThan(16384)));
 
          // Verify the remote state of the socket shows that it is not configured to send
          // its packets to anywhere in particular. This means the information must be
          // provided in each Datagram packet that the user wishes to send.
-         assertThat(socket.getRemoteSocketAddress(), is(nullValue()));
-         assertThat(socket.getPort(), is(-1));
-         assertThat(socket.getInetAddress(), is(nullValue()));
+         assertThat( socket.getRemoteSocketAddress(), is(nullValue()));
+         assertThat( socket.getPort(), is(-1));
+         assertThat( socket.getInetAddress(), is(nullValue()));
 
          // Close socket and verify that it is now reported as closed
          socket.close();
-         assertThat(socket.isClosed(), is(true));
+         assertThat( socket.isClosed(), is(true));
 
          // Verify that sockets remain bound even after they have been closed.
          assertThat(socket.isBound(), is(true));
