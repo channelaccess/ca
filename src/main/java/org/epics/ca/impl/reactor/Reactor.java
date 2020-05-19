@@ -1,5 +1,7 @@
 package org.epics.ca.impl.reactor;
 
+import org.epics.ca.util.logging.LibraryLogManager;
+
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
@@ -24,7 +26,7 @@ public class Reactor
 {
 
    // Get Logger
-   private static final Logger logger = Logger.getLogger (Reactor.class.getName ());
+   private static final Logger logger = LibraryLogManager.getLogger( Reactor.class );
 
    /**
     * Simple internal request interface.
@@ -467,6 +469,7 @@ public class Reactor
     * @return selector selection key.
     * @throws ClosedChannelException Channel closed
     */
+   @SuppressWarnings( "UnusedReturnValue" )
    public SelectionKey register( SelectableChannel selectableChannel, int interestOps, ReactorHandler handler ) throws ClosedChannelException
    {
       final RegistrationRequest rr = new RegistrationRequest (selectableChannel, interestOps, handler);
