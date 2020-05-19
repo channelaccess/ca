@@ -148,7 +148,6 @@ public class CARepeaterStarterTest
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort), is(false ) );
    }
 
-
    @Test
    void testIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddresses() throws Throwable
    {
