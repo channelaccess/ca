@@ -26,7 +26,7 @@ public class BlockingQueueMonitorNotificationServiceFactory implements MonitorNo
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LibraryLogManager.getLogger(BlockingQueueMonitorNotificationServiceFactory.class );
+   private static final Logger logger = LibraryLogManager.getLogger( BlockingQueueMonitorNotificationServiceFactory.class );
 
    private final List<MonitorNotificationService<?>> serviceList = new ArrayList<>();
    private final ThreadPoolExecutor threadPoolExecutor;
