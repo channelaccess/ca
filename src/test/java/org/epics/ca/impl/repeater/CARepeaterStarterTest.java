@@ -8,29 +8,31 @@ package org.epics.ca.impl.repeater;
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.*;
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import static org.epics.ca.impl.repeater.CARepeaterStarter.getLocalNetworkInterfaceAddresses;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
 
-class CARepeaterStarterTest
+public class CARepeaterStarterTest
 {
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterStarterTest.class );
-   private final int testPort = 5065;
+   private static final int testPort = 5065;
+   private static final boolean caRepeaterDebug = true;
 
 
 /*- Main ---------------------------------------------------------------------*/
@@ -38,18 +40,40 @@ class CARepeaterStarterTest
 /*- Public methods -----------------------------------------------------------*/
 /*- Package-level methods ----------------------------------------------------*/
 
+   @BeforeAll
+   static void beforeAll()
+   {
+      assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
+   }
+
    @BeforeEach
    void beforeEach()
    {
-      assertThat( "Test precondition failure: the repeater should NOT be running on port " + testPort + ".", CARepeaterStarter.isRepeaterRunning( testPort ), is (false ) );
+      final InetSocketAddress wildcardAddress = new InetSocketAddress( 5065 );
+      logger.info( "Checking Test Precondition: CA Repeater should NOT be running... on: " + wildcardAddress );
+
+      if ( CARepeaterStarter.isRepeaterRunning( testPort ) )
+      {
+         logger.info( "Test Precondition FAILED: the CA Repeater was detected to be already running." );
+         fail();
+      }
+      else
+      {
+         logger.info( "Test Precondition OK: the CA Repeater was not detected to be already running." );
+      }
+      logger.info( "Starting Test." );
    }
 
    @AfterEach
    void afterEach() throws InterruptedException
    {
+      logger.info( "Cleaning up after test..." );
+      logger.finest( "Collecting final output..." );
+      Thread.sleep( 1000 );
+      logger.finest( "Flushing Streams..." );
       System.out.flush();
       System.err.flush();
-      Thread.sleep( 1000 );
+      logger.info( "Test finished." );
    }
 
    @Test
@@ -61,17 +85,35 @@ class CARepeaterStarterTest
    @Test
    void testStartRepeaterInSeparateJvmProcess() throws Throwable
    {
-      final Optional<Process> optProcess = CARepeaterStarter.startRepeaterInSeparateJvmProcess( testPort );
-      assertThat( optProcess.isPresent(), is( true ) );
-      assertThat( optProcess.get().isAlive(), is( true ) );
+      logger.info( "Starting CA Repeater in separate process." );
+      final Process process = CARepeaterStarter.startRepeaterInSeparateJvmProcess( testPort, caRepeaterDebug );
+      logger.info( "The CA Repeater process was created." );
+      logger.info( "Verifying that the CA Repeater process is reported as being alive..." );
+      assertThat( process.isAlive(), is( true ) );
+      logger.info( "OK" );
+      logger.info( "Waiting a couple of seconds to allow the spawned process time to reserve the listening port..." );
       Thread.sleep( 2000 );
-      assertThat( optProcess.get().isAlive(), is( true ) );
+      logger.info( "Waiting completed." );
+      final boolean alreadyTerminated = process.waitFor(1, TimeUnit.SECONDS );
+      assertThat( alreadyTerminated, is( false ) );
+      logger.info( "Verifying that the CA Repeater process is reported as being alive..." );
+      assertThat( process.isAlive(), is( true ) );
+      logger.info( "OK" );
+      logger.info( "Letting the CA Repeater run for 2 seconds..." );
+      Thread.sleep( 2000 );
+      logger.info( "Verifying that the CA Repeater is detected as running..." );
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
-      Thread.sleep( 5000 );
-      optProcess.ifPresent( Process::destroy );
+      logger.info( "OK" );
+      logger.info( "Killing the CA Repeater process..." );
+      process.destroy();
+      logger.info( "Killed !" );
       Thread.sleep( 1000 );
-      assertThat( optProcess.get().isAlive(), is( false ) );
+      logger.info( "Verifying that the CA Repeater process is no longer reported as being alive..." );
+      assertThat( process.isAlive(), is( false ) );
+      logger.info( "OK" );
+      logger.info( "Verifying that the CA Repeater is no longer detected as running..." );
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( false ) );
+      logger.info( "OK" );
    }
 
    @Test
@@ -87,15 +129,19 @@ class CARepeaterStarterTest
    }
 
    @Test
-   void testIsRepeaterRunning_detectsSocketReservedInSameJvm() throws Throwable
+   void testIsRepeaterRunning_detectsShareableSocketWhenReservedInSameJvm() throws Throwable
    {
-      try ( DatagramSocket listeningSocket = SocketUtilities.createBroadcastAwareListeningSocket( testPort, false ) )
+      try ( DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(testPort, true ) )
       {
          assertThat( CARepeaterStarter.isRepeaterRunning( testPort), is(true  ) );
       }
-
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort), is(false ) );
-      try ( DatagramSocket listeningSocket = SocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
+   }
+
+   @Test
+   void testIsRepeaterRunning_detectsNonShareableSocketWhenReservedInSameJvm() throws Throwable
+   {
+      try ( DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(testPort, false ) )
       {
          assertThat( CARepeaterStarter.isRepeaterRunning( testPort), is(true  ) );
       }
@@ -104,9 +150,9 @@ class CARepeaterStarterTest
 
 
    @Test
-   void testIsRepeaterRunning_detectsSocketReservedOnDifferentLocalAddresses() throws Throwable
+   void testIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddresses() throws Throwable
    {
-      final List<Inet4Address> localAddressList = getLocalNetworkInterfaceAddresses();
+      final List<Inet4Address> localAddressList = NetworkUtilities.getLocalNetworkInterfaceAddresses();
       for ( Inet4Address localAddress : localAddressList )
       {
          testIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddress( localAddress.getHostAddress() );
@@ -123,9 +169,9 @@ class CARepeaterStarterTest
 
       // Spawn an external process to reserve a socket on port 5065 for 5000 milliseconds
       final String classPath=  System.getProperty( "java.class.path", "<java.class.path not found>" );
-      final String classWithMainMethod =  SocketReserver.class.getName();
+      final String classWithMainMethod =  UdpSocketReserver.class.getName();
       final String portToReserve = "5065";
-      final String reserveTimeInMillis = "5000";
+      final String reserveTimeInMillis = "1000";
       final Process process = new ProcessBuilder().command( "java",
                                                             "-cp",
                                                             classPath,
@@ -151,41 +197,10 @@ class CARepeaterStarterTest
       assertThat( "The isRepeaterRunning method failed to detect that the socket is now available.",
                   CARepeaterStarter.isRepeaterRunning( testPort ), is( false ) );
 
-      logger.info( "The test PASSED" );
+      logger.info( "The test PASSED." );
    }
 
 
 /*- Nested Classes -----------------------------------------------------------*/
-
-   public static class SocketReserver
-   {
-      private static final Logger logger = LibraryLogManager.getLogger( SocketReserver.class );
-
-      public static void main( String[] args ) throws SocketException, InterruptedException, UnknownHostException
-      {
-         if ( args.length != 3 )
-         {
-            logger.info( "Usage: java -cp <classpath> org.epics.ca.impl.repeater.CARepeaterStarterTest$SocketReserver <arg1> <arg2> <arg3>");
-            logger.info( "Where: arg1 = localAddress; arg2 = port; arg3 = reserveTimeInMillis" );
-            return;
-         }
-
-         final InetAddress inetAddress = InetAddress.getByName( args[ 0 ] );
-         final int port = Integer.parseInt( args[ 1 ] );
-         final long sleepTimeInMillis = Integer.parseInt( args[ 2 ] );
-
-         logger.info( "Reserving socket: '" + inetAddress + ":" + port + "'." );
-
-         try ( DatagramSocket listeningSocket = new DatagramSocket( null ) )
-         {
-            listeningSocket.setReuseAddress( false );
-            listeningSocket.bind( new InetSocketAddress( inetAddress, port ) );
-            logger.info( "Sleeping...");
-            Thread.sleep( sleepTimeInMillis );
-            logger.info( "Awake again...");
-            logger.info( "Releasing socket.");
-         }
-      }
-   }
 
 }
