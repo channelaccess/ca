@@ -24,7 +24,7 @@ public class DisruptorMonitorNotificationServiceFactory implements MonitorNotifi
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LibraryLogManager.getLogger(DisruptorMonitorNotificationServiceFactory.class );
+   private static final Logger logger = LibraryLogManager.getLogger( DisruptorMonitorNotificationServiceFactory.class );
    private final List<MonitorNotificationService<?>> serviceList = new ArrayList<>();
    private final boolean oldImpl;
 
