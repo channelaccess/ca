@@ -44,13 +44,6 @@ public class MonitorNotificationServiceTest
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
 
-   @BeforeAll
-   static void beforeAll()
-   {
-      System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s  %5$s%6$s%n");
-      Locale.setDefault(Locale.ROOT );
-   }
-
    @ParameterizedTest
    @MethodSource( "getMonitorNotificationServiceImplementations" )
    void testGetNotifierForConsumer_ThrowsNullPointerExceptionWhenConsumerNull( String serviceImpl )
