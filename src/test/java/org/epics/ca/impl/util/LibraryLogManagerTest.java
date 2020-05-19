@@ -23,13 +23,15 @@ class LibraryLogManagerTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
+   private static final Logger logger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
+
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
 /*- Package-level methods ----------------------------------------------------*/
 
    @Test
-   void testGetLoggerWithDebugEnabled()
+   void testGetLogger_withDebugEnabled()
    {
       System.setProperty( "CA_DEBUG", "1" );
       final Logger debugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
@@ -40,10 +42,11 @@ class LibraryLogManagerTest
       debugLogger.info( "** This log message is at level INFO **" );
       debugLogger.warning( "** This log message is at level WARNING **" );
       debugLogger.severe( "** This log message is at level SEVERE **" );
+      System.clearProperty( "CA_DEBUG" );
    }
 
    @Test
-   void testGetLoggerWithDebugDisabled()
+   void testGetLogger_withDebugDisabled()
    {
       System.setProperty( "CA_DEBUG", "0" );
       final Logger noDebugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
@@ -57,7 +60,7 @@ class LibraryLogManagerTest
    }
 
    @Test
-   void testGetLoggerWithDefaultDebugLevel()
+   void testGetLogger_withDefaultDebugLevel()
    {
       final Logger defaultLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
       defaultLogger.finest( "** This log message is at level FINEST **" );
@@ -70,7 +73,7 @@ class LibraryLogManagerTest
    }
 
    @Test
-   void testGetLoggerWithExceptions()
+   void testGetLogger_withExceptions()
    {
       final Logger exceptionLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
 
@@ -85,7 +88,7 @@ class LibraryLogManagerTest
    }
 
    @RepeatedTest( 3 )
-   void testPerformanceWithDebugDisabled()
+   void testFinest_performanceWithDebugDisabled()
    {
       System.setProperty( "CA_DEBUG", "0" );
       final Logger noDebugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
@@ -100,7 +103,7 @@ class LibraryLogManagerTest
    }
 
    @RepeatedTest( 3 )
-   void testPerformanceWithDebugEnabled()
+   void testFinest_performanceWithDebugEnabled()
    {
       System.setProperty( "CA_DEBUG", "1" );
       final Logger noDebugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
