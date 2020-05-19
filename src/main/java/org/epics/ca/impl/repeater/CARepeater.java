@@ -36,13 +36,6 @@ class CARepeater
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeater.class );
 
-   static
-   {
-      // force only IPv4 sockets, since EPICS does not work right with IPv6 sockets
-      // see http://java.sun.com/j2se/1.5.0/docs/guide/net/properties.html
-      System.setProperty ( "java.net.preferIPv4Stack", "true" );
-   }
-
    private final byte[] buffer;
    private final ByteBuffer data;
 
@@ -67,7 +60,7 @@ class CARepeater
    {
       Validate.inclusiveBetween(1, 65535, repeaterPort, "The port must be in the range 1-65535." );
 
-      logger.log( Level.INFO, "The CA repeater will listen to broadcasts on all local interfaces by binding to the wildcard address on port " + repeaterPort + "." ) ;
+      logger.info( "Creating CA repeater instance which will bind to the wildcard address on port " + repeaterPort + "." ) ;
 
       this.buffer = new byte[ Constants.MAX_UDP_RECV ];
       this.data = ByteBuffer.wrap( buffer );
@@ -76,17 +69,19 @@ class CARepeater
 
       try
       {
-         this.listeningSocket = SocketUtilities.createBroadcastAwareListeningSocket( repeaterPort, false );
+         logger.finest( "Creating broadcast-aware listening socket on port: " + repeaterPort );
+         this.listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(repeaterPort, false );
+         logger.finest( "The listening socket was created ok." );
       }
       catch ( SocketException ex )
       {
          final String msg = "An unexpected exception has prevented the CA Repeater from starting.";
-         logger.log( Level.INFO, msg, ex );
+         logger.log( Level.WARNING, msg, ex );
          throw new CaRepeaterStartupException( msg, ex );
       }
 
       final InetSocketAddress repeaterListeningSocketAddress = (InetSocketAddress)  listeningSocket.getLocalSocketAddress();
-      logger.log( Level.FINEST, "The repeater will advertise its availability on the socket with address : '" + repeaterListeningSocketAddress ) ;
+      logger.finest( "The repeater will advertise its availability on the socket with address : '" + repeaterListeningSocketAddress ) ;
       clientProxyManager = new CARepeaterClientManager( repeaterListeningSocketAddress );
    }
 
@@ -149,29 +144,29 @@ class CARepeater
     */
    private void processUdpDatagramPackets()
    {
-      logger.log( Level.FINEST, "Processing incoming UDP datagrams..." );
+      logger.finest( "Processing incoming UDP datagrams..." );
       while ( !shutdownRequest.get() )
       {
          try
          {
             // Wait for a Datagram Packet to arrive.
-            logger.log( Level.FINEST, "Waiting for next datagram." );
+            logger.finest( "Waiting for next datagram." );
             final DatagramPacket inputPacket = waitForDatagram();
             if ( shutdownRequest.get() )
             {
-               logger.log( Level.FINEST, "The wait for the next datagram has terminated." );
-               logger.log( Level.FINEST, "The CA repeater has been shutdown. Will not process any more messages." );
+               logger.finest( "The wait for the next datagram has terminated." );
+               logger.finest( "The CA repeater has been shutdown. Will not process any more messages." );
                return;
             }
-            logger.log( Level.FINEST, "A new UDP datagram packet has been received. " );
+            logger.finest( "A new UDP datagram packet has been received. " );
 
             // Process all the data in the datagram packet which may consist of one or several CA messages.
             boolean unprocessedMessages = true;
             DatagramPacket packetToProcess = inputPacket;
             while ( unprocessedMessages )
             {
-               logger.log( Level.FINEST, "Consuming next message in UDP datagram packet." );
-               logger.log( Level.FINEST, "The length of the UDP datagram is: " + packetToProcess.getLength() + " bytes."  );
+               logger.finest( "Consuming next message in UDP datagram packet." );
+               logger.finest( "The length of the UDP datagram is: " + packetToProcess.getLength() + " bytes."  );
                final DatagramPacket residualMessagePacket = processOneMessage( packetToProcess,
                                                                                // Zero Length message consumer
                                                                                this::handleClientRegistrationRequest,
@@ -182,7 +177,7 @@ class CARepeater
                                                                                // All other message consumer
                                                                                this::handleAllOtherMessages );
 
-               logger.log( Level.FINEST, "After processing the length of the UDP datagram is: " + residualMessagePacket.getLength() + " bytes."  );
+               logger.finest("After processing the length of the UDP datagram is: " + residualMessagePacket.getLength() + " bytes."  );
                unprocessedMessages = residualMessagePacket.getLength() > 0;
                packetToProcess = residualMessagePacket;
             }
@@ -235,13 +230,13 @@ class CARepeater
       Validate.notNull( zeroLengthMessageHandler );
       Validate.notNull( defaultMessageHandler );
 
-      logger.log( Level.FINEST, "Consuming one message." );
+      logger.finest( "Consuming one message." );
 
       final int bytesReceived = inputPacket.getLength();
-      logger.log( Level.FINEST, "The length of the UDP datagram packet is " + bytesReceived + " bytes." );
+      logger.finest( "The length of the UDP datagram packet is " + bytesReceived + " bytes." );
 
       final InetSocketAddress senderSocketAddress = (InetSocketAddress) inputPacket.getSocketAddress();
-      logger.log( Level.FINEST, "The message was sent from socket '" + senderSocketAddress  + "'" );
+      logger.finest( "The message was sent from socket '" + senderSocketAddress  + "'" );
 
       if ( bytesReceived == 0 )
       {
@@ -255,27 +250,27 @@ class CARepeater
          final short commandCode = buffer.getShort( CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value );
          if ( commandCode == CARepeaterMessage.CaCommandCodes.CA_REPEATER_REGISTER.value )
          {
-            logger.log( Level.FINEST, "Calling CLIENT REGISTRATION MESSAGE consumer." );
+            logger.finest( "Calling CLIENT REGISTRATION MESSAGE consumer." );
             clientRegistrationMessageHandler.accept( inputPacket );
 
-            logger.log( Level.FINEST, "Removing processed CLIENT REGISTRATION MESSAGE." );
+            logger.finest( "Removing processed CLIENT REGISTRATION MESSAGE." );
             return removeProcessedMessage( inputPacket, Constants.CA_MESSAGE_HEADER_SIZE );
 
          }
          else if( commandCode == CARepeaterMessage.CaCommandCodes.CA_PROTO_RSRV_IS_UP.value  )
          {
-            logger.log( Level.FINEST, "Calling BEACON MESSAGE consumer." );
+            logger.finest( "Calling BEACON MESSAGE consumer." );
             beaconMessageHandler.accept( inputPacket );
 
-            logger.log( Level.FINEST, "Removing processed BEACON MESSAGE." );
+            logger.finest("Removing processed BEACON MESSAGE." );
             return removeProcessedMessage( inputPacket, Constants.CA_MESSAGE_HEADER_SIZE );
          }
       }
 
-      logger.log( Level.FINEST, "Calling DEFAULT MESSAGE consumer." );
+      logger.finest( "Calling DEFAULT MESSAGE consumer." );
       defaultMessageHandler.accept( inputPacket );
 
-      logger.log( Level.FINEST, "Removing processed DEFAULT MESSAGE of length " + inputPacket.getLength() + " bytes." );
+      logger.finest( "Removing processed DEFAULT MESSAGE of length " + inputPacket.getLength() + " bytes." );
       return removeProcessedMessage( inputPacket, inputPacket.getLength() );
    }
 
@@ -289,34 +284,34 @@ class CARepeater
       Validate.notNull( packet );
       Validate.isTrue( packet.getLength() == 0 || packet.getLength() >= Constants.CA_MESSAGE_HEADER_SIZE );
 
-      logger.log( Level.FINEST, "Handling CA Client Registration Message sent from socket '" + packet.getSocketAddress() + "'" );
+      logger.finest( "Handling CA Client Registration Message sent from socket '" + packet.getSocketAddress() + "'" );
 
       final ByteBuffer buffer = ByteBuffer.wrap( packet.getData() );
       final InetAddress serverInetAddress = InetAddressUtil.intToIPv4Address(buffer.getInt( CARepeaterMessage.CaHeaderOffsets.CA_HDR_INT_PARAM2_OFFSET.value ) );
       final InetSocketAddress serverSocketAddress = new InetSocketAddress( serverInetAddress, packet.getPort() );
-      logger.log( Level.FINEST, "The server address encoded in the datagram was: '" + serverInetAddress + "'" );
+      logger.finest( "The server address encoded in the datagram was: '" + serverInetAddress + "'" );
 
       // Reject registration requests that do not come from a local machine address.
-      if ( ! SocketUtilities.isThisMyIpAddress( packet.getAddress() ) )
+      if ( ! NetworkUtilities.isThisMyIpAddress( packet.getAddress() ) )
       {
-         logger.log( Level.WARNING, "The internet address associated with the request datagram (" + packet.getAddress() + ") was not a local address.'" );
-         logger.log( Level.WARNING, "The CA repeater can only register clients on one of the local machine interfaces." );
+         logger.warning( "The internet address associated with the request datagram (" + packet.getAddress() + ") was not a local address.'" );
+         logger.warning( "The CA repeater can only register clients on one of the local machine interfaces." );
          return;
       }
 
       // Reject registration requests from clients that do not seem to be listening on the reported socket.
       if ( CARepeaterClientProxy.isClientDead( (InetSocketAddress) packet.getSocketAddress() ) )
       {
-         logger.log( Level.WARNING, "The CA repeater client (" + packet.getAddress() + ") reports that it is dead." );
-         logger.log( Level.WARNING, "The CA repeater only register clients that are alive." );
+         logger.warning( "The CA repeater client (" + packet.getAddress() + ") reports that it is dead." );
+         logger.warning( "The CA repeater only register clients that are alive." );
          return;
       }
 
       // Reject registration requests from clients that are already registered.
      if ( clientProxyManager.isListeningPortAlreadyAssigned( packet.getPort() ) )
       {
-         logger.log( Level.WARNING, "The internet address associated with the request datagram (" + packet.getSocketAddress() + ") is already a registered client." );
-         logger.log( Level.WARNING, "Nothing further to do." );
+         logger.warning( "The internet address associated with the request datagram (" + packet.getSocketAddress() + ") is already a registered client." );
+         logger.warning( "Nothing further to do." );
          return;
       }
 
@@ -338,17 +333,17 @@ class CARepeater
       Validate.notNull( packet );
       Validate.isTrue( packet.getLength() >= Constants.CA_MESSAGE_HEADER_SIZE );
 
-      logger.log( Level.FINEST, "Handling CA Beacon Message sent from socket '" + packet.getSocketAddress()  + "'." );
+      logger.finest( "Handling CA Beacon Message sent from socket '" + packet.getSocketAddress()  + "'." );
 
       final ByteBuffer buffer = ByteBuffer.wrap( packet.getData() );
       final short caServerVersionNumber = buffer.getShort( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_SHORT_BEACON_MSG_SERVER_PROTOCOL_MINOR_VERSION_OFFSET.value );
-      logger.log( Level.FINEST, "The CA Beacon Message indicates the server's protocol minor version number is: '" + caServerVersionNumber  + "'." );
+      logger.finest( "The CA Beacon Message indicates the server's protocol minor version number is: '" + caServerVersionNumber  + "'." );
 
       final short serverListeningPort = buffer.getShort( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_SHORT_BEACON_MSG_SERVER_TCP_LISTENING_PORT_OFFSET.value );
-      logger.log( Level.FINEST, "The CA Beacon Message indicates the server's TCP listening port is: '" + serverListeningPort  + "'" );
+      logger.finest( "The CA Beacon Message indicates the server's TCP listening port is: '" + serverListeningPort  + "'" );
 
       final int serverBeaconId = buffer.getInt( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_INT_BEACON_MSG_SERVER_BEACON_ID_OFFSET.value );
-      logger.log( Level.FINEST, "The CA Beacon Message has the following Beacon ID '" + serverBeaconId  + "'." );
+      logger.finest( "The CA Beacon Message has the following Beacon ID '" + serverBeaconId  + "'." );
 
       // Extract the socket address of the message sender. This will be excluded from the list of
       // CA Repeater clients that the message will be forwarded to.
@@ -360,12 +355,12 @@ class CARepeater
       // provided in the received Datagram Packet.
       final int serverAddressEncodedInMessage = buffer.getInt( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_INT_BEACON_MSG_SERVER_ADDR_OFFSET.value );
       final String serverAddressEncodedInMessageAsString = InetAddressUtil.intToIPv4Address( serverAddressEncodedInMessage ).toString();
-      logger.log( Level.FINEST, "The CA Beacon Message advertised the server's IP address as being: '" + serverAddressEncodedInMessageAsString  + "'." );
+      logger.finest( "The CA Beacon Message advertised the server's IP address as being: '" + serverAddressEncodedInMessageAsString  + "'." );
 
       if ( serverAddressEncodedInMessage == 0 )
       {
-         logger.log( Level.FINEST, "Using IP address from datagram sending socket (" + packet.getAddress() + ")." );
-         logger.log( Level.FINEST, "Forwarding Beacon Message...");
+         logger.finest( "Using IP address from datagram sending socket (" + packet.getAddress() + ")." );
+         logger.finest( "Forwarding Beacon Message...");
 
          final InetAddress serverAddressEncodedInDatagram = packet.getAddress();
          clientProxyManager.forwardBeacon( caServerVersionNumber,
@@ -376,8 +371,8 @@ class CARepeater
       }
       else
       {
-         logger.log( Level.FINEST, "Using IP address encoded in message (" + serverAddressEncodedInMessageAsString + ")." );
-         logger.log( Level.FINEST, "Forwarding Beacon Message...");
+         logger.finest( "Using IP address encoded in message (" + serverAddressEncodedInMessageAsString + ")." );
+         logger.finest( "Forwarding Beacon Message...");
          clientProxyManager.forwardBeacon( caServerVersionNumber,
                                            serverListeningPort,
                                            serverBeaconId,
@@ -433,21 +428,21 @@ class CARepeater
       {
          if ( shutdownRequest.get() )
          {
-            logger.log( Level.FINEST, "The receive datagram operation terminated because the CA repeater was shutdown." );
+            logger.finest( "The receive datagram operation terminated because the CA repeater was shutdown." );
             return new DatagramPacket( new byte[] {}, 0  );
          }
          else
          {
             final String msg = "An unexpected exception has made it impossible to obtain a new datagram.";
-            logger.log( Level.FINEST, msg );
+            logger.finest( msg );
             Thread.currentThread().interrupt();
             throw new Exception(msg, ex);
          }
 
       }
 
-      logger.log( Level.FINEST, "" );
-      logger.log( Level.FINEST, "CA Repeater listening socket has received new data. Processing..." );
+      logger.finest( "" );
+      logger.finest( "CA Repeater listening socket has received new data. Processing..." );
       return packet;
    }
 
@@ -464,14 +459,14 @@ class CARepeater
       Validate.notNull( inputPacket );
       Validate.isTrue( messageToRemoveLength <= inputPacket.getLength() );
 
-      logger.log( Level.FINEST, "Removing message of length " + messageToRemoveLength + " bytes." );
+      logger.finest( "Removing message of length " + messageToRemoveLength + " bytes." );
 
       final int newLength = inputPacket.getLength() - messageToRemoveLength;
       final byte[] newPayload = Arrays.copyOfRange( inputPacket.getData(), messageToRemoveLength, inputPacket.getLength() );
       final SocketAddress newSocketAddress = inputPacket.getSocketAddress();
 
       final DatagramPacket outputPacket = new DatagramPacket( newPayload, newLength,newSocketAddress );
-      logger.log( Level.FINEST, "The datagram packet is now of length " + newLength + " bytes." );
+      logger.finest( "The datagram packet is now of length " + newLength + " bytes." );
       return outputPacket;
    }
 
