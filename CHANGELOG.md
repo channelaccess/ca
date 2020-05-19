@@ -88,9 +88,9 @@ This log describes the functionality of tagged versions within the repository.
   Release was originally triggered mainly by need to address problems when interoperating with EPICS 7 Channel Access (see Issue #58). 
   But other changes to modernise build chain to use later tools.
   Also refactored lots of code following IntelliJ code inspection recommendations.
-  Thanks to JL Muir for his contributions. :-)
   Also CA Repeater was refactored for improved clarity resulting in the creation of many new unit tests to verify the behaviour.
-  
+  Also: thanks to JL Muir for his contributions. :-)
+
   ###### Change List:   
   * [Issue #52](https://github.com/channelaccess/ca/issues/52) Fix readme Gradle fragment version. Credit JL Muir. :-)
   * [Issue #53](https://github.com/channelaccess/ca/issues/53) README unclear about supported listeners. Credit JL Muir. :-)
@@ -121,5 +121,13 @@ This log describes the functionality of tagged versions within the repository.
   * [Issue #78](https://github.com/channelaccess/ca/issues/78) Update Channel Access Test Server to use latest from JCA project.
   * [Issue #79](https://github.com/channelaccess/ca/issues/79) Miscellaneous improvements to unit tests.
   * [Issue #80](https://github.com/channelaccess/ca/issues/80) Update CHANGELOG with details of software release 1.3.0.
- 
-  
+  * [Issue #81](https://github.com/channelaccess/ca/issues/81) Refactor / simplify logging facilities.
+  * [Issue #82](https://github.com/channelaccess/ca/issues/82) Restructure using standard class template.
+  * [Issue #83](https://github.com/channelaccess/ca/issues/83) Further improvements to Example program.
+  * [Issue #84](https://github.com/channelaccess/ca/issues/84) Further test improvements
+  * [Issue #85](https://github.com/channelaccess/ca/issues/85) Modify Example program to start/stop EPICS Test Server automatically.
+  * [Issue #86](https://github.com/channelaccess/ca/issues/86) Create markdown file for developer notes.
+  * [Issue #87](https://github.com/channelaccess/ca/issues/87) Add various run targets to gradle build script.
+  * [Issue #88](https://github.com/channelaccess/ca/issues/88) Refactor general-purpose network related functions into separate class.
+  * [Issue #89](https://github.com/channelaccess/ca/issues/89) Start repeater registration process immediately after CA Repeater
+
