@@ -26,7 +26,7 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LibraryLogManager.getLogger(StripedExecutorServiceMonitorNotificationServiceFactory.class);
+   private static final Logger logger = LibraryLogManager.getLogger( StripedExecutorServiceMonitorNotificationServiceFactory.class );
    private final List<MonitorNotificationService<?>> serviceList = new ArrayList<>();
 
    private final StripedExecutorService stripedExecutorService;
