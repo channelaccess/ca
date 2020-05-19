@@ -19,21 +19,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ChannelsTest
 {
    private Context context;
-   private EpicsChannelAccessTestServer server;
+   private EpicsChannelAccessTestServer channelAccessTestServer;
 
    @BeforeEach
    void setUp()
    {
-      server = new EpicsChannelAccessTestServer();
-      server.runInSeparateThread ();
-      context = new Context ();
+      channelAccessTestServer = EpicsChannelAccessTestServer.start();
+      context = new Context();
    }
 
    @AfterEach
    void tearDown()
    {
       context.close ();
-      server.destroy ();
+      channelAccessTestServer.shutdown();
    }
 
    @Test
