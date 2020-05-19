@@ -30,32 +30,22 @@ class ChannelThroughputTests
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger(ChannelThroughputTests.class );
-
    private EpicsChannelAccessTestServer server;
-
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
 
-   @BeforeAll
-   static void beforeAll()
-   {
-      System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s  %5$s%6$s%n");
-      Locale.setDefault( Locale.ROOT );
-   }
-
    @BeforeEach
    void setUp()
    {
-      server = new EpicsChannelAccessTestServer();
-      server.runInSeparateThread();
+      server = EpicsChannelAccessTestServer.start();
    }
 
    @AfterEach
    void tearDown()
    {
-      server.destroy();
+      server.shutdown();
    }
 
    /**
