@@ -4,7 +4,6 @@ package org.epics.ca.impl.monitor;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.epics.ca.util.logging.LibraryLogManager;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -12,7 +11,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -35,13 +33,6 @@ class MonitorNotificationServiceFactoryCreatorTest
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public attributes --------------------------------------------------------*/
-
-   @BeforeAll
-   static void beforeAll()
-   {
-      System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s  %5$s%6$s%n");
-      Locale.setDefault( Locale.ROOT );
-   }
 
    @Test
    void testCreateMonitorNotificationServiceFactory_ThrowsNullPointerExceptionWhenServiceImplConfigurationNull()
