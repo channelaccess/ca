@@ -30,14 +30,6 @@ class CARepeaterClientManager
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterClientManager.class );
-
-   static
-   {
-      // force only IPv4 sockets, since EPICS does not work right with IPv6 sockets
-      // see http://java.sun.com/j2se/1.5.0/docs/guide/net/properties.html
-      System.setProperty ( "java.net.preferIPv4Stack", "true" );
-   }
-
    private final Map<InetSocketAddress,CARepeaterClientProxy> clientMap = Collections.synchronizedMap( new HashMap<>() );
    private final InetSocketAddress repeaterListeningSocketAddress;
 
@@ -77,16 +69,16 @@ class CARepeaterClientManager
    {
       Validate.notNull( clientListeningSocketAddress );
 
-      logger.log( Level.FINEST, "Attempting to register new client listening at socket address: " + clientListeningSocketAddress);
+      logger.finest( "Attempting to register new client listening at socket address: " + clientListeningSocketAddress);
 
       // Attempt to create a new CA Repeater Client Proxy.
       final CARepeaterClientProxy proxy;
       try
       {
-         logger.log( Level.FINEST, "Creating new proxy for CA Repeater Client... ");
+         logger.finest( "Creating new proxy for CA Repeater Client... ");
          // SocketException -->
          proxy = new CARepeaterClientProxy( clientListeningSocketAddress );
-         logger.log( Level.FINEST, "The proxy was created OK. ");
+         logger.finest( "The proxy was created OK. ");
       }
       catch( SocketException ex )
       {
@@ -95,14 +87,14 @@ class CARepeaterClientManager
       }
 
       // Attempt to send the new repeater client a CA_REPEATER_CONFIRM message.
-      logger.log(Level.FINEST, "Sending repeater registration confirm message to '" + clientListeningSocketAddress + "'." );
+      logger.finest( "Sending repeater registration confirm message to '" + clientListeningSocketAddress + "'." );
       if( proxy.sendCaRepeaterConfirmMessage( repeaterListeningSocketAddress.getAddress() ) )
       {
          // If the message was sent successfully then add the new proxy to
          // the map of managed proxies.
-         logger.log( Level.FINEST, "Adding new client to list of registered CA repeater clients." );
+         logger.finest( "Adding new client to list of registered CA repeater clients." );
          clientMap.put( clientListeningSocketAddress, proxy );
-         logger.log( Level.FINEST, "The list now contains " + clientMap.size() + " clients." );
+         logger.finest( "The list now contains " + clientMap.size() + " clients." );
       }
       else
       {
@@ -116,19 +108,19 @@ class CARepeaterClientManager
       // Attempt to send previously existing clients a CA_PROTO_VERSION message. Why do we do this ?
       // The only hint is provided by the comment below taken from a previous version of the CA Repeater.
       // "send noop message to all other clients, not to accumulate clients when there are no beacons"
-      logger.log( Level.FINEST, "Sending repeater protocol version message to registered clients..." );
-      logger.log( Level.FINEST, "Will exclude the newly created client..." + clientListeningSocketAddress );
+      logger.finest( "Sending repeater protocol version message to registered clients..." );
+      logger.finest( "Will exclude the newly created client..." + clientListeningSocketAddress );
       final List<CARepeaterClientProxy> failedNotifications = sendVersionMessageToRegisteredClients( clientListeningSocketAddress );
 
       // Provide some visibility of notification failures in the log.
       if ( failedNotifications.size() > 0 )
       {
-         logger.log( Level.WARNING, "Failed to send protocol version message to one or more registered clients." );
+         logger.warning( "Failed to send protocol version message to one or more registered clients." );
       }
 
       // Every time a new client is created perform housekeeping on the
       // list of registered clients to remove any dead ones.
-      logger.log( Level.FINEST, "Performing housekeeping on registered clients..." );
+      logger.finest( "Performing housekeeping on registered clients..." );
       removeDeadClients();
    }
 
@@ -151,13 +143,13 @@ class CARepeaterClientManager
       Validate.notNull( serverAddress );
       Validate.notNull( excluded );
 
-      logger.log(Level.FINEST, "Forwarding beacon with ID: " + serverBeaconId + " to " + clientMap.size() + " CA Repeater clients." );
-      logger.log( Level.FINEST, "Any CA Repeater client with socket address to " + excluded + " will be excluded from notification." );
+      logger.finest( "Forwarding beacon with ID: " + serverBeaconId + " to " + clientMap.size() + " CA Repeater clients." );
+      logger.finest( "Any CA Repeater client with socket address to " + excluded + " will be excluded from notification." );
       final List<CARepeaterClientProxy> failedNotifications = sendBeaconMessageToRegisteredClients( serverProtocolMinorVersion, serverListeningPort, serverBeaconId, serverAddress, excluded );
 
       // Every time a new client is created perform housekeeping on the
       // list of registered clients to remove any dead ones.
-      logger.log( Level.FINEST, "Performing housekeeping on registered clients..." );
+      logger.finest( "Performing housekeeping on registered clients..." );
       removeDeadClients();
    }
 
@@ -177,9 +169,8 @@ class CARepeaterClientManager
       Validate.notNull( packet );
       Validate.isTrue( packet.getSocketAddress() instanceof InetSocketAddress );
 
-      logger.log( Level.FINEST, "Forwarding datagram packet to " + clientMap.size() + " CA Repeater clients." );
-
-      logger.log( Level.FINEST, "Any CA Repeater client with socket address to " + excluded + " will be excluded from notification." );
+      logger.finest( "Forwarding datagram packet to " + clientMap.size() + " CA Repeater clients." );
+      logger.finest( "Any CA Repeater client with socket address to " + excluded + " will be excluded from notification." );
 
       // Create a datagram packet using the same data but which does not specify the datagram
       // destination address.
@@ -189,7 +180,7 @@ class CARepeaterClientManager
 
       // Every time a datagram is sent perform housekeeping on the
       // list of registered clients to remove any dead ones.
-      logger.log( Level.FINEST, "Performing housekeeping on registered clients..." );
+      logger.finest( "Performing housekeeping on registered clients..." );
       removeDeadClients();
    }
 
@@ -351,10 +342,10 @@ class CARepeaterClientManager
     */
    private void removeClient( CARepeaterClientProxy proxy )
    {
-      logger.log(Level.FINEST, "Deregistering dead client which used to listen at socket address: " + proxy.getClientListeningSocketAddress() );
+      logger.finest( "Deregistering dead client which used to listen at socket address: " + proxy.getClientListeningSocketAddress() );
       final CARepeaterClientProxy noLongerRequiredProxy = clientMap.remove( proxy.getClientListeningSocketAddress() );
 
-      logger.log(Level.FINEST, "Closing dead client communication proxy." );
+      logger.finest( "Closing dead client communication proxy." );
       noLongerRequiredProxy.close();
    }
 
