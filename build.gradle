@@ -95,6 +95,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
     testImplementation 'org.junit.platform:junit-platform-launcher:1.6.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.0'
+    testImplementation 'org.junit.platform:junit-platform-commons:1.6.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0:javadoc'
@@ -110,7 +111,9 @@ dependencies {
 }
 
 test {
-    enabled = true
+    // Both these properties MUST be asserted when running the tests.
+    systemProperty 'java.net.preferIPv4Stack', 'true'
+    systemProperty 'java.net.preferIPv6Stack', 'false'
     useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
@@ -183,6 +186,52 @@ task fatJarWithTests(type: Jar) {
     from { configurations.testRuntimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
     with testJar
+}
+
+task udpSocketTester( type:JavaExec ) {
+    main = 'org.epics.ca.impl.repeater.UdpSocketTester'
+    // Both these properties MUST be asserted when running any of the programs or tests in this project
+    systemProperty 'java.net.preferIPv4Stack', 'true'
+    systemProperty 'java.net.preferIPv6Stack', 'false'
+    classpath fatJarWithTests
+    args '4444', "5"
+}
+
+task udpSocketReserver( type:JavaExec ) {
+    main = 'org.epics.ca.impl.repeater.UdpSocketReserver'
+    // Both these properties MUST be asserted when running any of the programs or tests in this project
+    systemProperty 'java.net.preferIPv4Stack', 'true'
+    systemProperty 'java.net.preferIPv6Stack', 'false'
+    classpath fatJarWithTests
+    args '0.0.0.0', '9162', "500"
+}
+
+task udpMessageSniffer( type:JavaExec ) {
+    main = 'org.epics.ca.impl.repeater.UdpMessageSniffer'
+    // Both these properties MUST be asserted when running any of the programs or tests in this project
+    systemProperty 'java.net.preferIPv4Stack', 'true'
+    systemProperty 'java.net.preferIPv6Stack', 'false'
+    classpath fatJarWithTests
+    args '5064'
+}
+
+task runJava(type: JavaExec ) {
+    // Both these properties MUST be asserted when running the tests.
+    systemProperty 'java.net.preferIPv4Stack', 'true'
+    systemProperty 'java.net.preferIPv6Stack', 'false'
+    main = 'org.epics.ca.TargetPlatformTestRunner'
+    classpath fatJarWithTests
+    args '-method', 'org.epics.ca.impl.repeater.SocketUtilitiesTest#testIsSocketAvailable_reportRepeaterPortStatus'
+}
+
+task example(type: JavaExec ) {
+    // Both these properties MUST be asserted when running the tests.
+    systemProperty 'java.net.preferIPv4Stack', 'true'
+    systemProperty 'java.net.preferIPv6Stack', 'false'
+    systemProperty 'CA_DEBUG', 'true'
+    main = 'org.epics.ca.Example'
+    classpath fatJarWithTests
+    args ''
 }
 
 // Define what will get published
