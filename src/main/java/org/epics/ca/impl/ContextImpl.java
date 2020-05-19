@@ -47,12 +47,6 @@ public class ContextImpl implements AutoCloseable, Constants
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   static
-   {
-      // force only IPv4 sockets, since EPICS does not work with IPv6 sockets
-      System.setProperty ("java.net.preferIPv4Stack", "true");
-   }
-
    /**
     * Context logger.
     */
@@ -236,12 +230,23 @@ public class ContextImpl implements AutoCloseable, Constants
       }
 
       // leader/followers processing
-      leaderFollowersThreadPool = new LeaderFollowersThreadPool ();
+      leaderFollowersThreadPool = new LeaderFollowersThreadPool();
 
       // spawn initial leader
-      leaderFollowersThreadPool.promoteLeader (reactor::process);
+      leaderFollowersThreadPool.promoteLeader( reactor::process );
 
-      broadcastTransport.set (initializeUDPTransport ());
+      broadcastTransport.set(initializeUDPTransport ());
+
+      // Attempt to spawn the CA Repeater if not already running.
+      try
+      {
+         final boolean caRepeaterDebugMode = Boolean.parseBoolean( System.getProperty( "CA_DEBUG", "false" ) );
+         CARepeaterStarter.startRepeaterIfNotAlreadyRunning( repeaterPort, caRepeaterDebugMode );
+      }
+      catch ( RuntimeException ex )
+      {
+         logger.log( Level.WARNING, "Failed to start CA Repeater on port " + repeaterPort, ex ) ;
+      }
 
       // Start task to register with CA Repeater
       final InetSocketAddress repeaterLocalAddress = new InetSocketAddress (InetAddress.getLoopbackAddress (), repeaterPort );
@@ -249,16 +254,6 @@ public class ContextImpl implements AutoCloseable, Constants
                                                                   0,
                                                                   CA_REPEATER_REGISTRATION_INTERVAL,
                                                                   TimeUnit.SECONDS );
-
-      // Attempt to spawn the CA Repeater if not already running.
-      try
-      {
-         CARepeaterStarter.startRepeaterIfNotAlreadyRunning( repeaterPort );
-      }
-      catch ( RuntimeException ex )
-      {
-         logger.log( Level.WARNING, "Failed to start CA Repeater on port " + repeaterPort, ex ) ;
-      }
 
       channelSearchManager = new ChannelSearchManager( broadcastTransport.get() );
       monitorNotificationServiceFactory = MonitorNotificationServiceFactoryCreator.create( monitorNotifierConfigImpl );
