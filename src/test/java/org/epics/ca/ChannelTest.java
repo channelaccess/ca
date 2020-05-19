@@ -5,6 +5,7 @@ package org.epics.ca;
 
 import org.epics.ca.data.*;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -13,7 +14,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 import java.util.*;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,16 +40,13 @@ class ChannelTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   // Get Logger
-   private static final Logger logger = Logger.getLogger( ChannelTest.class.getName () );
+   private static final Logger logger = LibraryLogManager.getLogger( ChannelTest.class );
 
    private static final double DELTA = 1e-10;
 
    //private Context context;
    private static EpicsChannelAccessTestServer server;
    private static final int TIMEOUT_SEC = 5;
-
-   private static Future<?> future;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -58,26 +55,51 @@ class ChannelTest
    @BeforeAll
    static void beforeAll()
    {
-      System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s  %5$s%6$s%n");
       System.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
-      System.setProperty( "CA_DEBUG", "5" );
       System.setProperty( "EPICS_CA_AUTO_ADDR_LIST", "NO" );
-      Locale.setDefault( Locale.ROOT );
-      server = new EpicsChannelAccessTestServer();
-      future =server.runInSeparateThread ();
+      server = EpicsChannelAccessTestServer.start();
    }
 
    @AfterAll
    static void afterAll()
    {
-      server.destroy();
-      future.cancel( true );
+      server.shutdown();
    }
 
    @Test
-   void logTest()
+   void logMessage()
    {
-      logger.log(Level.FINEST, "My msg is: %s", "abc" );
+      // Note: see the reference below for further details about the format options available for logging.
+      // https://docs.oracle.com/javase/1.5.0/docs/api/java/text/MessageFormat.html
+
+      // String formatting options
+      logger.log( Level.INFO, "STRING formatting options:" );
+      logger.log( Level.INFO, "My msg with '{0}' format specifier is: {0}",  "Hello" );
+      logger.log( Level.INFO, "My msg with '{0} {1}' format specifier is: {0} {1}\n", new String[] { "Hello", "world !" } );
+
+      // Number formatting options
+      logger.log( Level.INFO, "NUMBER formatting options:" );
+      logger.log( Level.INFO, "My msg with '{0,number}' format specifier is: {0,number}", 123456789.987654321 );
+      logger.log( Level.INFO, "My msg with '{0,number,integer}' specifier is: {0,number,integer}", 123456789.987654321 );
+      logger.log( Level.INFO, "My msg with '{0,number,currency}' specifier is: {0,number,currency}", 123456789.987654321 );
+      logger.log( Level.INFO, "My msg with '{0,number,percent}' specifier is: {0,number,percent}\n", 123456789.987654321 );
+
+      // Date formatting options
+      logger.log( Level.INFO, "DATE formatting options:" );
+      logger.log( Level.INFO, "My msg with '{0,date}' format specifier is: {0,date}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,date,short}' specifier is: {0,date,short}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,date,medium}' specifier is: {0,date,medium}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,date,long}' specifier is: {0,date,long}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,date,full}' specifier is: {0,date,full}\n", new Date() );
+
+      // Time formatting options
+      logger.log( Level.INFO, "TIME formatting options:" );
+      logger.log( Level.INFO, "My msg with '{0,time}' format specifier is: {0,time}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,time,short}' specifier is: {0,time,short}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,time,medium}' specifier is: {0,time,medium}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,time,long}' specifier is: {0,time,long}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,time,full}' specifier is: {0,time,full}\n", new Date() );
+
    }
 
 
@@ -279,14 +301,13 @@ class ChannelTest
 
             // Destroy the test server which will create a channel disconnection event.
             // Verify that the monitor did not receive a new update
-            server.destroy();
+            server.shutdown();
             Thread.sleep(1000);
             Mockito.verifyNoMoreInteractions(consumer);
 
             // Now recreate the server and check that the monitor received an update with the default value
             // for this PV
-            server = new EpicsChannelAccessTestServer();
-            server.runInSeparateThread();
+            server = EpicsChannelAccessTestServer.start();
             Thread.sleep(1000);
             Mockito.verify(consumer, Mockito.times(1)).accept(defautAdcValue);
          }
@@ -413,8 +434,7 @@ class ChannelTest
       alarm.setAlarmStatus (AlarmStatus.UDF_ALARM);
       alarm.setAlarmSeverity (AlarmSeverity.INVALID_ALARM);
 
-      final String[] labels =
-            { "zero", "one", "two", "three", "four", "five", "six", "seven" };
+      final String[] labels = { "zero", "one", "two", "three", "four", "five", "six", "seven" };
 
       internalTestGraphicEnum ("enum", Short.class, (short) 2, alarm, labels, false);
       internalTestGraphicEnum ("enum", Short.class, (short) 3, alarm, labels, true);
@@ -527,7 +547,7 @@ class ChannelTest
       return serviceImpls.stream().map(Arguments::of);
    }
 
-
+   @SuppressWarnings( "SameParameterValue" )
    private <T> void internalTestPutAndGet( String channelName, Class<T> clazz, T expectedValue, boolean async ) throws Throwable
    {
       try ( Context context = new Context() )
