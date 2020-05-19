@@ -2,12 +2,10 @@ package org.epics.ca.impl.monitor.striped;
 
 import org.epics.ca.impl.monitor.MonitorNotificationServiceTest;
 import org.epics.ca.util.logging.LibraryLogManager;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Locale;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -19,14 +17,7 @@ import static org.epics.ca.NotificationConsumer.*;
 class StripedExecutorServiceMonitorNotificationServiceTest
 {
    // Get Logger
-   private static final Logger logger = LibraryLogManager.getLogger(MonitorNotificationServiceTest.class );
-
-   @BeforeAll
-   static void beforeAll()
-   {
-      System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s  %5$s%6$s%n");
-      Locale.setDefault(Locale.ROOT );
-   }
+   private static final Logger logger = LibraryLogManager.getLogger( MonitorNotificationServiceTest.class );
 
    /**
     * Data for the test below.
@@ -48,11 +39,11 @@ class StripedExecutorServiceMonitorNotificationServiceTest
 
    /**
     *
-    * @param notifications
-    * @param notifyValue1
-    * @param notifyValue2
-    * @param serviceImpl
-    * @param <T>
+    * @param serviceImpl the service implementation.
+    * @param notifications the number of notifications to be sent.
+    * @param notifyValue1 the first example notification value.
+    * @param notifyValue2 the second example notification value.
+    * @param <T> the notification type.
     */
    @ParameterizedTest
    @MethodSource( "getArgumentsForTestsWithSameConsumer" )
