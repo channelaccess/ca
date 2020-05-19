@@ -10,11 +10,8 @@ public final class LibraryVersion
 
    /**
     * Returns a best-efforts string representation of the CA library that is
-    * running inside the current JVM.
-    *
-    * @implNote
-    * When available the version string is retrieved from the relevant entries
-    * within the manifest file, if any, associated with the package.
+    * running inside the current JVM by extracting information from the
+    * manifest file, if any, associated with the top level CA package.
     *
     * @return the version string or &lt;unknown&gt; if unavailable.
     */
