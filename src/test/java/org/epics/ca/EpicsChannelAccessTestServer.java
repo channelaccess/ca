@@ -2,7 +2,6 @@
 
 package org.epics.ca;
 
-
 /*- Imported packages --------------------------------------------------------*/
 
 import gov.aps.jca.CAException;
@@ -16,9 +15,8 @@ import com.cosylab.epics.caj.cas.util.DefaultServerImpl;
 import com.cosylab.epics.caj.cas.util.MemoryProcessVariable;
 import com.cosylab.epics.caj.cas.util.examples.CounterProcessVariable;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -34,71 +32,92 @@ public class EpicsChannelAccessTestServer
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   /**
-    * JCA server context.
-    */
-   private volatile ServerContext context = null;
+   private final ExecutorService executor;
+   private final ServerContext context;
+
 
 /*- Main ---------------------------------------------------------------------*/
 
    /**
-    * Program entry point.
+    * Runs the EPICS CA Test Server from the command line.
     *
-    * @param args command-line arguments
+    * @param args command-line arguments (not used).
     */
    public static void main( String[] args )
    {
-      // execute
-      new EpicsChannelAccessTestServer().execute ();
+      EpicsChannelAccessTestServer.start();
    }
 
+
 /*- Constructor --------------------------------------------------------------*/
+
+   /**
+    * Creates a new instance.
+    *
+    * @throws CAException if some unexpected condition occurs.
+    */
+   private EpicsChannelAccessTestServer() throws CAException
+   {
+      // Create the library default server implementation
+      // System.setProperty( "EPICS_CA_ADDR_LIST", "localhost" );
+
+      // Get the JCALibrary instance.
+      final JCALibrary jca = JCALibrary.getInstance();
+
+      // Create a context based on the library default server implementation
+      // CAException -->
+      final DefaultServerImpl server = new DefaultServerImpl();
+      context = jca.createServerContext( JCALibrary.CHANNEL_ACCESS_SERVER_JAVA, server );
+
+      // Register the process variables required for any subsequent tests.
+      registerProcessVariables( server );
+
+      executor = Executors.newSingleThreadExecutor();
+   }
+
 /*- Public methods -----------------------------------------------------------*/
 
-   public Future<?> runInSeparateThread()
+   /**
+    * Starts the EPICS CA Test Server and returns a reference which will
+    * allow it to be shut down in the future.
+    *
+    * @return the server reference.
+    * @throws RuntimeException if anything prevents the server from starting.
+    */
+   public static EpicsChannelAccessTestServer start()
    {
-      final Future<?> myFuture;
+      System.out.println( "\nStarting the EPICS Channel Access Test Server..." );
+
+      final EpicsChannelAccessTestServer server;
       try
       {
-         // initialize context
-         initialize ();
-
-         // Run server
-         myFuture = Executors.newSingleThreadExecutor().submit( () -> {
-            try
-            {
-               context.run (0);
-            }
-            catch ( Throwable th )
-            {
-               th.printStackTrace ();
-            }
-         } );
+          server = new EpicsChannelAccessTestServer();
       }
-      catch ( Throwable th )
+      catch ( CAException ex )
       {
-         throw new RuntimeException( "Failed to start CA server.", th );
+         throw new RuntimeException( "An exception occurred which prevented the server from starting." );
       }
-      return myFuture;
+
+      // Display basic information about the CA context associated with the server.
+      server.printContextInfo();
+
+      // Start the server in a separate daemon thread that will continue until shut down.
+      server.startInSeparateThread();
+
+      // Return the reference to the server (which will allow it to be shutdown when required).
+      System.out.println( "The EPICS Channel Access Test Server was initialised and is running.\n" );
+      return server;
    }
 
    /**
-    * Destroy JCA server context.
+    * Shuts down the test server, releasing all resources.
     */
-   public void destroy()
+   public void shutdown()
    {
-      try
-      {
-         // Destroy the context, check if never initialized.
-         if ( context != null )
-         {
-            context.destroy();
-         }
-      }
-      catch ( Throwable th )
-      {
-         th.printStackTrace ();
-      }
+      System.out.println( "\nShutting down the EPICS Channel Access Test Server..." );
+      executor.shutdownNow();
+      destroyContextWithoutPropagatingExceptions();
+      System.out.println( "The EPICS Channel Access Test Server was shutdown." );
    }
 
 
@@ -106,25 +125,57 @@ public class EpicsChannelAccessTestServer
 /*- Private methods ----------------------------------------------------------*/
 
    /**
-    * Initialize JCA context.
+    * Runs the EPICS CA Test Server from a separate thread in the calling
+    * JVM instance, returning immediately.
     *
-    * @throws CAException throws on any failure.
+    * The test server runs indefinitely until the <code>destroy</code>
+    * method is called or until unless some unexpected exception condition
+    * terminates processing prematurely.
     */
-   private void initialize() throws CAException
+   private void startInSeparateThread()
    {
+      executor.execute( () -> {
 
-      // Get the JCALibrary instance.
-      final JCALibrary jca = JCALibrary.getInstance ();
+         // Run the server indefinitely or until some exception occurs.
+         try
+         {
+            // Zero means run and block forever.
+            context.run(0 );
+         }
+         catch( CAException ex )
+         {
+            ex.printStackTrace ();
+            throw new RuntimeException( "The following unexpected exception occurred: '" + ex.getMessage() + "'", ex );
+         }
+         finally
+         {
+            destroyContextWithoutPropagatingExceptions();
+         }
+      } );
+   }
 
-      // Create server implementation
-      final DefaultServerImpl server = new DefaultServerImpl ();
+   private void printContextInfo()
+   {
+      System.out.println( "TEST SERVER VERSION INFO:" );
+      System.out.println( context.getVersion().getVersionString() );
+      System.out.println( "TEST SERVER CONTEXT INFO:" );
+      context.printInfo();
 
-      // Create a context with default configuration values.
-      System.setProperty( "EPICS_CA_ADDR_LIST", "localhost" );
-      context = jca.createServerContext( JCALibrary.CHANNEL_ACCESS_SERVER_JAVA, server );
+   }
 
-      // register process variables
-      registerProcessVariables( server );
+   /**
+    * Destroys the test server context, releasing all resources.
+    */
+   private void destroyContextWithoutPropagatingExceptions()
+   {
+      try
+      {
+         context.destroy();
+      }
+      catch ( IllegalStateException | CAException  ex )
+      {
+         Thread.currentThread().interrupt();
+      }
    }
 
    /**
@@ -167,8 +218,7 @@ public class EpicsChannelAccessTestServer
       // enum in-memory PV
       final MemoryProcessVariable enumPV = new MemoryProcessVariable ("enum", null, DBR_Enum.TYPE, new short[] { 0 })
       {
-         private final String[] labels =
-               { "zero", "one", "two", "three", "four", "five", "six", "seven" };
+         private final String[] labels = { "zero", "one", "two", "three", "four", "five", "six", "seven" };
 
          /* (non-Javadoc)
           * @see com.cosylab.epics.caj.cas.util.MemoryProcessVariable#getEnumLabels()
@@ -197,38 +247,6 @@ public class EpicsChannelAccessTestServer
       }
       server.createMemoryProcessVariable ("large", DBR_Int.TYPE, arrayValue);
    }
-
-   private void execute()
-   {
-      try
-      {
-         // initialize context
-         initialize ();
-
-         // Display basic information about the context.
-         System.out.println (context.getVersion ().getVersionString ());
-         context.printInfo ();
-         System.out.println ();
-
-         System.out.println ("Running server...");
-
-         // run server
-         context.run (0);
-
-         System.out.println ("Done.");
-
-      }
-      catch ( Throwable th )
-      {
-         th.printStackTrace ();
-      }
-      finally
-      {
-         // always finalize
-         destroy ();
-      }
-   }
-
 
 /*- Nested Classes -----------------------------------------------------------*/
 
