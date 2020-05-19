@@ -28,14 +28,6 @@ class CARepeaterClientProxy implements AutoCloseable
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterClientProxy.class );
-
-   static
-   {
-      // force only IPv4 sockets, since EPICS does not work right with IPv6 sockets
-      // see http://java.sun.com/j2se/1.5.0/docs/guide/net/properties.html
-      System.setProperty ( "java.net.preferIPv4Stack", "true" );
-   }
-
    private final InetSocketAddress clientListeningSocketAddress;
    private final DatagramSocket senderSocket;
 
@@ -75,22 +67,22 @@ class CARepeaterClientProxy implements AutoCloseable
    {
       Validate.notNull( clientListeningSocketAddress, "The 'clientListeningSocketAddress' argument was null." );
       final InetAddress inetAddress = clientListeningSocketAddress.getAddress();
-      Validate.isTrue( SocketUtilities.isThisMyIpAddress( inetAddress ), "The 'clientListeningSocketAddress' specified a socket which was not local ('" + inetAddress + "')."  );
+      Validate.isTrue( NetworkUtilities.isThisMyIpAddress(inetAddress ), "The 'clientListeningSocketAddress' specified a socket which was not local ('" + inetAddress + "')."  );
 
-      logger.log( Level.FINEST, "Creating new CA Repeater Client Proxy for client socket with listening address: '" + clientListeningSocketAddress + "'..." );
+      logger.finest( "Creating new CA Repeater Client Proxy for client socket with listening address: '" + clientListeningSocketAddress + "'..." );
       this.clientListeningSocketAddress = clientListeningSocketAddress;
 
       // SocketException -->
       // SecurityException -->
       if ( SEND_SOCKET_LAZY_BIND )
       {
-         logger.log( Level.FINEST, "The sending socket will be bound later." );
-         this.senderSocket = SocketUtilities.createUnboundSendSocket();
+         logger.finest( "The sending socket will be bound later." );
+         this.senderSocket = UdpSocketUtilities.createUnboundSendSocket();
       }
       else
       {
-         logger.log( Level.FINEST, "The sending socket will be bound by the OS to an ephemeral port." );
-         this.senderSocket = SocketUtilities.createEphemeralSendSocket( false );
+         logger.finest( "The sending socket will be bound by the OS to an ephemeral port." );
+         this.senderSocket = UdpSocketUtilities.createEphemeralSendSocket(false );
       }
 
       // Note:
@@ -106,7 +98,7 @@ class CARepeaterClientProxy implements AutoCloseable
       //
       // SocketException -->
       // SecurityException -->
-      logger.log( Level.FINEST, "The sending socket will be connected to the client listening at address: " + clientListeningSocketAddress );
+      logger.finest( "The sending socket will be connected to the client listening at address: " + clientListeningSocketAddress );
       senderSocket.connect( this.clientListeningSocketAddress );
    }
 
@@ -151,7 +143,7 @@ class CARepeaterClientProxy implements AutoCloseable
    boolean sendCaRepeaterConfirmMessage( InetAddress repeaterAddress )
    {
       Validate.notNull( repeaterAddress );
-      logger.log(Level.FINEST, "Sending CA_REPEATER_CONFIRM to client listening at socket address: " + clientListeningSocketAddress );
+      logger.finest( "Sending CA_REPEATER_CONFIRM to client listening at socket address: " + clientListeningSocketAddress );
 
       // Send message
       final DatagramPacket packet = CARepeaterMessage.createRepeaterConfirmMessage( repeaterAddress );
@@ -202,7 +194,7 @@ class CARepeaterClientProxy implements AutoCloseable
     */
    boolean sendCaVersionMessage()
    {
-      logger.log(Level.FINEST, "Sending CA_PROTO_VERSION to client listening at socket address: " + clientListeningSocketAddress );
+      logger.finest( "Sending CA_PROTO_VERSION to client listening at socket address: " + clientListeningSocketAddress );
 
       final DatagramPacket packet = CARepeaterMessage.createVersionMessage();
       return sendDatagram(packet );
@@ -239,13 +231,13 @@ class CARepeaterClientProxy implements AutoCloseable
       // Attempt to send the datagram. Catch any errors and translate to return code.
       try
       {
-         logger.log( Level.FINEST, "Setting datagram destination socket address to " + clientListeningSocketAddress );
+         logger.finest( "Setting datagram destination socket address to " + clientListeningSocketAddress );
 
          // Make a copy here to avoid side-effects on the datagramPacket argument (as it
          // would otherwise get bound during the send operation).
          final DatagramPacket sendPacket = new DatagramPacket( packet.getData(), packet.getLength(), clientListeningSocketAddress );
 
-         logger.log( Level.FINEST, "Sending datagram packet to: " + clientListeningSocketAddress);
+         logger.finest( "Sending datagram packet to: " + clientListeningSocketAddress);
 
          // Checked (= potentially recoverable) Exceptions: IOException, PortUnreachableException -->
          // Unchecked = unrecoverable exceptions) Exceptions: SecurityException, IllegalBlockingModeException, IllegalArgumentException -->
@@ -276,7 +268,7 @@ class CARepeaterClientProxy implements AutoCloseable
     */
    boolean isClientDead()
    {
-      logger.log(Level.FINEST, "Checking whether client is alive at address: " + clientListeningSocketAddress);
+      logger.finest( "Checking whether client is alive at address: " + clientListeningSocketAddress);
       return isClientDead( clientListeningSocketAddress );
    }
 
@@ -294,22 +286,22 @@ class CARepeaterClientProxy implements AutoCloseable
     */
    static boolean isClientDead( InetSocketAddress socketAddress )
    {
-      logger.log( Level.FINEST, "Checking whether the CA Repeater client at address '" + socketAddress + " is alive." );
+      logger.finest( "Checking whether the CA Repeater client at address '" + socketAddress + " is alive." );
 
       // The current implementation determines liveness by trying to open a
       // listening socket on the same socket as the remote client. If the
       // port is available => repeater client is dead !
 
-      logger.log( Level.FINEST, "Checking socket availability for address: " + socketAddress + "."  );
+      logger.finest( "Checking socket availability for address: " + socketAddress + "."  );
 
-      if ( SocketUtilities.isSocketAvailable( socketAddress ) )
+      if ( UdpSocketUtilities.isSocketAvailable(socketAddress ) )
       {
-         logger.log( Level.FINEST, "The socket is available => the client appears to be DEAD !" );
+         logger.finest( "The socket is available => the client appears to be DEAD !" );
          return true;
       }
       else
       {
-         logger.log( Level.FINEST, "The socket is NOT available => the client appears to be ALIVE !" );
+         logger.finest( "The socket is NOT available => the client appears to be ALIVE !" );
          return false;
       }
    }
