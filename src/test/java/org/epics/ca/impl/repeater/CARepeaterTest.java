@@ -6,7 +6,9 @@ package org.epics.ca.impl.repeater;
 
 import org.epics.ca.Constants;
 
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,6 +20,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,6 +38,7 @@ class CARepeaterTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
+   private static final Logger logger = LibraryLogManager.getLogger( CARepeaterTest.class );
    private CARepeater caRepeater;
 
 /*- Main ---------------------------------------------------------------------*/
@@ -42,15 +46,21 @@ class CARepeaterTest
 /*- Public methods -----------------------------------------------------------*/
 /*- Package-level methods ----------------------------------------------------*/
 
+   @BeforeAll
+   static void beforeAll()
+   {
+      assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
+   }
+
    @BeforeEach
    void beforeEach() throws CARepeater.CaRepeaterStartupException
    {
-      System.out.println( "Starting CARepeater integration tests..." );
-      System.out.println( "Creating CA Repeater which will listen for broadcast messages on Port 1234." );
+      logger.info( "Starting CARepeater integration tests..." );
+      logger.info( "Creating CA Repeater which will listen for broadcast messages on Port 1234." );
       caRepeater = new CARepeater( 1234 );
-      System.out.println( "Starting CA Repeater on port 1234." );
+      logger.info( "Starting CA Repeater on port 1234." );
       caRepeater.start();
-      System.out.println( "Repeater has been started." );
+      logger.info( "Repeater has been started." );
    }
 
    @AfterEach
@@ -58,24 +68,24 @@ class CARepeaterTest
    {
       if ( caRepeater == null )
       {
-         System.out.println( "CA Repeater did not start correctly so no need to shut it down..." );
+         logger.info( "CA Repeater did not start correctly so no need to shut it down..." );
       }
       else
       {
-         System.out.println( "Shutting down CA Repeater..." );
+         logger.info( "Shutting down CA Repeater..." );
          caRepeater.shutdown();
-         System.out.println( "Repeater has been shutdown." );
+         logger.info( "Repeater has been shutdown." );
       }
-      System.out.println( "CARepeater test completed ok." );
+      logger.info( "CARepeater test completed ok." );
    }
 
 
    @Test
    void testRunInternalCaRepeaterForTwoSeconds() throws InterruptedException
    {
-      System.out.println( "Sleeping for 2 seconds..." );
+      logger.info( "Sleeping for 2 seconds..." );
       Thread.sleep( 2000 );
-      System.out.println( "Sleeping time is over." );
+      logger.info( "Sleeping time is over." );
    }
 
    /**
@@ -105,7 +115,7 @@ class CARepeaterTest
       //  a new client. We then flip the socket into receive mode and check that
       // the socket receives a repeater confirm message.
       // SocketException -->
-      try( DatagramSocket testSocket = SocketUtilities.createEphemeralSendSocket( true ) )
+      try( DatagramSocket testSocket = UdpSocketUtilities.createEphemeralSendSocket(true ) )
       {
          // Create a datagram packet containing a REPEATER_REGISTER message
          // UnknownHostException -->
@@ -139,13 +149,13 @@ class CARepeaterTest
    void integrationTestCaRepeater_zeroLengthDatagram_registersClientWhoSentIt( int port) throws IOException
    {
       // Run this test in try-with-resources to ensure that resources get cleaned up
-      try( DatagramSocket caRepeaterClientSocket = SocketUtilities.createEphemeralSendSocket( true ) )
+      try( DatagramSocket caRepeaterClientSocket = UdpSocketUtilities.createEphemeralSendSocket(true ) )
       {
          // Send zero length datagram to CA Repeater Listening Port. This should
          // cause the CA Repeater to register a new client with the socket address
          // of the sender.
          final DatagramPacket requestPacket = new DatagramPacket(new byte[] {}, 0);
-         requestPacket.setAddress( InetAddress.getLocalHost() );
+         requestPacket.setAddress( InetAddress.getLoopbackAddress() );
          requestPacket.setPort( port );
          caRepeaterClientSocket.send( requestPacket );
 
@@ -167,67 +177,67 @@ class CARepeaterTest
    void integrationTestCaRepeater_afterRegistration_allReceivedDatagrams_getPublishedToAllClients() throws IOException
    {
       // Run this test in try-with-resources to ensure that resources get cleaned up
-      try( DatagramSocket caRepeaterClientSocketA = SocketUtilities.createEphemeralSendSocket( true );
-           DatagramSocket caRepeaterClientSocketB = SocketUtilities.createEphemeralSendSocket(true);
-           DatagramSocket caRepeaterClientSocketC = SocketUtilities.createEphemeralSendSocket(true);
-           DatagramSocket caRepeaterSenderSocket = SocketUtilities.createEphemeralSendSocket(true))
+      try( DatagramSocket caRepeaterClientSocketA = UdpSocketUtilities.createEphemeralSendSocket(true );
+           DatagramSocket caRepeaterClientSocketB = UdpSocketUtilities.createEphemeralSendSocket(true);
+           DatagramSocket caRepeaterClientSocketC = UdpSocketUtilities.createEphemeralSendSocket(true);
+           DatagramSocket caRepeaterSenderSocket = UdpSocketUtilities.createEphemeralSendSocket(true))
       {
          // Client A: Send zero length datagram to the CA Repeater force registration of the socket as a CA Repeater client
          final DatagramPacket registrationRequestPacket = new DatagramPacket( new byte[] { (byte) 0 }, 0 );
-         registrationRequestPacket.setAddress( InetAddress.getLocalHost() );
+         registrationRequestPacket.setAddress( InetAddress.getLoopbackAddress() );
          registrationRequestPacket.setPort( 1234 );
-         System.out.println( "Client A: sending: registrationRequestPacket: " + Arrays.toString( registrationRequestPacket.getData() )  + " to: " + registrationRequestPacket.getSocketAddress()  + " from: " + caRepeaterClientSocketA.getLocalSocketAddress() );
+         logger.info( "Client A: sending: registrationRequestPacket: " + Arrays.toString( registrationRequestPacket.getData() )  + " to: " + registrationRequestPacket.getSocketAddress()  + " from: " + caRepeaterClientSocketA.getLocalSocketAddress() );
          caRepeaterClientSocketA.send( registrationRequestPacket );
-         System.out.println( "Client B: sending: registrationRequestPacket: " + Arrays.toString( registrationRequestPacket.getData() )  + " to: " + registrationRequestPacket.getSocketAddress()  + " from: " + caRepeaterClientSocketB.getLocalSocketAddress() );
+         logger.info( "Client B: sending: registrationRequestPacket: " + Arrays.toString( registrationRequestPacket.getData() )  + " to: " + registrationRequestPacket.getSocketAddress()  + " from: " + caRepeaterClientSocketB.getLocalSocketAddress() );
          caRepeaterClientSocketB.send( registrationRequestPacket );
-         System.out.println( "Client C: sending: registrationRequestPacket: " + Arrays.toString( registrationRequestPacket.getData() )  + " to: " + registrationRequestPacket.getSocketAddress()  + " from: " + caRepeaterClientSocketC.getLocalSocketAddress() );
+         logger.info( "Client C: sending: registrationRequestPacket: " + Arrays.toString( registrationRequestPacket.getData() )  + " to: " + registrationRequestPacket.getSocketAddress()  + " from: " + caRepeaterClientSocketC.getLocalSocketAddress() );
          caRepeaterClientSocketC.send( registrationRequestPacket );
 
          // Client A: Wait for CA Repeater to reply and verify that the reply was a CA_REPEATER_CONFIRM message.
-         System.out.println( "Client A: waiting for CA repeater registration confirmation." );
+         logger.info( "Client A: waiting for CA repeater registration confirmation." );
          final byte[] replyMessageA = new byte[ CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ];
          final DatagramPacket replyPacketA = new DatagramPacket( replyMessageA, replyMessageA.length );
          final ByteBuffer replyBufferA = ByteBuffer.wrap( replyMessageA );
          caRepeaterClientSocketA.receive( replyPacketA );
-         System.out.println( "Received: replyPacketA: " + Arrays.toString( replyPacketA.getData() )  + " from: " + replyPacketA.getSocketAddress() );
+         logger.info( "Received: replyPacketA: " + Arrays.toString( replyPacketA.getData() )  + " from: " + replyPacketA.getSocketAddress() );
          assertThat(replyPacketA.getLength(), is(16 ) );
          final short commandReceivedA = replyBufferA.getShort( CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value );
          final short commandExpectedA = CARepeaterMessage.CaCommandCodes.CA_REPEATER_CONFIRM.value;
          assertThat( commandReceivedA, is( commandExpectedA ) );
-         System.out.println( "Client A was registered." );
+         logger.info( "Client A was registered." );
 
          // Client B: Wait for CA Repeater to reply and verify that the reply was a CA_REPEATER_CONFIRM message.
-         System.out.println( "Client B: waiting for CA repeater registration confirmation." );
+         logger.info( "Client B: waiting for CA repeater registration confirmation." );
          final byte[] replyMessageB = new byte[ CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ];
          final DatagramPacket replyPacketB = new DatagramPacket( replyMessageB, replyMessageB.length );
          final ByteBuffer replyBufferB = ByteBuffer.wrap( replyMessageB );
          caRepeaterClientSocketB.receive( replyPacketB );
-         System.out.println( "Received: replyPacketB: " + Arrays.toString( replyPacketB.getData() )  + " from: " + replyPacketB.getSocketAddress() );
+         logger.info( "Received: replyPacketB: " + Arrays.toString( replyPacketB.getData() )  + " from: " + replyPacketB.getSocketAddress() );
          assertThat(replyPacketB.getLength(), is(16 ) );
 
          final short commandReceivedB = replyBufferA.getShort( CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value );
          final short commandExpectedB = CARepeaterMessage.CaCommandCodes.CA_REPEATER_CONFIRM.value;
          assertThat( commandReceivedB, is( commandExpectedA ) );
-         System.out.println( "Client B was registered." );
+         logger.info( "Client B was registered." );
 
          // Client C: Wait for CA Repeater to reply and verify that the reply was a CA_REPEATER_CONFIRM message.
-         System.out.println( "Client C: waiting for CA repeater registration confirmation." );
+         logger.info( "Client C: waiting for CA repeater registration confirmation." );
          final byte[] replyMessageC = new byte[ CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ];
          final DatagramPacket replyPacketC = new DatagramPacket( replyMessageC, replyMessageC.length );
          final ByteBuffer replyBufferC = ByteBuffer.wrap( replyMessageC );
          caRepeaterClientSocketC.receive( replyPacketC );
-         System.out.println( "Received: replyPacketC: " + Arrays.toString( replyPacketC.getData() )  + " from: " + replyPacketC.getSocketAddress() );
+         logger.info( "Received: replyPacketC: " + Arrays.toString( replyPacketC.getData() )  + " from: " + replyPacketC.getSocketAddress() );
          assertThat(replyPacketC.getLength(), is(16 ) );
          final short commandReceivedC = replyBufferA.getShort( CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value );
          final short commandExpectedC = CARepeaterMessage.CaCommandCodes.CA_REPEATER_CONFIRM.value;
          assertThat( commandReceivedC, is( commandExpectedA ) );
-         System.out.println( "Client C was registered." );
+         logger.info( "Client C was registered." );
 
          // Send some "random" packet to the CA Repeater
-         System.out.println( "Sending UDP datagram to CA Repeater..." );
+         logger.info( "Sending UDP datagram to CA Repeater..." );
          final byte[] someRandomTxMessage = new byte[] { 1, 2, 3, 4, 5 };
          final DatagramPacket randomTxPacket = new DatagramPacket( someRandomTxMessage, someRandomTxMessage.length );
-         randomTxPacket.setAddress( InetAddress.getLocalHost() );
+         randomTxPacket.setAddress( InetAddress.getLoopbackAddress() );
          randomTxPacket.setPort( 1234 );
          caRepeaterSenderSocket.send( randomTxPacket );
 
@@ -236,11 +246,11 @@ class CARepeaterTest
          final DatagramPacket rxPacketA = new DatagramPacket( rxMessageA, 32 );
          final ByteBuffer rxBufferA = ByteBuffer.wrap( rxMessageA );
          caRepeaterClientSocketA.receive( rxPacketA );
-         System.out.println( "Received: rxPacketA: " + Arrays.toString( rxPacketA.getData() ) + " from: " + rxPacketA.getSocketAddress() );
+         logger.info( "Received: rxPacketA: " + Arrays.toString( rxPacketA.getData() ) + " from: " + rxPacketA.getSocketAddress() );
          caRepeaterClientSocketA.receive( rxPacketA );
-         System.out.println( "Received: rxPacketA: " + Arrays.toString( rxPacketA.getData() ) + " from: " + rxPacketA.getSocketAddress() );
+         logger.info( "Received: rxPacketA: " + Arrays.toString( rxPacketA.getData() ) + " from: " + rxPacketA.getSocketAddress() );
          caRepeaterClientSocketA.receive( rxPacketA );
-         System.out.println( "Received: rxPacketA: " + Arrays.toString( rxPacketA.getData() ) + " from: " + rxPacketA.getSocketAddress() );
+         logger.info( "Received: rxPacketA: " + Arrays.toString( rxPacketA.getData() ) + " from: " + rxPacketA.getSocketAddress() );
          assertThat( rxPacketA.getLength(), is(5 ) );
          assertThat( Arrays.copyOfRange( rxBufferA.array(), 0, someRandomTxMessage.length), is( someRandomTxMessage ) );
 
@@ -249,9 +259,9 @@ class CARepeaterTest
          final DatagramPacket rxPacketB = new DatagramPacket( rxMessageB, 32 );
          final ByteBuffer rxBufferB = ByteBuffer.wrap( rxMessageB );
          caRepeaterClientSocketB.receive( rxPacketB );
-         System.out.println( "Received: rxPacketB: " + Arrays.toString( rxPacketB.getData() )  + " from: " + rxPacketB.getSocketAddress() );
+         logger.info( "Received: rxPacketB: " + Arrays.toString( rxPacketB.getData() )  + " from: " + rxPacketB.getSocketAddress() );
          caRepeaterClientSocketB.receive( rxPacketB );
-         System.out.println( "Received: rxPacketB: " + Arrays.toString( rxPacketB.getData() )  + " from: " + rxPacketB.getSocketAddress() );
+         logger.info( "Received: rxPacketB: " + Arrays.toString( rxPacketB.getData() )  + " from: " + rxPacketB.getSocketAddress() );
          assertThat( rxPacketB.getLength(), is(5 ) );
          assertThat( Arrays.copyOfRange( rxBufferB.array(), 0, someRandomTxMessage.length), is( someRandomTxMessage ) );
 
@@ -260,7 +270,7 @@ class CARepeaterTest
          final DatagramPacket rxPacketC = new DatagramPacket( rxMessageC, 32 );
          final ByteBuffer rxBufferC = ByteBuffer.wrap( rxMessageC );
          caRepeaterClientSocketC.receive( rxPacketC );
-         System.out.println( "Received: rxPacketC: " + Arrays.toString( rxPacketC.getData() )  + " from: " + rxPacketC.getSocketAddress() );
+         logger.info( "Received: rxPacketC: " + Arrays.toString( rxPacketC.getData() )  + " from: " + rxPacketC.getSocketAddress() );
          assertThat( rxPacketC.getLength(), is(5 ) );
          assertThat( Arrays.copyOfRange( rxBufferC.array(), 0, someRandomTxMessage.length), is( someRandomTxMessage ) );
       }
