@@ -6,7 +6,6 @@ package org.epics.ca.impl;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.util.logging.LibraryLogManager;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -21,7 +20,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.Locale;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -57,13 +55,6 @@ class TCPTransportTest
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
-
-   @BeforeAll
-   static void beforeAll()
-   {
-      System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %4$s %5$s%6$s%n");
-      Locale.setDefault( Locale.ROOT );
-   }
 
    @BeforeEach
    @SuppressWarnings( "unchecked" )
