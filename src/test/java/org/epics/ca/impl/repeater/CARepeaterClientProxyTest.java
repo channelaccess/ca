@@ -6,6 +6,7 @@ package org.epics.ca.impl.repeater;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.epics.ca.util.net.InetAddressUtil;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.net.*;
@@ -17,6 +18,7 @@ import java.util.concurrent.Future;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -36,6 +38,12 @@ class CARepeaterClientProxyTest
    // -------------------------------------------------------------------------
    // 1.0 Unit Tests
    // -------------------------------------------------------------------------
+
+   @BeforeAll
+   static void beforeAll()
+   {
+      assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
+   }
 
    @Test
    void testConstructor_nullArgument_throwsNullPointerException()
@@ -111,12 +119,12 @@ class CARepeaterClientProxyTest
    // -------------------------------------------------------------------------
 
    @Test
-   void integrationTestSendCaVersionMessage() throws SocketException, ExecutionException, InterruptedException, UnknownHostException
+   void integrationTestSendCaVersionMessage() throws SocketException, ExecutionException, InterruptedException
    {
       final UdpReceiver udpReceiver = new UdpReceiver();
       final Future<DatagramPacket> future = udpReceiver.arm( 3333 );
 
-      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLocalHost(), 3333 ) ) )
+      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 3333 ) ) )
       {
            System.out.println( "About to send..." );
            proxy.sendCaVersionMessage();
@@ -145,7 +153,7 @@ class CARepeaterClientProxyTest
       final UdpReceiver udpReceiver = new UdpReceiver();
       final Future<DatagramPacket> future = udpReceiver.arm( 3333 );
 
-      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLocalHost(), 3333 ) ) )
+      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 3333 ) ) )
       {
          System.out.println( "About to send..." );
          proxy.sendCaServerBeaconMessage( (short) 99, (short) 4444, 0x12345678, InetAddress.getByAddress( new byte[] {(byte) 0Xaa, (byte) 0Xbb, (byte) 0Xcc, (byte) 0Xdd } ) );
@@ -169,15 +177,15 @@ class CARepeaterClientProxyTest
    }
 
    @Test
-   void integrationTestSendRepeaterConfirmMessage() throws SocketException, ExecutionException, InterruptedException, UnknownHostException
+   void integrationTestSendRepeaterConfirmMessage() throws SocketException, ExecutionException, InterruptedException
    {
       final UdpReceiver udpReceiver = new UdpReceiver();
       final Future<DatagramPacket> future = udpReceiver.arm( 3333 );
 
-      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLocalHost(), 3333 ) ) )
+      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 3333 ) ) )
       {
          System.out.println( "About to send..." );
-         proxy.sendCaRepeaterConfirmMessage(InetAddress.getLoopbackAddress() );
+         proxy.sendCaRepeaterConfirmMessage( InetAddress.getLoopbackAddress() );
       }
 
       System.out.println( "Sent. Waiting for data..." );
@@ -196,13 +204,13 @@ class CARepeaterClientProxyTest
       assertThat( byteBuffer.getInt( CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_INT_REPEATER_CONFIRM_MSG_UNUSED4_OFFSET.value ), is ( 0 ) );
 
       final InetAddress caRepeaterInetAddressAsInteger = InetAddressUtil.intToIPv4Address( byteBuffer.getInt( CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_INT_REPEATER_CONFIRM_MSG_REPEATER_ADDR_OFFSET.value ) );
-      assertThat(SocketUtilities.isThisMyIpAddress(caRepeaterInetAddressAsInteger ), is (true ) );
+      assertThat( NetworkUtilities.isThisMyIpAddress( caRepeaterInetAddressAsInteger ), is (true ) );
    }
 
    @Test
    void testIsClientDead() throws SocketException
    {
-      try ( DatagramSocket caRepeaterClientListener = SocketUtilities.createBroadcastAwareListeningSocket( 1111, false );
+      try ( DatagramSocket caRepeaterClientListener = UdpSocketUtilities.createBroadcastAwareListeningSocket(1111, false );
             CARepeaterClientProxy proxyToClientWhichIsAlive = new CARepeaterClientProxy( new InetSocketAddress( 1111 ) );
             CARepeaterClientProxy proxyToClientWhichIsDead = new CARepeaterClientProxy( new InetSocketAddress( 1112 ) ) )
       {
@@ -219,6 +227,9 @@ class CARepeaterClientProxyTest
 /*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/
 
+   /**
+    * Utility class to verify UDP data transfer.
+    */
    private static class UdpReceiver
    {
       // The size of the receive buffer needs to be larger than the maximum size of
@@ -232,14 +243,16 @@ class CARepeaterClientProxyTest
       @SuppressWarnings( "SameParameterValue" )
       private Future<DatagramPacket> arm( int port )
       {
+         System.out.println( "Arming UDP Receiver..." );
          final ExecutorService executor = Executors.newSingleThreadExecutor();
          return executor.submit(() -> {
             final DatagramPacket receivePacket = new DatagramPacket( new byte[ BUFSIZE], BUFSIZE );
             System.out.println( "Receive thread started" );
-            try( final DatagramSocket listeningSocket = SocketUtilities.createBroadcastAwareListeningSocket( port, true ) )
+            try( final DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(port, true ) )
             {
                try
                {
+                  System.out.println( "Listening on socket " + listeningSocket.getLocalSocketAddress() );
                   listeningSocket.receive( receivePacket );
                   System.out.println( "Received new packet from: " + receivePacket.getSocketAddress());
                }
