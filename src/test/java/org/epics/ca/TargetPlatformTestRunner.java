@@ -4,6 +4,8 @@ package org.epics.ca;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.impl.repeater.NetworkUtilities;
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.platform.launcher.*;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
@@ -13,9 +15,9 @@ import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 import java.io.PrintWriter;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import static org.junit.platform.engine.discovery.ClassNameFilter.includeClassNamePatterns;
-import static org.junit.platform.engine.discovery.DiscoverySelectors.selectPackage;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.*;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -30,9 +32,10 @@ public class TargetPlatformTestRunner
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private final SummaryGeneratingListener summaryGeneratingListener = new SummaryGeneratingListener();
-   private final TestExecutionListener loggingListener = LoggingListener.forJavaUtilLogging( Level.INFO );
+   private static final Logger logger = LibraryLogManager.getLogger( TargetPlatformTestRunner.class );
 
+   private final SummaryGeneratingListener summaryGeneratingListener;
+   private final TestExecutionListener loggingListener;
 
 /*- Main ---------------------------------------------------------------------*/
 
@@ -45,69 +48,123 @@ public class TargetPlatformTestRunner
     */
    public static void main( String[] args)
    {
-      final TargetPlatformTestRunner runner = new TargetPlatformTestRunner();
-
-      if ( args.length > 2 )
+      if( ! NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible() )
       {
-         System.out.println( "\nUsage: java -cp ca-x.y.z-all-with-tests.jar org.epics.ca.TestRunner [packageSelector] [classFilter]\n" );
-         System.out.println( "Concrete Examples:" );
-         System.out.println( "[1] Run all tests in the library" );
-         System.out.println( "java -cp ca-1.2.3-all-with-tests.jar org.epics.ca.TargetPlatformTestRunner\n\n" );
-         System.out.println( "[2] Run all tests in the package named 'repeater'." );
-         System.out.println( "java -cp ca-1.2.3-all-with-tests.jar org.epics.ca.TargetPlatformTestRunner org.epics.ca.impl.repeater\n\n" );
-         System.out.println( "[3] Run all tests in the package named 'repeater' whose class names match 'SocketUtilitiesTest'." );
-         System.out.println( "java -cp ca-1.2.3-all-with-tests.jar org.epics.ca.TargetPlatformTestRunner org.epics.ca.impl.repeater SocketUtilitiesTest\n\n" );
-
-         System.exit( 0 );
+         return;
       }
 
-      final String packageSelector = args.length >= 1 ? args[ 0 ] : "org.epics.ca";
-      final String classNameFilterPatterns = args.length >= 2 ? args[ 1 ] : ".*Test";
+      final TargetPlatformTestRunner runner = new TargetPlatformTestRunner();
 
-      runner.runAll( packageSelector, classNameFilterPatterns );
+      if ( ( args.length != 0 ) && ( args.length != 2 ) )
+      {
+         printUsage();
+         return;
+      }
 
-      final TestExecutionSummary summary = runner.summaryGeneratingListener.getSummary();
+      if ( args.length == 0 )
+      {
+         runner.runTests( "-ALL", "" );
+      }
+      else
+      {
+         runner.runTests( args[ 0 ], args[ 1 ] );
+      }
+
+      final TestExecutionSummary summary = runner.getSummary();
       summary.printTo( new PrintWriter( System.out ) );
    }
 
 
 /*- Constructor --------------------------------------------------------------*/
+
+   public TargetPlatformTestRunner()
+   {
+      this.summaryGeneratingListener = new SummaryGeneratingListener();
+      this.loggingListener = LoggingListener.forJavaUtilLogging( Level.INFO );
+   }
+
 /*- Public methods -----------------------------------------------------------*/
+
+   private TestExecutionSummary getSummary()
+   {
+      return summaryGeneratingListener.getSummary();
+   }
+
 /*- Package-level methods ----------------------------------------------------*/
 /*- Private methods ----------------------------------------------------------*/
+
+   private static void printUsage()
+   {
+      System.out.println( "\nUsage: java -cp ca-x.y.z-all-with-tests.jar org.epics.ca.TargetPlatformTestRunner [{-package|-class|-method} testSelector]\n" );
+      System.out.println( "Concrete Examples:" );
+      System.out.println( "[1] Run all the tests in the library." );
+      System.out.println( "java -cp ca-1.2.3-all-with-tests.jar org.epics.ca.TargetPlatformTestRunner\n" );
+      System.out.println( "\n" );
+      System.out.println( "[2] Run all the tests in the package named 'repeater'." );
+      System.out.println( "java -cp ca-1.2.3-all-with-tests.jar org.epics.ca.TargetPlatformTestRunner -package org.epics.ca.impl.repeater\n" );
+      System.out.println( "\n" );
+      System.out.println( "[3] Run all the tests in the class named 'org.epics.ca.impl.repeater.SocketUtilitiesTest'." );
+      System.out.println( "java -cp ca-1.2.3-all-with-tests.jar -class org.epics.ca.impl.repeater.SocketUtilitiesTest\n" );
+      System.out.println( "\n" );
+      System.out.println( "[4] Run the test with the method named 'org.epics.ca.impl.repeater.SocketUtilitiesTest#integrationTestDataTransfer'." );
+      System.out.println( "java -cp ca-1.2.3-all-with-tests.jar org.epics.ca.TargetPlatformTestRunner -method org.epics.ca.impl.repeater.SocketUtilitiesTest#integrationTestDataTransfer\n" );
+      System.out.println( "\n" );
+      System.exit( 0 );
+   }
 
    /**
     * Runs the tests specified by the supplied arguments.
     *
-    * @param packageSelector selects the top level package to start searching
-    *    for tests. For example: "org.epics.ca.impl.repeater".
-    * @param classNameFilterPatterns selects the names of classes that should
-    *    be tested. For example: ".*Test"
+    * The testType selects whether all the tests in the test suite should be run, or whether
+    * the tests should be specific to some particular package, or class or method.
+    *
+    * @param testType selects the type of test to be run. Should be one of [ -all | -package | -class | -method ].
+    * @param testSpecifier specifies the test to be run. Should be a fully-qualified package name or class name
+    *    or method name.
     */
-   private void runAll( String packageSelector, String classNameFilterPatterns )
+   private void runTests( String testType, String testSpecifier )
    {
-      final LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
-         .selectors( selectPackage( packageSelector ) )
-         .filters( includeClassNamePatterns( classNameFilterPatterns ) )
-         .build();
+      final LauncherDiscoveryRequest request;
+      switch ( testType.toUpperCase() )
+      {
+         case "-ALL":
+            request = LauncherDiscoveryRequestBuilder.request().selectors( selectPackage( "org.epics.ca" ) ).build();
+            break;
+
+         case "-PACKAGE":
+            request = LauncherDiscoveryRequestBuilder.request().selectors( selectPackage( testSpecifier ) ).build();
+            break;
+
+         case "-CLASS":
+            request = LauncherDiscoveryRequestBuilder.request().selectors( selectClass( testSpecifier ) ).build();
+            break;
+
+         case "-METHOD":
+            request = LauncherDiscoveryRequestBuilder.request().selectors( selectMethod( testSpecifier ) ).build();
+            break;
+
+         default:
+            printUsage();
+            return;
+      }
 
       final Launcher launcher = LauncherFactory.create();
       final TestPlan testPlan = launcher.discover( request );
 
-      for ( TestIdentifier root : testPlan.getRoots())
-      {
-         System.out.println( "The following test classes have been discovered: " );
-         for ( TestIdentifier test : testPlan.getChildren( root  ))
-         {
-            System.out.println( "- " + test.getDisplayName() );
-         }
-      }
-
       launcher.registerTestExecutionListeners( summaryGeneratingListener );
       launcher.registerTestExecutionListeners( loggingListener );
 
-      System.out.println( "RUNNING TESTS..." );
-      launcher.execute( request );
+      try
+      {
+         logger.info("RUNNING TEST(S)...");
+         launcher.execute( testPlan );
+         logger.info( "TEST(S) COMPLETED." );
+      }
+      catch ( RuntimeException ex )
+      {
+         logger.info( "TEST(S) FAILED WITH EXCEPTION." );
+      }
+
    }
 
 
