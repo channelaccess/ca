@@ -31,7 +31,7 @@ public class DisruptorNewMonitorNotificationService<T> implements MonitorNotific
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LibraryLogManager.getLogger(DisruptorNewMonitorNotificationService.class );
+   private static final Logger logger = LibraryLogManager.getLogger( DisruptorNewMonitorNotificationService.class );
 
    // The size of the ring buffer, must be power of 2.
    private static final int NOTIFICATION_VALUE_BUFFER_SIZE = 2;
