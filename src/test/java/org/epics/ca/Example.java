@@ -14,14 +14,11 @@ import org.epics.ca.data.Timestamped;
 
 public class Example
 {
-
    public static void main( String[] args )
    {
-      System.out.println( "NOTE: To run this example you need to first start the Epics Channel Access Test Server running..." );
+      final EpicsChannelAccessTestServer epicsChannelAccessTestServer = EpicsChannelAccessTestServer.start();
 
       final Properties properties = new Properties();
-      properties.setProperty( "CA_DEBUG", "0" );
-
       properties.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
       properties.setProperty( Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString(), "NO" );
 
@@ -181,28 +178,34 @@ public class Example
 
          // async get
          final CompletableFuture<Double> fd = adc.getAsync();
+
          // ... in some other thread
          final double dv2 = fd.get ();
 
          final CompletableFuture<Timestamped<Double>> ftd = adc.getAsync( Timestamped.class );
+
          // ... in some other thread
-         Timestamped<Double> td = ftd.get ();
+         final Timestamped<Double> td = ftd.get();
 
          final CompletableFuture<Status> sf = adc.putAsync (12.8 );
-         boolean putOK = sf.get ().isSuccessful ();
+         final boolean putOK = sf.get ().isSuccessful ();
 
          // create monitor
          System.out.print( "Monitoring DOUBLE using try-with-resources... "  );
-         Monitor<Double> ref;
-         try( Monitor<Double> monitor = adc.addValueMonitor( v -> System.out.println( "OK.  Data returned: '" + v + "'." ) ) )
+         try ( final Monitor<Double> monitor = adc.addValueMonitor( v -> System.out.println( "OK.  Data returned: '" + v + "'." ) ) )
          {
-            ref = monitor;
+            // Let the monitor run for a couple of seconds
+            Thread.sleep( 2000 );
          }
          // Should have way of checking that monitor closed here, but currently monitor has no method to check this.
       }
       catch( Exception ex )
       {
          System.out.println ( "\nThe example program FAILED, with the following exception: " + ex );
+      }
+      finally
+      {
+         epicsChannelAccessTestServer.shutdown();
       }
       System.out.println( "\nThe example program SUCCEEDED, and ran to completion." );
    }
