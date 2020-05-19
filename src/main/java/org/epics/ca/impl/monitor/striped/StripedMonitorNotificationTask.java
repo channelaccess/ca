@@ -28,9 +28,7 @@ class StripedMonitorNotificationTask<T> implements StripedRunnable
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   // Get Logger
-   private static final Logger logger = LibraryLogManager.getLogger(StripedMonitorNotificationTask.class );
-
+   private static final Logger logger = LibraryLogManager.getLogger( StripedMonitorNotificationTask.class );
    private final T value;
    private final Consumer<? super T> valueConsumer;
 
