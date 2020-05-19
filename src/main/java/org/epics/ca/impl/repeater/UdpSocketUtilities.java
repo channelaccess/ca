@@ -6,16 +6,23 @@ package org.epics.ca.impl.repeater;
 /*- Class Declaration --------------------------------------------------------*/
 
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.util.logging.LibraryLogManager;
+
 import java.net.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Provides higher level UDP socket functions for use in the CA Repeater.
+ * Provides higher-level UDP socket functions for use in the CA Repeater.
  */
-class SocketUtilities
+class UdpSocketUtilities
 {
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
+
+   private static final Logger logger = LibraryLogManager.getLogger( UdpSocketUtilities.class );
+
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
@@ -45,7 +52,7 @@ class SocketUtilities
       // SocketException, SecurityException -->
       // Note: the local variable below is deliberately retained to assist in debugging.
       @SuppressWarnings( "UnnecessaryLocalVariable" )
-      final DatagramSocket socket = SocketUtilities.createUnboundSocket();
+      final DatagramSocket socket = UdpSocketUtilities.createUnboundSocket();
 
       // If no exceptions have occurred return the socket which is now ready for use.
       return socket;
@@ -64,22 +71,22 @@ class SocketUtilities
     * (that's to say a port that is automatically selected by the
     * operating system).
     *
-    * @param broadcastEnable determines whether the returned socket supports
+    * @param enableBroadcasts determines whether the returned socket supports
     *    broadcast capabilities. (Support depends also on the OS).
     * @return the configured socket.
     * @throws SocketException if the socket could not be created for any reason.
     * @throws SecurityException if the operation was not allowed for any reason.
     */
-   static DatagramSocket createEphemeralSendSocket( boolean broadcastEnable ) throws SocketException
+   static DatagramSocket createEphemeralSendSocket( boolean enableBroadcasts ) throws SocketException
    {
       // Attempt to create a socket which is initially unbound. This potentially
       // allows it to be configured before performing the bind operation.
       // SocketException, SecurityException -->
-      final DatagramSocket socket = SocketUtilities.createUnboundSocket();
+      final DatagramSocket socket = UdpSocketUtilities.createUnboundSocket();
 
       // Could perform socket configuration here, but nothing special required.
       // Note: Broadcast is by default enabled anyway.
-      socket.setBroadcast( broadcastEnable );
+      socket.setBroadcast( enableBroadcasts );
 
       // Create the address/port to bind it to. For the purposes of data transmission
       // this should be an ephemeral port on the local machine.
@@ -104,7 +111,8 @@ class SocketUtilities
     * the socket receive BROADCAST messages from ANY of the local
     * networks associated with the host.
     *
-    * @param port positive integer specifying the port to listen on.
+    * @param port positive integer in the range 1-65535, specifying the port
+    *    to listen on.
     * @param shareable determines whether the port is shareable with other
     *        operating system users, or whether it should be dedicated for
     *        the exclusive use of the calling client.
@@ -115,7 +123,7 @@ class SocketUtilities
     */
    static DatagramSocket createBroadcastAwareListeningSocket( int port, boolean shareable ) throws SocketException
    {
-      Validate.isTrue( port > 0 );
+      Validate.inclusiveBetween( 1, 65535, port );
 
       // Attempt to create a socket which is initially unbound. This
       // allows it to be configured before performing the bind operation.
@@ -153,74 +161,57 @@ class SocketUtilities
    }
 
    /**
-    * Returns an indication of whether the supplied IP address is
-    * valid for the local interface.
+    * Returns a boolean indicator of whether the supplied target socket is available.
     *
-    * @param addr the address to check.
+    * @param targetSocketAddress the target socket address to check.
     * @return the result.
+    * @throws RuntimeException if some unexpected condition prevented the check
+    *    from being made (for example SecurityException )
     */
-   static boolean isThisMyIpAddress( InetAddress addr )
-   {
-      // Check if the address is the wildcard address (0.0.0.0) or the loopback address (127.0.0.1)
-      if ( addr.isAnyLocalAddress() || addr.isLoopbackAddress() )
-      {
-         return true;
-      }
-
-      // Check if the address is defined on any interfaces on the local host.
-      try
-      {
-         return NetworkInterface.getByInetAddress( addr ) != null;
-      }
-      catch( SocketException e )
-      {
-         return false;
-      }
-   }
-
-   /**
-    * Checks whether the specified socket address is available.
-    *
-    * Available is defined as follows:
-    * <ul>
-    *    <li>The socket is NOT already in use.</li>
-    *    <li>The socket IS in use, but opened in a SHAREABLE way.</li>
-    * </ul>
-    *
-    * @implNote
-    * The current implementation determines availability by trying to open a non-shareable
-    * socket on the specified target address. If this succeeds => the port is available.
-    *
-    * @param targetAddress the socket address to test.
-    * @return true if it is.
-    */
-   static boolean isSocketAvailable( InetSocketAddress targetAddress )
+   static boolean isSocketAvailable( InetSocketAddress targetSocketAddress )
    {
       boolean isAvailable;
-      try
-      {
-         // Need to create unbound first so that we can configure the socket as we want it.
-         // SocketException -->
-         final DatagramSocket socket = new DatagramSocket( null );
 
-         // Strive to configure the socket for exclusive access
+      logger.finest("Checking whether a UDP socket is available for target address '" + targetSocketAddress + "'.");
+
+      // Need to create unbound first so that we can configure the socket as we want it.
+      // SocketException -->
+      try( final DatagramSocket socket = new DatagramSocket( null ) )
+      {
+         logger.finest( "Socket created ok." );
+
+         // Strive to configure the socket for exclusive access.
          // SocketException -->
          socket.setReuseAddress( false );
+         logger.finest( "Socket SO_REUSE set to FALSE ok." );
 
          // Now attempt to bind to the specified target address
          // SocketException -->
-         socket.bind( targetAddress );
-         socket.close ();
-         isAvailable = true;
+         // Security Exception -->
+         // IllegalArgumentException
+         try
+         {
+            socket.bind( targetSocketAddress );
+            logger.finest("Socket bind ok.");
+            return true;
+         }
+         catch ( SocketException ex )
+         {
+            // This is the exception which gets thrown if the socket is already in use.
+            // An exception here is considered a "normal" part of the test.
+            return false;
+         }
       }
-      catch ( Throwable th )
+      catch ( RuntimeException | SocketException ex )
       {
-         // this is OK
-         isAvailable = false;
+         // An exception here is not expected. Where necessary convert
+         // to a runtime exception, but always put a warning in the log.
+         final String msg = "An unexpected exception was thrown.";
+         logger.log( Level.WARNING, msg, ex );
+         throw new RuntimeException( msg, ex );
       }
-
-      return isAvailable;
    }
+
 
 /*- Private methods ----------------------------------------------------------*/
 
@@ -231,7 +222,7 @@ class SocketUtilities
     * An unbound socket will be automatically bound by the OS on the first
     * attempted send or receive operation.
     *
-    * @return the socket
+    * @return the socket.
     * @throws SocketException if the socket could not be opened.
     * @throws SecurityException if the operation was not allowed for any reason.
     */

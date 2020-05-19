@@ -3,13 +3,11 @@ package org.epics.ca.impl.repeater;
 
 /*- Imported packages --------------------------------------------------------*/
 
-import org.epics.ca.util.logging.LibraryLogManager;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.util.logging.Logger;
+
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -34,16 +32,6 @@ public class UdpMessageSniffer
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
-
-private static final Logger logger = LibraryLogManager.getLogger( UdpMessageSniffer.class );
-
-static
-{
-   // force only IPv4 sockets, since EPICS does not work right with IPv6 sockets
-   // see http://java.sun.com/j2se/1.5.0/docs/guide/net/properties.html
-   System.setProperty ( "java.net.preferIPv4Stack", "true" );
-}
-
 /*- Main ---------------------------------------------------------------------*/
 
    /**
@@ -57,6 +45,11 @@ static
     */
    public static void main( String[] argv )
    {
+      if( ! NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible() )
+      {
+         return;
+      }
+
       if ( argv.length != 1 )
       {
          System.out.println( "Usage: java -cp <caJarFile> org.epics.ca.impl.repeater.UdpMessageSniffer <port>" );
@@ -93,7 +86,7 @@ static
       DatagramSocket socket;
       try
       {
-         socket = SocketUtilities.createBroadcastAwareListeningSocket(port, true );
+         socket = UdpSocketUtilities.createBroadcastAwareListeningSocket(port, true );
          //socket = new DatagramSocket(port, InetAddress.getByName( "0.0.0.0") );
          System.out.println ( "Listening for traffic on port " + port);
       }
