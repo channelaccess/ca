@@ -28,7 +28,7 @@ import org.epics.ca.util.logging.LibraryLogManager;
 public class TCPTransport implements Transport, ReactorHandler, Runnable
 {
 
-   private static final Logger logger = LibraryLogManager.getLogger(TCPTransport.class );
+   private static final Logger logger = LibraryLogManager.getLogger( TCPTransport.class );
 
    /**
     * Connection status.
