@@ -31,7 +31,7 @@ public class NetworkUtilities
 
    public static boolean verifyTargetPlatformNetworkStackIsChannelAccessCompatible()
    {
-      if( verifyIpv4NetworkStackPreferred() && verifyIpv6NetworkStackNotPreferred() )
+      if ( verifyIpv4NetworkStackPreferred() && verifyIpv6NetworkStackNotPreferred() )
       {
          System.out.println( "The network stack for this JVM is configured OK for channel access." );
          return true;
@@ -43,7 +43,7 @@ public class NetworkUtilities
          {
             System.out.println( "Please ensure that the system property 'java.net.preferIPv4Stack' is set to true.");
          }
-         if ( !NetworkUtilities.verifyIpv6NetworkStackNotPreferred() )
+         if ( ! NetworkUtilities.verifyIpv6NetworkStackNotPreferred() )
          {
             System.out.println( "Please ensure that the system property 'java.net.preferIPv6Stack' is set to false.");
          }
@@ -119,12 +119,28 @@ public class NetworkUtilities
 
    private static boolean verifyIpv4NetworkStackPreferred()
    {
-      return System.getProperty( "java.net.preferIPv4Stack", "false" ).equals( "true" );
+      final String propertyName = "java.net.preferIPv4Stack";
+      logger.finest( "The property: '" + propertyName + "' is set to: '" + System.getProperty( propertyName ) + "'." );
+
+      // Note: according to the documentation below the default JVM network stack setting for 'java.net.preferIPv4Stack' is false.
+      // So this is the value that is used below if the property is not explicitly defined.
+      // https://docs.oracle.com/javase/7/docs/api/java/net/doc-files/net-properties.html
+      final boolean result =  System.getProperty( propertyName, "false" ).equals( "true" );
+      logger.finest( "verifyIpv4NetworkStackPreferred is set to: '" + result + "'." );
+      return result;
    }
 
    private static boolean verifyIpv6NetworkStackNotPreferred()
    {
-      return System.getProperty( "java.net.preferIPv6Stack", "true" ).equals( "false" );
+      final String propertyName = "java.net.preferIPv6Stack";
+      logger.finest( "The property: '" + propertyName + "' is set to: '" + System.getProperty( propertyName ) + "'." );
+
+      // Note: according to the documentation below the default JVM network stack setting for 'java.net.preferIPv6Stack' is false.
+      // So this is the value that is used below if the property is not explicitly defined.
+      // https://docs.oracle.com/javase/7/docs/api/java/net/doc-files/net-properties.html
+      final boolean result =  System.getProperty( propertyName, "false" ).equals( "false" );
+      logger.finest( "verifyIpv6NetworkStackNotPreferred is set to: '" + result  + "'." );
+      return result;
    }
 
 /*- Nested Classes -----------------------------------------------------------*/
