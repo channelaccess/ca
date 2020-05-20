@@ -115,6 +115,9 @@ test {
     // Both these properties MUST be asserted when running the tests.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
+    systemProperty 'CA_DEBUG', 'false'
+    systemProperty 'CA_REPEATER_DEBUG', 'false'
+    systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
     useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
@@ -127,7 +130,7 @@ test {
 javadoc {
     // TODO: Re-evaluate situation after move to Java 11.
     // Ideally we would like to generate HTML 5 javadoc files. But currently
-    // (2020-05-07) this will not  work with Java 8. Need to wait for upgrade
+    // (2020-05-07) this will not work with Java 8. Need to wait for upgrade
     // to Java 11 then try again.
     // options.addBooleanOption( 'html5', true)
     options.addStringOption( "tag", "implNote:a:Implementation Note:" )
@@ -229,7 +232,9 @@ task example(type: JavaExec ) {
     // Both these properties MUST be asserted when running the tests.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
-    systemProperty 'CA_DEBUG', 'true'
+    systemProperty 'CA_DEBUG', 'false'
+    systemProperty 'CA_REPEATER_DEBUG', 'false'
+    systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
     main = 'org.epics.ca.Example'
     classpath fatJarWithTests
     args ''
