@@ -1,6 +1,3 @@
-
-# Overview
-
 # Overview
 The __ca__ package provides an easy to use Channel Access library for Matlab. It is cross platform and runs on all major operating systems - Linux, Windows, Mac OS X.
 
