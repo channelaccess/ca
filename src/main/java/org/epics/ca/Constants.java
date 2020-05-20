@@ -95,6 +95,12 @@ public interface Constants
 
 
    /**
+    * Initial delay in seconds between creation of a new Context and the
+    * first attempt to register with the CA Repeater.
+    */
+   int CA_REPEATER_INITIAL_DELAY = 0;
+
+   /**
     * CA Repeater attempted registration interval in seconds.
     */
     int CA_REPEATER_REGISTRATION_INTERVAL = 60;
@@ -134,7 +140,7 @@ public interface Constants
    /**
     * Read access right mask.
     */
-   int CA_PROTO_ACCESS_RIGHT_READ = 1 << 0;
+   int CA_PROTO_ACCESS_RIGHT_READ = 1;
 
    /**
     * Write access right mask.
