@@ -32,8 +32,8 @@ public class CARepeaterStarterTest
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterStarterTest.class );
    private static final int testPort = 5065;
-   private static final boolean caRepeaterDebug = true;
-
+   private static final boolean caRepeaterDebugEnable = true;
+   private static final boolean caRepeaterOutputCaptureEnable = false;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -86,7 +86,7 @@ public class CARepeaterStarterTest
    void testStartRepeaterInSeparateJvmProcess() throws Throwable
    {
       logger.info( "Starting CA Repeater in separate process." );
-      final Process process = CARepeaterStarter.startRepeaterInSeparateJvmProcess( testPort, caRepeaterDebug );
+      final Process process = CARepeaterStarter.startRepeaterInSeparateJvmProcess( testPort, caRepeaterDebugEnable, caRepeaterOutputCaptureEnable );
       logger.info( "The CA Repeater process was created." );
       logger.info( "Verifying that the CA Repeater process is reported as being alive..." );
       assertThat( process.isAlive(), is( true ) );
