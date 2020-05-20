@@ -13,6 +13,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -201,11 +202,22 @@ public class ContextImpl implements AutoCloseable, Constants
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 
+   /**
+    * Create a new context which will be initialised using the information in
+    * the system properties object.
+    */
    public ContextImpl()
    {
-      this (System.getProperties ());
+      this ( System.getProperties() );
    }
 
+   /**
+    * Create a new context based on the supplied properties object.
+    *
+    * @param properties the properties specifying configuration information for
+    *    the new context.
+    * @throws IllegalArgumentException if the supplied properties was null.
+    */
    public ContextImpl( Properties properties )
    {
       if ( properties == null )
@@ -222,11 +234,11 @@ public class ContextImpl implements AutoCloseable, Constants
       // async IO reactor
       try
       {
-         reactor = new Reactor ();
+         reactor = new Reactor();
       }
       catch ( IOException e )
       {
-         throw new RuntimeException ("Failed to initialize reactor.", e);
+         throw new RuntimeException( "Failed to initialize reactor.", e);
       }
 
       // leader/followers processing
@@ -250,10 +262,10 @@ public class ContextImpl implements AutoCloseable, Constants
 
       // Start task to register with CA Repeater
       final InetSocketAddress repeaterLocalAddress = new InetSocketAddress (InetAddress.getLoopbackAddress (), repeaterPort );
-      repeaterRegistrationFuture = timer.scheduleWithFixedDelay ( new RepeaterRegistrationTask( repeaterLocalAddress ),
-                                                                  0,
-                                                                  CA_REPEATER_REGISTRATION_INTERVAL,
-                                                                  TimeUnit.SECONDS );
+      repeaterRegistrationFuture = timer.scheduleWithFixedDelay( new RepeaterRegistrationTask( repeaterLocalAddress ),
+                                                                 CA_REPEATER_INITIAL_DELAY,
+                                                                 CA_REPEATER_REGISTRATION_INTERVAL,
+                                                                 TimeUnit.SECONDS );
 
       channelSearchManager = new ChannelSearchManager( broadcastTransport.get() );
       monitorNotificationServiceFactory = MonitorNotificationServiceFactoryCreator.create( monitorNotifierConfigImpl );
@@ -376,6 +388,7 @@ public class ContextImpl implements AutoCloseable, Constants
       logger.log ( Level.FINER, "Search response for channel " + channel.getName () + " received.");
 
       // check for multiple responses
+      //noinspection SynchronizationOnLocalVariableOrMethodParameter
       synchronized( channel )
       {
          TCPTransport transport = channel.getTransport ();
@@ -501,26 +514,26 @@ public class ContextImpl implements AutoCloseable, Constants
    @Override
    public void close()
    {
-
+      logger.finest( "Closing context." );
       if ( closed.getAndSet (true) )
       {
          return;
       }
 
-      channelSearchManager.cancel ();
-      broadcastTransport.get ().close ();
+      channelSearchManager.cancel();
+      broadcastTransport.get().close ();
 
       // this will also close all CA transports
-      destroyAllChannels ();
+      destroyAllChannels();
 
-      reactor.shutdown ();
+      reactor.shutdown();
       leaderFollowersThreadPool.shutdown ();
-      timer.shutdown ();
+      timer.shutdown();
 
       // Dispose of the monitor service factory and all services which it has created
       monitorNotificationServiceFactory.close();
 
-      executorService.shutdown ();
+      executorService.shutdown();
       try
       {
          executorService.awaitTermination (3, TimeUnit.SECONDS);
@@ -529,7 +542,7 @@ public class ContextImpl implements AutoCloseable, Constants
       {
          // noop
       }
-      executorService.shutdownNow ();
+      executorService.shutdownNow();
    }
 
    public Reactor getReactor()
@@ -747,6 +760,7 @@ public class ContextImpl implements AutoCloseable, Constants
       synchronized ( channelsByCID )
       {
          // search first free (theoretically possible loop of death)
+         //noinspection StatementWithEmptyBody
          while ( channelsByCID.containsKey (++lastCID) )
          {
             // Intentionally left blank
@@ -823,6 +837,7 @@ public class ContextImpl implements AutoCloseable, Constants
       synchronized ( responseRequests )
       {
          // search first free (theoretically possible loop of death)
+         //noinspection StatementWithEmptyBody
          while ( responseRequests.containsKey (++lastIOID) )
          {
             // Intentionally left blank
@@ -934,43 +949,43 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Tries to connect to the given adresss.
     *
-    * @param address
-    * @param tries
-    * @return
-    * @throws IOException
+    * @param address the address of the socket.
+    * @param tries the attempt number.
+    * @return the channel.
+    * @throws IOException thrown on failure.
     */
+   @SuppressWarnings( "SameParameterValue" )
    private SocketChannel tryConnect( InetSocketAddress address, int tries ) throws IOException
    {
       IOException lastException = null;
 
       for ( int tryCount = 0; tryCount < tries; tryCount++ )
       {
-
          // sleep for a while
          if ( tryCount > 0 )
          {
             try
             {
-               Thread.sleep (100);
+               Thread.sleep(100 );
             }
             catch ( InterruptedException ie )
             {
+               logger.finest( "Interrupted Exception" );
             }
          }
          logger.log( Level.FINEST,"Opening socket to CA server " + address + ", attempt " + (tryCount + 1) + "." );
 
          try
          {
-            return SocketChannel.open (address);
+            return SocketChannel.open( address );
          }
          catch ( IOException ioe )
          {
             lastException = ioe;
          }
-
       }
 
-      throw lastException;
+      throw Objects.requireNonNull( lastException );
    }
 
 /*- Nested classes -----------------------------------------------------------*/

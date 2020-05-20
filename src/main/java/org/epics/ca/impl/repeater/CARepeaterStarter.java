@@ -13,6 +13,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,6 +29,15 @@ public class CARepeaterStarter
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterStarter.class );
 
+   private static AtomicReference<ProcessStreamConsumer> processStreamConsumer =  new AtomicReference<>();
+
+   public static void shutdownProcessStreamConsumer()
+   {
+      if ( processStreamConsumer.get() != null )
+      {
+         processStreamConsumer.get().shutdown();
+      }
+   }
 
 /*- Main ---------------------------------------------------------------------*/
 
@@ -121,11 +131,9 @@ public class CARepeaterStarter
 
       synchronized ( CARepeaterStarter.class  )
       {
-
          if ( ! isRepeaterRunning( repeaterPort ) )
          {
             final Process process = startRepeaterInSeparateJvmProcess( repeaterPort, debugEnabled );
-            ProcessStreamConsumer.consumeFrom( process );
          }
       }
    }
@@ -169,17 +177,18 @@ public class CARepeaterStarter
                                                       "-Djava.net.preferIPv4Stack=true",
                                                       "-Djava.net.preferIPv6Stack=false",
                                                       classWithMainMethod,
-                                                      "-p", repeaterPortAsString );
+                                                      "-p", repeaterPortAsString, "" +
+                                                            "> /dev/null 2>&1 &" );
 
       try
       {
          // Spawn a new CA Repeater as a child of the existing process.
-         logger.finest( "Attempting to run CA Repeater in separate process using command line : '" + commandLine + "'." );
+         logger.finest( "Attempting to run CA Repeater in separate process using command line: '" + commandLine + "'." );
          final Process process = new ProcessBuilder().command( commandLine ).start();
 
          // Consume all output from it and send it to the log.
-         ProcessStreamConsumer.consumeFrom( process );
-         logger.finest( "The process was started OK" );
+         processStreamConsumer.set( ProcessStreamConsumer.consumeFrom( process ) );
+         logger.finest( "The process was started OK." );
          return process;
       }
       catch ( IOException ex )
