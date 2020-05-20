@@ -1,6 +1,8 @@
 package org.epics.ca;
 
 import static java.util.stream.Collectors.joining;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Properties;
@@ -17,27 +19,16 @@ class ContextTest
    {
       try ( Context context = new Context () )
       {
-         assertNotNull (context);
+         assertNotNull( context );
       }
    }
 
    @Test
    void testContextProperties()
    {
-      try ( Context context = new Context (null) )
-      {
-         fail ("null properties accepted");
-      }
-      catch ( IllegalArgumentException iae )
-      {
-         // expected
-      }
-
-      Properties props = new Properties ();
-      try ( Context context = new Context (props) )
-      {
-         assertNotNull (context);
-      }
+      final Exception ex = assertThrows( IllegalArgumentException.class, () -> new Context (null) );
+      assertThat( ex.getMessage(), is( "null properties" ) );
+      assertDoesNotThrow( () -> new Context ( new Properties () ) );
    }
 
    @Test
