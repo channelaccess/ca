@@ -111,6 +111,7 @@ dependencies {
 }
 
 test {
+    // Note: this configuration is automatically used for all gradle-triggered tests.
     // Both these properties MUST be asserted when running the tests.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
