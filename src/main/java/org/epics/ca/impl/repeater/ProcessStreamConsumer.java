@@ -8,10 +8,9 @@ import org.apache.commons.lang3.Validate;
 import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,27 +29,55 @@ public class ProcessStreamConsumer
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( org.epics.ca.impl.repeater.ProcessStreamConsumer.class );
-   private final ExecutorService executorService;
-   private final Process process;
-
+   private final InputStream stdout;
+   private final InputStream stderr;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 
    private ProcessStreamConsumer( Process process )
    {
-      Validate.notNull(process );
+      Validate.notNull( process );
       Validate.isTrue( process.isAlive() );
-      this.process = process;
-      this.executorService = Executors.newFixedThreadPool(3 );
+
+      this.stdout = process.getInputStream();
+      this.stderr = process.getErrorStream();
    }
 
 /*- Public methods -----------------------------------------------------------*/
 
-   static void consumeFrom( Process process )
+   static ProcessStreamConsumer consumeFrom( Process process )
    {
-      final ProcessStreamConsumer processStreamConsumer = new ProcessStreamConsumer(process );
+      Validate.notNull( process );
+
+      final ProcessStreamConsumer processStreamConsumer = new ProcessStreamConsumer( process );
       processStreamConsumer.start();
+      return processStreamConsumer;
+   }
+
+   public void shutdown()
+   {
+      try
+      {
+         logger.finest( "Closing down the STDOUT stream consumer." );
+         stdout.close();
+         logger.finest( "The STDOUT stream consumer has been closed." );
+      }
+      catch ( IOException ex )
+      {
+         logger.log( Level.WARNING, "Exception when closing down the STDOUT stream consumer.", ex );
+      }
+
+      try
+      {
+         logger.finest( "Closing down the STDERR stream consumer." );
+         stderr.close();
+         logger.finest( "The STDERR stream consumer has been closed." );
+      }
+      catch ( IOException ex )
+      {
+         logger.log( Level.WARNING, "Exception when closing down the STDERR stream consumer.", ex );
+      }
    }
 
 /*- Package-level methods ----------------------------------------------------*/
@@ -58,48 +85,35 @@ public class ProcessStreamConsumer
 
    private void start()
    {
-      logger.finest( "Started." );
-      executorService.submit( () -> consumeAndLogSubProcessStream( process.getInputStream(), Level.INFO ) );
-      executorService.submit( () -> consumeAndLogSubProcessStream( process.getErrorStream(), Level.WARNING ) );
-      executorService.submit( this::shutdownExecutorWhenProcessDies );
-      logger.finest( "Ready." );
+      logger.finest( "Starting stream consumers..." );
+      new Thread( () -> consumeAndLogSubProcessStream( "STDOUT", stdout, Level.INFO ) ).start();
+      new Thread( () -> consumeAndLogSubProcessStream( "STDERR", stderr, Level.WARNING ) ).start();
+      logger.finest( "The stream consumers are running." );
    }
 
-   private void shutdownExecutorWhenProcessDies()
+   private void consumeAndLogSubProcessStream( String streamName, InputStream streamToConsume, Level logLevel )
    {
-      logger.finest( "Waiting for process death..." );
-      while( process.isAlive() )
+      Validate.notBlank( streamName );
+      Validate.notNull( streamToConsume );
+      Validate.notNull( logLevel );
+
+      try ( final BufferedReader subProcessStreamReader = new BufferedReader( new InputStreamReader( streamToConsume ) ) )
       {
+         logger.finest( "Monitoring stream " + streamName + " of type " + streamToConsume.getClass().getSimpleName()  + "." );
          try
          {
-            process.waitFor();
-         }
-         catch ( InterruptedException ex )
-         {
-            Thread.currentThread().interrupt();
-            logger.warning( "Process stream consumer was interrupted !" );
-         }
-      }
-      logger.finest( "Process has died. Shutting down..." );
-      executorService.shutdownNow();
-      logger.finest( "Shutdown completed." );
-   }
-
-   private void consumeAndLogSubProcessStream( InputStream streamToConsume, Level logLevel)
-   {
-      try ( BufferedReader subProcessStreamReader = new BufferedReader( new InputStreamReader(streamToConsume ) ) )
-      {
-         logger.finest( "Monitoring Stream: " + streamToConsume );
-         while( ! executorService.isTerminated() )
-         {
+            String line;
             // Thread blocks here until some data arrives...
-            while ( subProcessStreamReader.ready() )
+            while ( ( line = subProcessStreamReader.readLine() ) != null )
             {
-               logger.finest("New data has arrived." );
-               final String readLine = subProcessStreamReader.readLine();
-               logger.log( logLevel, readLine );
+               logger.log( logLevel, line );
             }
          }
+         catch ( IOException ex )
+         {
+            logger.log( Level.WARNING, "Exception reading stream", ex );
+         }
+         logger.finest( "The stream " + streamName + " has terminated." );
       }
       catch( Exception ex )
       {
