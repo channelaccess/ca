@@ -145,11 +145,11 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       int dataCount = typeSupport.getForcedElementCount ();
 
       if ( dataCount == 0 && channel.getTransport ().getMinorRevision () < 13 )
-         dataCount = channel.getNativeElementCount ();
+      {
+         dataCount = channel.getNativeElementCount();
+      }
 
-      Messages.createSubscriptionMessage (
-            transport, typeSupport.getDataType (),
-            dataCount, channel.getSID (), ioid, mask);
+      Messages.createSubscriptionMessage ( transport, typeSupport.getDataType (), dataCount, channel.getSID (), ioid, mask );
       transport.flush ();
    }
 
@@ -170,7 +170,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
       }
       else if ( status == Status.DISCONN )
       {
-         logger.log( Level.FINEST, "Channel disconnected." );
+         logger.finest("Channel disconnected." );
          // The old Disruptor-based implementation pushes out a null here,
          // but only if there was room in the buffer. If there was no room
          // in the buffer the event was quietly dropped. Since this feature
@@ -194,12 +194,16 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
 
       Transport transport = channel.getTransport ();
       if ( transport == null )
+      {
          return;
+      }
 
-      int dataCount = typeSupport.getForcedElementCount ();
+      int dataCount = typeSupport.getForcedElementCount();
 
       if ( dataCount == 0 && channel.getTransport ().getMinorRevision () < 13 )
-         dataCount = channel.getNativeElementCount ();
+      {
+         dataCount = channel.getNativeElementCount();
+      }
 
       try
       {
