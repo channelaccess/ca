@@ -60,9 +60,9 @@ class StripedMonitorNotificationTask<T> implements StripedRunnable
    {
       try
       {
-         //logger.log(Level.FINEST, String.format( "Notifying consumer '%s' with value: '%s'... ", valueConsumer, value ) );
+         //logger.finest( String.format( "Notifying consumer '%s' with value: '%s'... ", valueConsumer, value ) );
          valueConsumer.accept( value );
-         //logger.log(Level.FINEST, "Notification completed ok");
+         //logger.finest( "Notification completed ok");
       }
       catch ( RuntimeException ex )
       {
