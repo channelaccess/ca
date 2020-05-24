@@ -4,11 +4,13 @@ package org.epics.ca.impl.repeater;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
@@ -17,6 +19,8 @@ import java.net.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -40,6 +44,9 @@ class UdpSocketUtilitiesTest
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
+
+   private static final Logger logger = LibraryLogManager.getLogger( UdpSocketUtilitiesTest.class );
+
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
@@ -48,7 +55,7 @@ class UdpSocketUtilitiesTest
    @BeforeAll
    static void beforeAll()
    {
-      // This is a guard condition. There is no point in checking the nehaviour
+      // This is a guard condition. There is no point in checking the behaviour
       // of the SocketUtilities class if the network stack is not appropriately
       // configured for channel access.
       assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
@@ -94,8 +101,8 @@ class UdpSocketUtilitiesTest
    void
    testInetAddress_getLocalHostAddress_and_getLoopbackAddress() throws UnknownHostException
    {
-      System.out.println("The localhost address is: " + InetAddress.getLocalHost());
-      System.out.println("The loopback address is: " + InetAddress.getLoopbackAddress());
+      logger.info("The localhost address is: " + InetAddress.getLocalHost());
+      logger.info("The loopback address is: " + InetAddress.getLoopbackAddress());
    }
 
    @Test
@@ -272,7 +279,7 @@ class UdpSocketUtilitiesTest
    {
       final InetSocketAddress wildcardAddress = new InetSocketAddress( InetAddress.getLocalHost(), 5065 );
       final boolean portAvailable =  UdpSocketUtilities.isSocketAvailable(wildcardAddress );
-      System.out.println( "The repeater port availability is: " + portAvailable );
+      logger.info( "The repeater port availability is: " + portAvailable );
    }
 
    @Test
@@ -316,10 +323,11 @@ class UdpSocketUtilitiesTest
             {
                e.printStackTrace();
             }
-            System.out.println("Thread completed.");
+            logger.info("Thread completed.");
          });
-         System.out.println("Thread: " + i + " submitted");
+         logger.info("Thread: " + i + " submitted");
       }
+      executorService.shutdown();
    }
 
    @Test
@@ -442,7 +450,7 @@ class UdpSocketUtilitiesTest
    void testCreateEphemeralSendSocketProperties( boolean broadcastEnable) throws SocketException
    {
       final DatagramSocket socketReferenceCopy;
-      try ( DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket(broadcastEnable ) )
+      try ( DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket( broadcastEnable ) )
       {
          socketReferenceCopy = sendSocket;
 
@@ -612,8 +620,8 @@ class UdpSocketUtilitiesTest
       assertThat( exception.getClass(), is( IOException.class ) );
       assertThat( exception.getMessage(), anyOf( containsString( "Message too long" ),
                                                  containsString( "sendto failed" ) ) );
-      System.out.println( "The exception message details were: '" +  exception.getMessage() + "'." );
-      System.out.println( "The maximum datagram length for InetAddress: '" + inetAddress + "' is " + maxDatagramLength + " bytes." );
+      logger.info( "The exception message details were: '" +  exception.getMessage() + "'." );
+      logger.info( "The maximum datagram length for InetAddress: '" + inetAddress + "' is " + maxDatagramLength + " bytes." );
    }
 
    @Test
@@ -632,7 +640,7 @@ class UdpSocketUtilitiesTest
       assertThat( exception.getMessage(), anyOf( containsString( "Permission denied" ),
                                                  containsString( "Can't assign requested address (sendto failed)" ),
                                                  containsString( "No buffer space available (sendto failed)" ) ) );
-      System.out.println( "The exception message details were: '" +  exception.getMessage() + "'." );
+      logger.info( "The exception message details were: '" +  exception.getMessage() + "'." );
    }
 
    @Test
@@ -651,7 +659,7 @@ class UdpSocketUtilitiesTest
                                                  containsString( "No route to host (sendto failed)" ),
                                                  containsString( "No buffer space available (sendto failed)" ),
                                                  containsString( "Protocol family unavailable" ) ) );
-      System.out.println( "The exception message details were: '" +  exception.getMessage() + "'." );
+      logger.info( "The exception message details were: '" +  exception.getMessage() + "'." );
    }
 
 
@@ -760,62 +768,76 @@ class UdpSocketUtilitiesTest
    // 7.0 Test socket broadcast capabilities on current platform
    // -------------------------------------------------------------------------
 
-   @Test
-   void integrationTestBroadcastCapability_matchesCurrentPlatformExpectation() throws IOException, ExecutionException, InterruptedException
+   private static List<Inet4Address> getArgumentsForIntegrationTestBroadcastCapability() throws UnknownHostException
    {
-      // Currently (2020-04-29) on LINUX and MAC platforms broadcast capability is often supported.
-      // But note when running on a MAC platform using VPN this test fails !
-      boolean broadcastsSupportedOnCurrentPlatform = LINUX.isCurrentOs() || MAC.isCurrentOs();
+      // The following address is blacklisted and won't be tested because it is a virtual
+      // machine that does not behave as expected on the library development machine.
+      final InetAddress blacklistAddress = Inet4Address.getByName( "192.168.251.255" );
 
-      // Change this address to the network UDP broadcast address. The following
-      // address (255.255.255.255) should be applicable on all network interfaces
-      // where broadcast capability is available.
-      final InetAddress broadcastAddress = InetAddress.getByName( "255.255.255.255" );
+      // Suppress this test for the blacklisted item.
+      final List<Inet4Address> allAddresses = NetworkUtilities.getLocalBroadcastAddresses();
+      return allAddresses.stream().filter( x -> ! x.equals( blacklistAddress ) ).collect(Collectors.toList() );
+   }
+
+   @MethodSource( "getArgumentsForIntegrationTestBroadcastCapability" )
+   @ParameterizedTest
+   void integrationTestBroadcastCapability( Inet4Address broadcastAddress) throws IOException, ExecutionException, InterruptedException
+   {
+      logger.info( "Testing broadcast address: '" + broadcastAddress  + "'." );
+
+      // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
+      if( NetworkUtilities.isVpnActive() )
+      {
+         logger.warning( "This test is not supported when a VPN connection is active on the local network interface." );
+         return;
+      }
+
       final int testPort = 8888;
-
       final DatagramPacket receivePacket = new DatagramPacket (new byte[ 10 ], 10 );
 
-      try ( final DatagramSocket listenSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(testPort, false );
+      try ( final DatagramSocket listenSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, false );
             final DatagramSocket sendSocket = UdpSocketUtilities.createUnboundSendSocket() )
       {
          final ExecutorService executor = Executors.newSingleThreadExecutor();
          final Future<?> f = executor.submit(() -> {
-            System.out.println( "Receive thread starting to listen on address: '" + listenSocket.getLocalSocketAddress() + "'." );
+            logger.info( "Receive thread starting to listen on address: '" + listenSocket.getLocalSocketAddress() + "'." );
             try
             {
                listenSocket.receive( receivePacket );
-               System.out.println( "Received new packet from: '" + receivePacket.getSocketAddress() + "'.");
+               logger.info( "Received new packet from: '" + receivePacket.getSocketAddress() + "'.");
             }
             catch ( Exception ex )
             {
-               System.out.println( "Received thread interrupted by exception: " + ex.getMessage() + "." );
+               logger.info( "Received thread interrupted by exception: " + ex.getMessage() + "." );
             }
-            System.out.println( "Receiver task completed.");
+            logger.info( "Receiver task completed.");
          });
 
-         System.out.println( "Sending packet..." );
+         logger.info( "Sending packet..." );
          final DatagramPacket sendPacket = new DatagramPacket( new byte[] { (byte) 0xAA, (byte) 0xBB }, 2 );
          sendPacket.setSocketAddress( new InetSocketAddress( broadcastAddress, testPort ) );
          assertDoesNotThrow( () -> sendSocket.send( sendPacket ), "The send operation generated an exception. Is this test being run behind a VPN where broadcasts are not supported ?" );
-         System.out.println("Send completed.");
+         logger.info("Send completed.");
 
          try
          {
-            System.out.println( "Waiting for data...");
+            logger.info( "Waiting 500ms for data...");
             f.get(500, TimeUnit.MILLISECONDS );
-            System.out.println( "Wait terminated." );
+            logger.info( "Wait terminated." );
             assertThat( receivePacket.getLength(), is( sendPacket.getLength() ) );
             assertThat( receivePacket.getData()[0], is( sendPacket.getData()[0] ) );
             assertThat( receivePacket.getData()[1], is( sendPacket.getData()[1] ) );
-            assertThat( broadcastsSupportedOnCurrentPlatform, is( true ) );
          }
          catch ( TimeoutException ex )
          {
-            System.out.println( "Timeout - data not received." );
+            fail( "Timeout - data not received." );
             f.cancel( true );
-            assertThat( broadcastsSupportedOnCurrentPlatform, is( false ) );
          }
-         executor.shutdown();
+         finally
+         {
+            logger.info("cleaning up.");
+            executor.shutdown();
+         }
       }
    }
 
@@ -842,24 +864,24 @@ class UdpSocketUtilitiesTest
 
          final ExecutorService executor = Executors.newSingleThreadExecutor();
          final Future<?> f = executor.submit(() -> {
-            System.out.println( "Receive thread started");
+            logger.info( "Receive thread started");
             try
             {
                listenSocket.receive( receivePacket );
-               System.out.println( "Received new packet from: " + receivePacket.getSocketAddress() );
+               logger.info( "Received new packet from: " + receivePacket.getSocketAddress() );
             }
             catch ( Exception ex )
             {
-               System.out.println( "Exception thrown !" + ex.getMessage() );
+               logger.info( "Exception thrown !" + ex.getMessage() );
             }
-            System.out.println( "Receive thread completed");
+            logger.info( "Receive thread completed");
          });
 
-         System.out.println( "About to send...");
+         logger.info( "About to send...");
          sendSocket.send( sendPacket );
-         System.out.println( "Waiting for receive to complete");
+         logger.info( "Waiting for receive to complete");
          f.get();
-         System.out.println( "Receive completed");
+         logger.info( "Receive completed");
          executor.shutdown();
       }
       assertThat ( receivePacket.getLength(), is( 2 ) );
