@@ -2,6 +2,7 @@ package org.epics.ca.impl.requests;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Logger;
 
 import org.epics.ca.CompletionException;
 import org.epics.ca.Status;
@@ -11,12 +12,15 @@ import org.epics.ca.impl.Messages;
 import org.epics.ca.impl.NotifyResponseRequest;
 import org.epics.ca.impl.Transport;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
+import org.epics.ca.util.logging.LibraryLogManager;
 
 /**
  * CA write notify.
  */
 public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements NotifyResponseRequest
 {
+
+   private static final Logger logger = LibraryLogManager.getLogger( WriteNotifyRequest.class );
 
    /**
     * Context.
@@ -52,11 +56,13 @@ public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements 
       this.sid = sid;
 
       context = transport.getContext ();
-      ioid = context.registerResponseRequest (this);
-      channel.registerResponseRequest (this);
+      ioid = context.registerResponseRequest( this );
+      channel.registerResponseRequest( this );
 
-      Messages.writeNotifyMessage (transport, sid, ioid, typeSupport, value, count);
-      transport.flush ();
+      logger.finest( "Send data count is: " + count );
+
+      Messages.writeNotifyMessage( transport, sid, ioid, typeSupport, value, count );
+      transport.flush();
    }
 
    @Override
@@ -66,24 +72,17 @@ public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements 
    }
 
    @Override
-   public void response(
-         int status,
-         short dataType,
-         int dataCount,
-         ByteBuffer dataPayloadBuffer
-   )
+   public void response( int status, short dataType, int dataCount, ByteBuffer dataPayloadBuffer )
    {
-
       try
       {
-
-         Status caStatus = Status.forStatusCode (status);
-         complete (caStatus);
+         final Status caStatus = Status.forStatusCode( status );
+         complete( caStatus );
       }
       finally
       {
          // always cancel request
-         cancel ();
+         cancel();
       }
    }
 
@@ -91,8 +90,8 @@ public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements 
    public void cancel()
    {
       // unregister response request
-      context.unregisterResponseRequest (this);
-      channel.unregisterResponseRequest (this);
+      context.unregisterResponseRequest( this );
+      channel.unregisterResponseRequest( this );
    }
 
    @Override
@@ -102,9 +101,11 @@ public class WriteNotifyRequest<T> extends CompletableFuture<Status> implements 
 
       Status status = Status.forStatusCode (errorCode);
       if ( status == null )
+      {
          status = Status.PUTFAIL;
+      }
 
-      completeExceptionally (new CompletionException (status, errorMessage));
+      completeExceptionally( new CompletionException( status, errorMessage ) );
    }
 
 }
