@@ -84,7 +84,7 @@ public class StripedExecutorServiceMonitorNotificationService<T> implements Moni
    public boolean publish( T value )
    {
       final StripedMonitorNotificationTask<T> task = new StripedMonitorNotificationTask<>( consumer, value );
-      logger.log(Level.FINEST, String.format( "Submitting task on stripe: '%s' ", task.getStripe() ) );
+      logger.finest( String.format( "Submitting task on stripe: '%s' ", task.getStripe() ) );
       executorService.submit( task );
 
       return true;
