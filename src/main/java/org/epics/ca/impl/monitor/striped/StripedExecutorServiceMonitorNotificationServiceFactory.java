@@ -50,8 +50,8 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
       this.numberOfThreads = numberOfThreads;
 
       final int numberOfThreadsBaseline = Thread.getAllStackTraces().keySet().size();
-      logger.log(Level.FINEST, String.format("The number of baseline threads in the system is: %d", numberOfThreadsBaseline));
-      logger.log(Level.INFO, String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory is being created with %d threads and an unlimited notification entry buffer size...", numberOfThreads ) );
+      logger.finest( String.format("The number of baseline threads in the system is: %d", numberOfThreadsBaseline));
+      logger.info( String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory is being created with %d threads and an unlimited notification entry buffer size...", numberOfThreads ) );
       stripedExecutorService = new StripedExecutorService( numberOfThreads );
    }
 
@@ -79,7 +79,7 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
    @Override
    public void close()
    {
-      logger.log(Level.FINEST, String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory is being closed with %d service entries...", getServiceCount() ) );
+      logger.finest( String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory is being closed with %d service entries...", getServiceCount() ) );
       for ( MonitorNotificationService<?> service : serviceList )
       {
          service.close();

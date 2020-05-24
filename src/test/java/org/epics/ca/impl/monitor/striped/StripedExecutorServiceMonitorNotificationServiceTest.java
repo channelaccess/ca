@@ -17,7 +17,7 @@ import static org.epics.ca.NotificationConsumer.*;
 class StripedExecutorServiceMonitorNotificationServiceTest
 {
    // Get Logger
-   private static final Logger logger = LibraryLogManager.getLogger( MonitorNotificationServiceTest.class );
+   private static final Logger logger = LibraryLogManager.getLogger( StripedExecutorServiceMonitorNotificationServiceTest.class );
 
    /**
     * Data for the test below.
