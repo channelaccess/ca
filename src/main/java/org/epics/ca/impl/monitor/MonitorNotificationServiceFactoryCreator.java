@@ -141,7 +141,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
     */
    public static MonitorNotificationServiceFactory create( String serviceConfiguration )
    {
-      logger.log( Level.FINEST, String.format("MonitorNotificationServiceFactoryCreator has been called with serviceImpl specifier: %s", serviceConfiguration ) );
+      logger.finest( String.format("MonitorNotificationServiceFactoryCreator has been called with serviceImpl specifier: %s", serviceConfiguration ) );
 
       Validate.notEmpty( serviceConfiguration );
 
@@ -177,7 +177,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
          {
             if( (args.length >= 2) )
             {
-               logger.log( Level.INFO, "Note: in this implementation the value for the number of notification threads will be ignored and set to 1." );
+               logger.info( "Note: in this implementation the value for the number of notification threads will be ignored and set to 1." );
             }
 
             final int totalNumberOfServiceThreads = 1;

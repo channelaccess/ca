@@ -45,15 +45,15 @@ public class DisruptorMonitorNotificationServiceFactory implements MonitorNotifi
       this.oldImpl = oldImpl;
 
       final int numberOfThreadsBaseline = Thread.getAllStackTraces().keySet().size();
-      logger.log( Level.FINEST, String.format("The number of baseline threads in the system is: %d", numberOfThreadsBaseline));
+      logger.finest(  String.format("The number of baseline threads in the system is: %d", numberOfThreadsBaseline));
 
       if ( oldImpl )
       {
-         logger.log( Level.INFO, "A DisruptorMonitorNotificationServiceFactory is being created to work with the OLD Disruptor implementation..." );
+         logger.info( "A DisruptorMonitorNotificationServiceFactory is being created to work with the OLD Disruptor implementation..." );
       }
       else
       {
-         logger.log( Level.INFO, "A DisruptorMonitorNotificationServiceFactory is being created to work with the NEW Disruptor implementation..." );
+         logger.info( "A DisruptorMonitorNotificationServiceFactory is being created to work with the NEW Disruptor implementation..." );
       }
    }
 
@@ -82,7 +82,7 @@ public class DisruptorMonitorNotificationServiceFactory implements MonitorNotifi
    @Override
    public void close()
    {
-      logger.log(Level.FINEST, String.format( "A DisruptorMonitorNotificationServiceFactory is being closed with %d service entries...", getServiceCount() ) );
+      logger.finest( String.format( "A DisruptorMonitorNotificationServiceFactory is being closed with %d service entries...", getServiceCount() ) );
       for ( MonitorNotificationService<?> service : serviceList )
       {
          service.close();

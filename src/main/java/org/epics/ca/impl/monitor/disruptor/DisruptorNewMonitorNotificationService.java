@@ -213,21 +213,21 @@ public class DisruptorNewMonitorNotificationService<T> implements MonitorNotific
 
       public void onEvent( Holder<T> event, long sequence, boolean endOfBatch )
       {
-         logger.log( Level.FINEST, String.format( "MySpecialEventHandler: Consuming Event - START. Sequence Number is: %d, Value is: %s ", sequence, event.value ) );
+         logger.finest( String.format( "MySpecialEventHandler: Consuming Event - START. Sequence Number is: %d, Value is: %s ", sequence, event.value ) );
          consumer.accept( event.value );
-         logger.log( Level.FINEST, String.format( "MySpecialEventHandler: Consuming Event - FINISH. Sequence Number is: %d, Value was: %s ", sequence, event.value ) );
+         logger.finest( String.format( "MySpecialEventHandler: Consuming Event - FINISH. Sequence Number is: %d, Value was: %s ", sequence, event.value ) );
       }
 
       @Override
       public void onStart()
       {
-         logger.log( Level.FINEST,"MySpecialEventHandler started on Thread: " + Thread.currentThread() + "... " );
+         logger.finest( "MySpecialEventHandler started on Thread: " + Thread.currentThread() + "... " );
       }
 
       @Override
       public void onShutdown()
       {
-         logger.log( Level.FINEST,"MySpecialEventHandler shutdown on Thread: " + Thread.currentThread() + "... " );
+         logger.finest( "MySpecialEventHandler shutdown on Thread: " + Thread.currentThread() + "... " );
       }
    }
 

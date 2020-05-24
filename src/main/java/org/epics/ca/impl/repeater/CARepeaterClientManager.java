@@ -321,8 +321,8 @@ class CARepeaterClientManager
     */
    private void removeDeadClients()
    {
-      logger.log(Level.FINEST, "Removing any CA Repeater Clients which previously registered but which now are dead." );
-      logger.log(Level.FINEST, "There are currently " + clientMap.size() + " clients."  );
+      logger.finest( "Removing any CA Repeater Clients which previously registered but which now are dead." );
+      logger.finest( "There are currently " + clientMap.size() + " clients."  );
 
        // Make a copy of the clients to send the message to
       final List<CARepeaterClientProxy> clientList = new ArrayList<>( clientMap.values() );
@@ -332,7 +332,7 @@ class CARepeaterClientManager
          .filter( CARepeaterClientProxy::isClientDead )
          .forEach( this::removeClient);
 
-      logger.log(Level.FINEST, "Following dead client cleanup there are now " + clientMap.size() + " clients."  );
+      logger.finest( "Following dead client cleanup there are now " + clientMap.size() + " clients."  );
    }
 
    /**

@@ -106,10 +106,10 @@ public class BlockingQueueMonitorNotificationService<T> implements MonitorNotifi
       boolean overrun = false;
       if ( ! valueQueue.offer( value ) )
       {
-         logger.log( Level.FINEST, String.format( "Buffer is full [size is: %d]", valueQueue.size() ) );
+         logger.finest( String.format( "Buffer is full [size is: %d]", valueQueue.size() ) );
          overrun = true;
          final T discardedValue = valueQueue.remove();
-         logger.log( Level.FINEST, String.format( "Removing and throwing away oldest queue item, %s", discardedValue ) );
+         logger.finest( String.format( "Removing and throwing away oldest queue item, %s", discardedValue ) );
 
          // Theoretically this call could throw an IllegalStateException but it should
          // not do so since the previous remove operation should now guarantee success.
@@ -117,11 +117,11 @@ public class BlockingQueueMonitorNotificationService<T> implements MonitorNotifi
       }
       else
       {
-         logger.log(Level.FINEST, String.format("Added new item to buffer [size is: %d]", valueQueue.size() ) );
+         logger.finest( String.format("Added new item to buffer [size is: %d]", valueQueue.size() ) );
 
          // In the case that there is a new notifcation item in the queue create a new task to pass the
          // value on to the consumer.
-         logger.log( Level.FINEST, String.format( "Queueing Task for consumer '%s' on work queue '%s'. Latest value is: '%s'", consumer, executor.getQueue().hashCode(), value ) );
+         logger.finest( String.format( "Queueing Task for consumer '%s' on work queue '%s'. Latest value is: '%s'", consumer, executor.getQueue().hashCode(), value ) );
          executor.submit( new MonitorNotificationTask<>( consumer, this ) );
       }
 
@@ -142,7 +142,7 @@ public class BlockingQueueMonitorNotificationService<T> implements MonitorNotifi
       Validate.isTrue( ! valueQueue.isEmpty(), "programming error - value notification queue was unexpectedly empty" );
 
       final T value = valueQueue.remove();
-      logger.log( Level.FINEST, String.format( "Retrieved value '%s'", value ) );
+      logger.finest(  String.format( "Retrieved value '%s'", value ) );
 
       // Get the oldest value from the head of the notification value queue
       return value;

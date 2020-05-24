@@ -97,8 +97,10 @@ public class BroadcastTransport implements ReactorHandler, Transport
    public void close()
    {
       if ( connectAddress != null )
-         logger.log( Level.FINER, "UDP connection to " + connectAddress + " closed.");
-      context.getReactor ().unregisterAndClose (channel);
+      {
+         logger.finer( "UDP connection to " + connectAddress + " closed.");
+      }
+      context.getReactor().unregisterAndClose( channel );
    }
 
    /**
@@ -139,7 +141,7 @@ public class BroadcastTransport implements ReactorHandler, Transport
             if ( fromAddress == null )
                break;
 
-            logger.log( Level.FINEST, "Received " + receiveBuffer.position() + " bytes from " + fromAddress + ".");
+            logger.finest(  "Received " + receiveBuffer.position() + " bytes from " + fromAddress + ".");
 
             // prepare buffer for reading
             receiveBuffer.flip ();

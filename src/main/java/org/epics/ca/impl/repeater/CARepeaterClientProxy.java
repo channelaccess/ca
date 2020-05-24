@@ -113,7 +113,7 @@ class CARepeaterClientProxy implements AutoCloseable
    @Override
    public void close()
    {
-      logger.log(Level.FINEST, "Closing CA Repeater client sending socket: " + clientListeningSocketAddress);
+      logger.finest( "Closing CA Repeater client sending socket: " + clientListeningSocketAddress);
       senderSocket.close();
    }
 
@@ -172,7 +172,7 @@ class CARepeaterClientProxy implements AutoCloseable
    {
       Validate.notNull( serverAddress );
 
-      logger.log(Level.FINEST, "Sending CA_RSRV_IS_UP (Beacon message) to client listening at socket address: " + clientListeningSocketAddress );
+      logger.finest( "Sending CA_RSRV_IS_UP (Beacon message) to client listening at socket address: " + clientListeningSocketAddress );
 
       // Send message
       final DatagramPacket packet = CARepeaterMessage.createBeaconMessage( serverProtocolMinorVersion, serverTcpListeningPort, serverBeaconId, serverAddress );

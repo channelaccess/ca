@@ -60,7 +60,7 @@ class ChannelThroughputTests
    @ValueSource( ints = { 1, 10, 100, 1000, 2000, 5000 } )
    void TestGet( int numberOfGets )
    {
-      logger.log( Level.INFO, String.format("Starting Get throughput test for %d CA gets", numberOfGets ) );
+      logger.info( String.format("Starting Get throughput test for %d CA gets", numberOfGets ) );
       try ( final Context context = new Context() )
       {
          final Channel<Integer> channel = context.createChannel("adc01", Integer.class );
@@ -73,9 +73,9 @@ class ChannelThroughputTests
          }
          long elapseTimeInMilliseconds = stopWatch.getTime(TimeUnit.MILLISECONDS);
 
-         logger.info("RESULTS:");
-         logger.log(Level.INFO, String.format("- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfGets));
-         logger.info("");
+         logger.info( "RESULTS:");
+         logger.info( String.format("- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfGets));
+         logger.info( "" );
       }
    }
 
@@ -93,7 +93,7 @@ class ChannelThroughputTests
    {
       try ( final Context context = new Context() )
       {
-         logger.log(Level.INFO, String.format("Starting PutAndGet throughput test for %d CA puts/gets", numberOfPutsAndGets));
+         logger.info( String.format("Starting PutAndGet throughput test for %d CA puts/gets", numberOfPutsAndGets));
          final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
          channel.connect();
 
@@ -104,9 +104,9 @@ class ChannelThroughputTests
          }
          long elapseTimeInMilliseconds = stopWatch.getTime(TimeUnit.MILLISECONDS);
 
-         logger.info("RESULTS:");
-         logger.log(Level.INFO, String.format("- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfPutsAndGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfPutsAndGets));
-         logger.info("");
+         logger.info( "RESULTS:");
+         logger.info( String.format("- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfPutsAndGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfPutsAndGets));
+         logger.info( "" );
       }
    }
 
@@ -124,7 +124,7 @@ class ChannelThroughputTests
    @MethodSource( "getArgumentsForTestPutAndMonitor" )
    void TestPutAndMonitor( String serviceImpl, int numberOfPuts )
    {
-      logger.log( Level.INFO, String.format("Starting PutAndMonitor throughput test using monitor notification impl: '%s' and for %d CA puts", serviceImpl, numberOfPuts ) );
+      logger.info( String.format("Starting PutAndMonitor throughput test using monitor notification impl: '%s' and for %d CA puts", serviceImpl, numberOfPuts ) );
       final Properties contextProperties = new Properties();
       contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
 
@@ -161,10 +161,10 @@ class ChannelThroughputTests
          final long multipleNotificationDeliveryTimeInMilliseconds = notificationDeliveryMeasurementStopWatch.getTime(TimeUnit.MILLISECONDS);
          final long singleNotificationDeliveryLatencyInMicroseconds = latencyMeasurementStopWatch.getTime(TimeUnit.MICROSECONDS);
 
-         logger.info("RESULTS:");
-         logger.log(Level.INFO, String.format("- The test consumer received: %d notifications", notificationConsumer.getCurrentNotificationCount()));
-         logger.log(Level.INFO, String.format("- The delivery latency was typically %d us", singleNotificationDeliveryLatencyInMicroseconds));
-         logger.log(Level.INFO, String.format("- Synchronous PutAndMonitor with %d puts took %s ms. Average: %3f ms.", numberOfPuts, multipleNotificationDeliveryTimeInMilliseconds, (float) multipleNotificationDeliveryTimeInMilliseconds / (float) numberOfPuts));
+         logger.info( "RESULTS:" );
+         logger.info( String.format("- The test consumer received: %d notifications", notificationConsumer.getCurrentNotificationCount()));
+         logger.info( String.format("- The delivery latency was typically %d us", singleNotificationDeliveryLatencyInMicroseconds));
+         logger.info( String.format("- Synchronous PutAndMonitor with %d puts took %s ms. Average: %3f ms.", numberOfPuts, multipleNotificationDeliveryTimeInMilliseconds, (float) multipleNotificationDeliveryTimeInMilliseconds / (float) numberOfPuts));
          logger.info("");
       }
    }
@@ -183,7 +183,7 @@ class ChannelThroughputTests
    @MethodSource( "getArgumentsForTestFastCounterMonitor" )
    void TestFastCounterMonitor( String serviceImpl, int numberOfNotifications )
    {
-      logger.log( Level.INFO, String.format("Starting FastCounterMonitor throughput test using impl: '%s'...", serviceImpl ) );
+      logger.info( String.format("Starting FastCounterMonitor throughput test using impl: '%s'...", serviceImpl ) );
       final Properties contextProperties = new Properties();
       contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
 
@@ -216,8 +216,8 @@ class ChannelThroughputTests
          monitorList.clear();
 
          logger.info("RESULTS:");
-         logger.log(Level.INFO, String.format("- The test consumer received: %d notifications", NotificationConsumer.getCurrentTotalNotificationCount()));
-         logger.log(Level.INFO, String.format("- FastCounterMonitor with %d notifications took %s ms. Average: %3f ms.", totalNotificationCount, elapsedTimeInMilliseconds, (float) elapsedTimeInMilliseconds / (float) totalNotificationCount));
+         logger.info( String.format("- The test consumer received: %d notifications", NotificationConsumer.getCurrentTotalNotificationCount()));
+         logger.info( String.format("- FastCounterMonitor with %d notifications took %s ms. Average: %3f ms.", totalNotificationCount, elapsedTimeInMilliseconds, (float) elapsedTimeInMilliseconds / (float) totalNotificationCount));
          logger.info("");
       }
    }

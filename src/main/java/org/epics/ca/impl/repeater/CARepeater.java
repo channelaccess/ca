@@ -70,7 +70,7 @@ class CARepeater
       try
       {
          logger.finest( "Creating broadcast-aware listening socket on port: " + repeaterPort );
-         this.listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(repeaterPort, false );
+         this.listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket( repeaterPort, false );
          logger.finest( "The listening socket was created ok." );
       }
       catch ( SocketException ex )
@@ -110,9 +110,9 @@ class CARepeater
          }
          catch ( Exception ex )
          {
-            logger.log( Level.INFO, "An unrecoverable exception has occurred which means this CA repeater will terminate.");
+            logger.info( "An unrecoverable exception has occurred which means this CA repeater will terminate.");
          }
-         logger.log( Level.INFO, "The CA Repeater has terminated.");
+         logger.info( "The CA Repeater has terminated.");
       } );
    }
 
@@ -240,7 +240,7 @@ class CARepeater
 
       if ( bytesReceived == 0 )
       {
-         logger.log( Level.FINEST, "Calling ZERO LENGTH MESSAGE consumer." );
+         logger.finest( "Calling ZERO LENGTH MESSAGE consumer." );
          zeroLengthMessageHandler.accept( inputPacket );
          return inputPacket;
       }
