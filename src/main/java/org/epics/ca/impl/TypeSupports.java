@@ -73,7 +73,7 @@ public class TypeSupports
    }
 
    /**
-    * Gets the TypeSupport corresponding for the specified typeCode and elementCount.
+    * Gets the TypeSupport corresponding to the specified typeCode and elementCount.
     *
     * @param typeCode the type code.
     * @param elementCount the element count.
@@ -86,7 +86,7 @@ public class TypeSupports
          return GraphicEnumTypeSupport.INSTANCE;
       }
 
-      if ( matches (GraphicEnumArrayTypeSupport.INSTANCE, typeCode, elementCount) )
+      if ( matches( GraphicEnumArrayTypeSupport.INSTANCE, typeCode, elementCount ) )
       {
          return GraphicEnumArrayTypeSupport.INSTANCE;
       }
@@ -153,7 +153,7 @@ public class TypeSupports
    {
       final int MAX_UNITS_SIZE = 8;
       final byte[] rawUnits = new byte[ MAX_UNITS_SIZE ];
-      buffer.get (rawUnits);
+      buffer.get( rawUnits );
 
       data.setUnits (extractString (rawUnits));
    }
@@ -223,7 +223,7 @@ public class TypeSupports
       @Override
       public int getForcedElementCount()
       {
-         return valueTypeSupport.getForcedElementCount ();
+         return valueTypeSupport.getForcedElementCount();
       }
 
       public void preValuePad( ByteBuffer buffer )
@@ -257,7 +257,7 @@ public class TypeSupports
       @Override
       public Alarm<T> deserialize( ByteBuffer buffer, Alarm<T> object, int count )
       {
-         Alarm<T> data = (object == null) ? newInstance () : object;
+         final Alarm<T> data = (object == null) ? newInstance () : object;
 
          readAlarm( buffer, data );
 
@@ -391,10 +391,10 @@ public class TypeSupports
          readAlarm( buffer, data );
 
          // CTRL_FLOAT and CTRL_DOUBLE only
-         int dataType = getDataType ();
+         final int dataType = getDataType ();
          if ( dataType == 30 || dataType == 34 )
          {
-            readPrecision(buffer, data);
+            readPrecision( buffer, data );
          }
          readUnits( buffer, data );
          readGraphicLimits( scalarValueTypeSupport, buffer, data );
@@ -492,7 +492,9 @@ public class TypeSupports
          if ( count < OPTIMIZED_COPY_THRESHOLD )
          {
             for ( int i = 0; i < count; i++ )
-               buffer.putDouble (array[ i ]);
+            {
+               buffer.putDouble( array[ i ]);
+            }
 
          }
          else
@@ -624,7 +626,6 @@ public class TypeSupports
             {
                buffer.putFloat(array[ i ]);
             }
-
          }
          else
          {
@@ -756,7 +757,6 @@ public class TypeSupports
             {
                buffer.put(array[ i ]);
             }
-
          }
          else
          {
@@ -880,7 +880,7 @@ public class TypeSupports
       @Override
       public void serialize( ByteBuffer buffer, short[] object, int count )
       {
-         short[] array = object;
+         final short[] array = object;
          if ( count < OPTIMIZED_COPY_THRESHOLD )
          {
             for ( int i = 0; i < count; i++ )
@@ -963,27 +963,26 @@ public class TypeSupports
       {
          final GraphicEnum data = (object == null) ? newInstance() : object;
 
-         readAlarm (buffer, data);
+         readAlarm( buffer, data );
 
          final int MAX_ENUM_STRING_SIZE = 26;
          final int MAX_ENUM_STATES = 16;
          final int n = buffer.getShort () & 0xFFFF;
-
-         byte[] rawBuffer = new byte[ MAX_ENUM_STRING_SIZE ];
+         final byte[] rawBuffer = new byte[ MAX_ENUM_STRING_SIZE ];
 
          // read labels
          final String[] labels = new String[ n ];
          for ( int i = 0; i < n; i++ )
          {
-            buffer.get (rawBuffer);
-            labels[ i ] = extractString (rawBuffer);
+            buffer.get( rawBuffer );
+            labels[ i ] = extractString( rawBuffer );
          }
 
          // read rest
          final int restEntries = MAX_ENUM_STATES - n;
          for ( int i = 0; i < restEntries; i++ )
          {
-            buffer.get(rawBuffer);
+            buffer.get( rawBuffer );
          }
 
          data.setLabels( labels );
@@ -1021,7 +1020,7 @@ public class TypeSupports
       {
          GraphicEnumArray data = (object == null) ? newInstance () : object;
 
-         readAlarm (buffer, data);
+         readAlarm( buffer, data );
 
          final int MAX_ENUM_STRING_SIZE = 26;
          final int MAX_ENUM_STATES = 16;
