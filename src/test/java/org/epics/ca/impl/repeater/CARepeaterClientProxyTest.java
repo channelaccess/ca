@@ -63,21 +63,21 @@ class CARepeaterClientProxyTest
    void testConstructor_loopbackIpDoesNotThrowException()
    {
       final InetSocketAddress nonLocalAddress = new InetSocketAddress( "127.0.0.1", 1234 );
-      assertDoesNotThrow( () -> new CARepeaterClientProxy( nonLocalAddress) );
+      assertDoesNotThrow( () -> new CARepeaterClientProxy( nonLocalAddress ).close() );
    }
 
    @Test
    void testConstructor_wildcardAddressDoesNotThrowException()
    {
       final InetSocketAddress wildcardAddress = new InetSocketAddress(1234 );
-      assertDoesNotThrow( () -> new CARepeaterClientProxy( wildcardAddress) );
+      assertDoesNotThrow( () -> new CARepeaterClientProxy( wildcardAddress ).close() );
    }
 
    @Test
    void testConstructor_ephemeralPortDoesNotThrowException()
    {
       final InetSocketAddress nonLocalAddress = new InetSocketAddress( 0 );
-      assertDoesNotThrow( () -> new CARepeaterClientProxy( nonLocalAddress) );
+      assertDoesNotThrow( () -> new CARepeaterClientProxy( nonLocalAddress ).close() );
    }
 
    @Test
