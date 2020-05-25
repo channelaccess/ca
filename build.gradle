@@ -112,13 +112,15 @@ dependencies {
 
 test {
     // Note: this configuration is automatically used for all gradle-triggered tests.
+    useJUnitPlatform()
+
     // Both these properties MUST be asserted when running the tests.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
-    systemProperty 'CA_DEBUG', 'false'
+    systemProperty 'CA_DEBUG', '0'
     systemProperty 'CA_REPEATER_DEBUG', 'false'
     systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
-    useJUnitPlatform()
+    systemProperty 'CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE', 'true'
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
@@ -219,22 +221,34 @@ task udpMessageSniffer( type:JavaExec ) {
     args '5064'
 }
 
-task runJava(type: JavaExec ) {
+// Run the TargetPlatformTestRunner Program directly from Gradle.
+task runJava( type: JavaExec ) {
     // Both these properties MUST be asserted when running the tests.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
     main = 'org.epics.ca.TargetPlatformTestRunner'
     classpath fatJarWithTests
-    args '-method', 'org.epics.ca.impl.repeater.SocketUtilitiesTest#testIsSocketAvailable_reportRepeaterPortStatus'
+    // Notes: Enable the appropriate option below:
+    // noargs = run all the tests in the library.
+    // args '-package', <fq_package_name> = run all the tests defined in the package.
+    // args '-class', <fq_class_name> = run all the tests defined in the class.
+    // args '-method', <fq_class_name#method_name> = run the specified test.
+
+    // args '-package', 'org.epics.ca.impl'
+    // args '-class', 'org.epics.ca.ChannelTest'
+    args '-method', 'org.epics.ca.ChannelTest#testMonitorDisconnectionBehaviour'
+
 }
 
-task example(type: JavaExec ) {
+// Run the Example Program directly from Gradle.
+task example( type: JavaExec ) {
     // Both these properties MUST be asserted when running the tests.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
     systemProperty 'CA_DEBUG', 'false'
-    systemProperty 'CA_REPEATER_DEBUG', 'false'
-    systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
+    systemProperty 'CA_REPEATER_DEBUG', 'true'
+    systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'true'
+    systemProperty 'CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE', 'true'
     main = 'org.epics.ca.Example'
     classpath fatJarWithTests
     args ''
