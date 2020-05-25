@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -172,7 +171,7 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
       }
       catch( InterruptedException ex )
       {
-         logger.log(Level.FINEST, "Unexpectedly interrupted from await" );
+         logger.finest( "Unexpectedly interrupted from await" );
          Thread.currentThread().interrupt();
       }
    }
@@ -185,7 +184,7 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
       }
       catch( InterruptedException ex )
       {
-         logger.log(Level.FINEST, "Unexpectedly interrupted from await" );
+         logger.finest( "Unexpectedly interrupted from await" );
          Thread.currentThread().interrupt();
       }
    }
@@ -198,7 +197,7 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
       }
       catch( InterruptedException ex )
       {
-         logger.log(Level.FINEST, "Unexpectedly interrupted from await" );
+         logger.finest( "Unexpectedly interrupted from await" );
          Thread.currentThread().interrupt();
       }
    }
@@ -206,7 +205,7 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
    @Override
    public void accept( T newValue )
    {
-//      logger.log(Level.INFO, String.format("Consumer: Thread: %s has notified me with value %s", Thread.currentThread(), newValue ) );
+      logger.finest( String.format( "Consumer: Thread: %s has notified me with value %s", Thread.currentThread(), newValue ) );
 
       // Sleep for the appropriate processing time according to the type of Consumer
       simulateProcessingTime( delayTimeInNanoseconds );
@@ -253,7 +252,7 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
       // Hold onto the latest notification value
       lastNotificationValue.set( newValue );
 
-      logger.log(Level.FINEST, String.format("Consumer: Thread %s has finished consuming", Thread.currentThread() ) );
+      logger.finest( String.format("Consumer: Thread %s has finished consuming", Thread.currentThread() ) );
    }
 
    public T getLastNotificationValue()
@@ -264,7 +263,7 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
    @Override
    public String toString()
    {
-      return "TestConsumer<" + consumerType + "," + delayTimeInNanoseconds + '>';
+      return "NotificationConsumer<" + consumerType + "," + delayTimeInNanoseconds + '>';
    }
 
 
@@ -298,16 +297,16 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
    {
       try
       {
-         logger.log( Level.FINEST, String.format( "Sleep request for %d nanoseconds", delaytimeInNanoseconds) );
+         logger.finest(  String.format( "Sleep request for %d nanoseconds", delaytimeInNanoseconds) );
          long millis = ( delaytimeInNanoseconds / 1_000_000L );
          long nanos =  ( delaytimeInNanoseconds % 1_000_000L );
-         logger.log( Level.FINEST, String.format( "Sleeping for %d millis and %d nanos", millis, nanos ) );
+         logger.finest(  String.format( "Sleeping for %d millis and %d nanos", millis, nanos ) );
          Thread.sleep( millis, (int) nanos );
-         logger.log( Level.FINEST, "Done with sleeping" );
+         logger.finest(  "Done with sleeping" );
       }
       catch( InterruptedException ex )
       {
-         logger.log( Level.FINEST, "Unexpectedly awoke from sleep" );
+         logger.finest(  "Unexpectedly awoke from sleep" );
          Thread.currentThread().interrupt();
       }
    }
