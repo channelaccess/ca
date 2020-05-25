@@ -42,6 +42,9 @@ class CARepeaterClientProxyTest
    @BeforeAll
    static void beforeAll()
    {
+      // This is a guard condition. There is no point in checking the behaviour
+      // of the CARepeaterClientProxyTest class if the network stack is not appropriately
+      // configured for channel access.
       assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
    }
 
