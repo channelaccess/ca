@@ -29,14 +29,13 @@ public class CARepeaterStarter
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterStarter.class );
 
-   private static AtomicReference<ProcessStreamConsumer> processStreamConsumer =  new AtomicReference<>();
+   private static final File NULL_FILE = new File( ( System.getProperty("os.name").startsWith( "Windows") ? "NUL" : "/dev/null" ) );
+
+   private static final AtomicReference<Process> lastStartedProcess =  new AtomicReference<>();
 
    public static void shutdownProcessStreamConsumer()
    {
-      if ( processStreamConsumer.get() != null )
-      {
-         processStreamConsumer.get().shutdown();
-      }
+
    }
 
 /*- Main ---------------------------------------------------------------------*/
@@ -113,14 +112,17 @@ public class CARepeaterStarter
     * running.
     *
     * @param repeaterPort specifies the port to listen on in the inclusive range 1-65535.
-    * @param debugEnabled whether debug logging should be enabled in the spawned
-    *    process.
+    * @param debugEnable whether debug logging should be enabled in the spawned
+    *    subprocess.
+    * @param outputCaptureEnable whether the standard output and standard error of
+    *   the spawned subprocess should be captured and sent to the logging system in
+    *   the owning process.
     * @throws IllegalArgumentException if the repeater port is out of range.
-    * @throws IllegalStateException if the repeater was already running.
     * @throws IllegalStateException if some other unexpected condition prevents
     *    repeater from being started.
+    * @throws RuntimeException if the JVM network stack was incorrectly configured.
     */
-   public static void startRepeaterIfNotAlreadyRunning( int repeaterPort, boolean debugEnabled )
+   public static void startRepeaterIfNotAlreadyRunning( int repeaterPort, boolean debugEnable, boolean outputCaptureEnable )
    {
       Validate.inclusiveBetween( 1, 65535, repeaterPort, "The port must be in the inclusive range 1-65535.");
 
@@ -133,10 +135,31 @@ public class CARepeaterStarter
       {
          if ( ! isRepeaterRunning( repeaterPort ) )
          {
-            final Process process = startRepeaterInSeparateJvmProcess( repeaterPort, debugEnabled );
+            final Process process = startRepeaterInSeparateJvmProcess( repeaterPort, debugEnable, outputCaptureEnable );
+            lastStartedProcess.set( process );
          }
       }
    }
+
+   /**
+    * Shuts down the last repeater that this class started (if any)
+    */
+   public static void shutdownLastStartedRepeater()
+   {
+      logger.fine( "Shutting down any CA Repeaters that were started by this process..." );
+
+      if ( lastStartedProcess.get() != null )
+      {
+         logger.fine( "A CA Repeater was found." );
+         lastStartedProcess.get().destroyForcibly();
+         logger.fine( "The CA Repeater was sent a termination signal." );
+      }
+      else
+      {
+         logger.fine( "NO CA Rpeaters need terminating." );
+      }
+   }
+
 
 /*- Package-level access methods ---------------------------------------------*/
 
@@ -147,8 +170,11 @@ public class CARepeaterStarter
     *
     * @param repeaterPort specifies the port that the CA Repeater will listen on
     *    in the range 1-65535.
-    * @param debugEnabled whether debug logging should be enabled in the spawned
-    *    process.
+    * @param debugEnable whether debug logging should be enabled in the spawned
+    *    subprocess.
+    * @param outputCaptureEnable whether the standard output and standard error of
+    *   the spawned subprocess should be captured and sent to the logging system in
+    *   the owning process.
     * @return process handle which can subsequently be used to monitor the process
     *    and/or shut it down.
     * @throws IllegalArgumentException if the repeater port is out of range.
@@ -156,7 +182,7 @@ public class CARepeaterStarter
     * @throws RuntimeException if some other unexpected condition prevents
     *    repeater from being started.
     */
-   static Process startRepeaterInSeparateJvmProcess( int repeaterPort, boolean debugEnabled )
+   static Process startRepeaterInSeparateJvmProcess( int repeaterPort, boolean debugEnable, boolean outputCaptureEnable )
    {
       Validate.inclusiveBetween( 1, 65535, repeaterPort, "The port must be in the inclusive range 1-65535.");
       Validate.validState( ! isRepeaterRunning( repeaterPort ), "The repeater is already running on port." + repeaterPort );
@@ -171,23 +197,38 @@ public class CARepeaterStarter
       final String classPath = System.getProperty("java.class.path", "<java.class.path not found>");
       final String classWithMainMethod = CARepeaterStarter.class.getName();
       final String repeaterPortAsString = Integer.toString( repeaterPort );
+
       final List<String> commandLine = Arrays.asList( "java",
                                                       "-cp", classPath,
-                                                      "-DCA_DEBUG=" + debugEnabled,
+                                                      "-DCA_DEBUG=" + debugEnable,
                                                       "-Djava.net.preferIPv4Stack=true",
                                                       "-Djava.net.preferIPv6Stack=false",
                                                       classWithMainMethod,
-                                                      "-p", repeaterPortAsString, "" +
-                                                            "> /dev/null 2>&1 &" );
+                                                      "-p", repeaterPortAsString );
 
       try
       {
          // Spawn a new CA Repeater as a child of the existing process.
          logger.finest( "Attempting to run CA Repeater in separate process using command line: '" + commandLine + "'." );
-         final Process process = new ProcessBuilder().command( commandLine ).start();
 
-         // Consume all output from it and send it to the log.
-         processStreamConsumer.set( ProcessStreamConsumer.consumeFrom( process ) );
+         final Process process;
+         if ( outputCaptureEnable  )
+         {
+            logger.finest( "The output from the CA Repeater will be captured in the log." );
+            process = new ProcessBuilder().command( commandLine )
+                                          .start();
+            ProcessStreamConsumer.consumeFrom( process );
+         }
+         else
+         {
+            logger.finest( "The output from the CA Repeater will NOT be captured in the log." );
+            process = new ProcessBuilder().command( commandLine )
+                                          .redirectError( ProcessBuilder.Redirect.to( NULL_FILE ) )
+                                          .redirectOutput( ProcessBuilder.Redirect.to( NULL_FILE ) )
+                                          .redirectInput( ProcessBuilder.Redirect.from( NULL_FILE ) )
+                                          .start();
+         }
+
          logger.finest( "The process was started OK." );
          return process;
       }
