@@ -49,13 +49,16 @@ class CARepeaterTest
    @BeforeAll
    static void beforeAll()
    {
+      // This is a guard condition. There is no point in checking the behaviour
+      // of the CARepeaterTest class if the network stack is not appropriately
+      // configured for channel access.
       assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
    }
 
    @BeforeEach
    void beforeEach() throws CARepeater.CaRepeaterStartupException
    {
-      logger.info( "Starting CARepeater integration tests..." );
+      logger.info( "Starting CA Repeater integration tests..." );
       logger.info( "Creating CA Repeater which will listen for broadcast messages on Port 1234." );
       caRepeater = new CARepeater( 1234 );
       logger.info( "Starting CA Repeater on port 1234." );
@@ -106,10 +109,10 @@ class CARepeaterTest
     */
    @CsvSource( { "127.0.0.1,1234,false,127.0.0.1","255.255.255.255,1234,true,0.0.0.0" } )
    @ParameterizedTest
-   void integrationTestCaRepeater_RegisterNewClient_( String targetInetAddress,
-                                                      int targetPort,
-                                                      boolean useBroadcast,
-                                                      String advertisedListeningAddress ) throws IOException
+   void integrationTestCaRepeater_RegisterNewClient( String targetInetAddress,
+                                                     int targetPort,
+                                                     boolean useBroadcast,
+                                                     String advertisedListeningAddress ) throws IOException
    {
       // In this test we send a request to the CA Repeater asking it to register
       //  a new client. We then flip the socket into receive mode and check that
