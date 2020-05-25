@@ -50,7 +50,7 @@ public class Context implements AutoCloseable
 
    public <T> Channel<T> createChannel( String channelName, Class<T> channelType )
    {
-      return delegate.createChannel( channelName, channelType, Constants.CHANNEL_PRIORITY_DEFAULT);
+      return delegate.createChannel( channelName, channelType, Constants.CHANNEL_PRIORITY_DEFAULT );
    }
 
    public <T> Channel<T> createChannel( String channelName, Class<T> channelType, int priority )

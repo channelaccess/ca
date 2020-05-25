@@ -210,7 +210,7 @@ public class Example
          final Timestamped<Double> dvts = dblCh.get( Timestamped.class );
          System.out.println( "OK. Data returned: '" + dvts.getValue() + ", " + dvts.getAlarmStatus() + ", " + dvts.getAlarmSeverity() + ", " + new Date( dvts.getMillis ()) + "'." );
 
-         // 14.0 Monnitor a DOUBEL using try-with-resourced
+         // 14.0 Monnitor a DOUBLE using try-with-resourced
          System.out.print( "Monitoring DOUBLE using try-with-resources... "  );
          try ( final Monitor<Double> monitor = dblCh.addValueMonitor( v -> System.out.println( "OK. Data returned: '" + v + "'." ) ) )
          {
