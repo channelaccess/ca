@@ -4,15 +4,20 @@ package org.epics.ca.impl.repeater;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Logger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -22,6 +27,9 @@ class NetworkUtilitiesTest
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
+
+   private static final Logger logger = LibraryLogManager.getLogger( NetworkUtilitiesTest.class );
+
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
@@ -34,6 +42,12 @@ class NetworkUtilitiesTest
       // of the NetworkUtilities class if the network stack is not appropriately
       // configured for channel access.
       assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
+   }
+
+   @Test
+   void testIsThisMyIp_suppliedWithNullThrowsNullPointerException()
+   {
+      assertThrows( NullPointerException.class, () -> NetworkUtilities.isThisMyIpAddress( null ) );
    }
 
    @Test
@@ -54,7 +68,7 @@ class NetworkUtilitiesTest
       final String hostName = InetAddress.getLocalHost().getHostName();
       final InetAddress[] localAddresses = InetAddress.getAllByName( hostName );
       Arrays.asList( localAddresses ).forEach( (addr) -> {
-         System.out.println( "Testing with IP: " + addr );
+         logger.info( "Testing with IP: " + addr );
          assertThat( NetworkUtilities.isThisMyIpAddress( addr ), is( true ) );
       } );
    }
@@ -64,13 +78,34 @@ class NetworkUtilitiesTest
    {
       final InetAddress[] localAddresses = InetAddress.getAllByName( "localhost" );
       Arrays.asList( localAddresses ).forEach( (addr) -> {
-         System.out.println( "Testing with IP: " + addr );
+         logger.info( "Testing with IP: " + addr );
          assertThat( NetworkUtilities.isThisMyIpAddress( addr ), is( true ) );
       } );
    }
 
+   @Test
+   void testGetLocalNetworkInterfaceAddresses()
+   {
+      logger.info( "The following network addresses have been detected on the local network interface:" );
+      final List<Inet4Address> list = NetworkUtilities.getLocalNetworkInterfaceAddresses();
+      list.forEach( (addr) -> logger.info("- " + addr.toString() ));
+   }
 
-/*- Private methods ----------------------------------------------------------*/
+   @Test
+   void testGetLocalBroadcastAddresses()
+   {
+      logger.info( "The following broadcast addresses have been detected on the local network interface:" );
+      final List<Inet4Address> list = NetworkUtilities.getLocalBroadcastAddresses();
+      list.forEach( (addr) -> logger.info("- " + addr.toString() ));
+   }
+
+   @Test
+   void testIsVpnActive()
+   {
+      NetworkUtilities.isVpnActive();
+   }
+
+   /*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/
 
 }
