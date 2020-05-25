@@ -14,9 +14,13 @@ import gov.aps.jca.dbr.DBR_Int;
 import com.cosylab.epics.caj.cas.util.DefaultServerImpl;
 import com.cosylab.epics.caj.cas.util.MemoryProcessVariable;
 import com.cosylab.epics.caj.cas.util.examples.CounterProcessVariable;
+import org.epics.ca.util.logging.LibraryLogManager;
 
+import java.io.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -31,6 +35,8 @@ public class EpicsChannelAccessTestServer
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
+
+   private static final Logger logger = LibraryLogManager.getLogger( EpicsChannelAccessTestServer.class );
 
    private final ExecutorService executor;
    private final ServerContext context;
@@ -86,7 +92,7 @@ public class EpicsChannelAccessTestServer
     */
    public static EpicsChannelAccessTestServer start()
    {
-      System.out.println( "\nStarting the EPICS Channel Access Test Server..." );
+      logger.info( "Starting the EPICS Channel Access Test Server..." );
 
       final EpicsChannelAccessTestServer server;
       try
@@ -95,6 +101,8 @@ public class EpicsChannelAccessTestServer
       }
       catch ( CAException ex )
       {
+         final String msg = "An exception occurred which prevented the server from starting.";
+         logger.log( Level.WARNING, msg, ex );
          throw new RuntimeException( "An exception occurred which prevented the server from starting." );
       }
 
@@ -105,7 +113,7 @@ public class EpicsChannelAccessTestServer
       server.startInSeparateThread();
 
       // Return the reference to the server (which will allow it to be shutdown when required).
-      System.out.println( "The EPICS Channel Access Test Server was initialised and is running.\n" );
+      logger.info( "The EPICS Channel Access Test Server was initialised and is running.\n" );
       return server;
    }
 
@@ -114,10 +122,10 @@ public class EpicsChannelAccessTestServer
     */
    public void shutdown()
    {
-      System.out.println( "\nShutting down the EPICS Channel Access Test Server..." );
+      logger.info( "Shutting down the EPICS Channel Access Test Server..." );
       executor.shutdownNow();
       destroyContextWithoutPropagatingExceptions();
-      System.out.println( "The EPICS Channel Access Test Server was shutdown." );
+      logger.info( "The EPICS Channel Access Test Server was shutdown." );
    }
 
 
@@ -144,8 +152,9 @@ public class EpicsChannelAccessTestServer
          }
          catch( CAException ex )
          {
-            ex.printStackTrace ();
-            throw new RuntimeException( "The following unexpected exception occurred: '" + ex.getMessage() + "'", ex );
+            final String msg = "The following unexpected exception occurred:" ;
+            logger.log( Level.WARNING, msg, ex );
+            throw new RuntimeException( msg, ex );
          }
          finally
          {
@@ -156,11 +165,30 @@ public class EpicsChannelAccessTestServer
 
    private void printContextInfo()
    {
-      System.out.println( "TEST SERVER VERSION INFO:" );
-      System.out.println( context.getVersion().getVersionString() );
-      System.out.println( "TEST SERVER CONTEXT INFO:" );
-      context.printInfo();
+      // Log the version
+      logger.info( context.getVersion().getVersionString() );
 
+      // The following rigmarole is to capture the context information
+      // output from the library and to send it through the logger,
+      // respecting the line breaks.
+      final ByteArrayOutputStream os = new ByteArrayOutputStream();
+      final PrintStream printStream = new PrintStream( os, true );
+      context.printInfo( printStream );
+      printStream.close();
+
+      try ( final Reader reader = new InputStreamReader( new ByteArrayInputStream( os.toByteArray() ) );
+            final BufferedReader bufferedReader = new BufferedReader( reader )  )
+      {
+         String line;
+         while ( (line = bufferedReader.readLine()) != null )
+         {
+            logger.info(line);
+         }
+      }
+      catch ( IOException ex )
+      {
+         logger.log( Level.WARNING, "Exception reading stream", ex );
+      }
    }
 
    /**
@@ -185,6 +213,9 @@ public class EpicsChannelAccessTestServer
     */
    private void registerProcessVariables( DefaultServerImpl server )
    {
+      // Note: the variables below are typically created with two elements per channel. This means
+      // they can be tested on the client side by connecting using either as scalars or as arrays.
+
       // Simple in-memory PV
       server.createMemoryProcessVariable ("simple", DBR_Int.TYPE, new int[] { 1, 2, 3 });
 
@@ -216,8 +247,7 @@ public class EpicsChannelAccessTestServer
       server.registerProcessVaribale( mpv4 );
 
       // enum in-memory PV
-      final MemoryProcessVariable enumPV = new MemoryProcessVariable ("enum", null, DBR_Enum.TYPE, new short[] { 0 })
-      {
+      final MemoryProcessVariable enumPV = new MemoryProcessVariable ("enum", null, DBR_Enum.TYPE, new short[] { 3, 1 } ) {
          private final String[] labels = { "zero", "one", "two", "three", "four", "five", "six", "seven" };
 
          /* (non-Javadoc)
@@ -227,9 +257,8 @@ public class EpicsChannelAccessTestServer
          {
             return labels;
          }
-
       };
-      server.registerProcessVaribale (enumPV);
+      server.registerProcessVaribale( enumPV );
 
       // counter PV
       final CounterProcessVariable counter = new CounterProcessVariable ("counter", null, -10, 10, 1, 1000, -7, 7, -9, 9);
