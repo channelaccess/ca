@@ -1,4 +1,8 @@
+/*- Package Declaration ------------------------------------------------------*/
+
 package org.epics.ca;
+
+/*- Imported packages --------------------------------------------------------*/
 
 import static java.util.stream.Collectors.joining;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -6,29 +10,61 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Properties;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
+
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.Test;
+
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
 
 class ContextTest
 {
 
+/*- Public attributes --------------------------------------------------------*/
+/*- Private attributes -------------------------------------------------------*/
+
+   private static final Logger logger = LibraryLogManager.getLogger( ContextTest.class );
    private final String TEST_CHANNEL_NAME = "test01";
 
+/*- Main ---------------------------------------------------------------------*/
+/*- Constructor --------------------------------------------------------------*/
+/*- Public methods -----------------------------------------------------------*/
+/*- Package-level access methods ---------------------------------------------*/
+
    @Test
-   void testContext()
+   void testConstructor_withNoProperties_doesNotThrow()
    {
-      try ( Context context = new Context () )
-      {
-         assertNotNull( context );
-      }
+      assertDoesNotThrow( () -> {
+         try ( Context context = new Context() )
+         {
+            logger.info("The new context was successfully created." );
+         }
+      } );
    }
 
    @Test
-   void testContextProperties()
+   void testConstructor_withEmptyProperties_doesNotThrow()
    {
-      final Exception ex = assertThrows( IllegalArgumentException.class, () -> new Context (null) );
+      assertDoesNotThrow( () -> {
+         try ( Context context = new Context( new Properties()) )
+         {
+            logger.info("The new context was successfully created." );
+         }
+      } );
+   }
+
+   @Test
+   void testConstructor_withNullProperties_doesThrow()
+   {
+      final Exception ex = assertThrows( IllegalArgumentException.class, () -> {
+         try ( Context context = new Context( null ) )
+         {
+            logger.warning("The new context was successfully created." );
+         }
+      } );
       assertThat( ex.getMessage(), is( "null properties" ) );
-      assertDoesNotThrow( () -> new Context ( new Properties () ) );
    }
 
    @Test
@@ -148,4 +184,8 @@ class ContextTest
          // expected
       }
    }
+
+/*- Private methods ----------------------------------------------------------*/
+/*- Nested Classes -----------------------------------------------------------*/
+
 }
