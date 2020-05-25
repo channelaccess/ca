@@ -1018,7 +1018,7 @@ public class TypeSupports
       @Override
       public GraphicEnumArray deserialize( ByteBuffer buffer, GraphicEnumArray object, int count )
       {
-         GraphicEnumArray data = (object == null) ? newInstance () : object;
+         final GraphicEnumArray data = (object == null) ? newInstance () : object;
 
          readAlarm( buffer, data );
 
@@ -1043,8 +1043,8 @@ public class TypeSupports
             buffer.get( rawBuffer );
          }
 
-         data.setLabels (labels);
-         data.setValue (ShortArrayTypeSupport.INSTANCE.deserialize (buffer, data.getValue (), count));
+         data.setLabels( labels );
+         data.setValue( ShortArrayTypeSupport.INSTANCE.deserialize (buffer, data.getValue (), count) );
 
          return data;
       }
@@ -1143,15 +1143,14 @@ public class TypeSupports
          }
          else
          {
-            buffer.asIntBuffer ().put (array, 0, count);
-            buffer.position (buffer.position () + serializeSize (array, count));
+            buffer.asIntBuffer ().put( array, 0, count );
+            buffer.position( buffer.position () + serializeSize( array, count) );
          }
       }
 
       @Override
       public int[] deserialize( ByteBuffer buffer, int[] object, int count )
       {
-
          int[] data;
          if ( object == null )
          {
@@ -1221,8 +1220,8 @@ public class TypeSupports
       @Override
       public void serialize( ByteBuffer buffer, String object, int count )
       {
-         buffer.put (object.getBytes ());
-         buffer.put ((byte) 0);
+         buffer.put( object.getBytes () );
+         buffer.put( (byte) 0 );
       }
 
       @Override
@@ -1257,10 +1256,9 @@ public class TypeSupports
          }
          else
          {
-            buffer.get (data, 0, length);
+            buffer.get( data, 0, length );
          }
-         return new String (data, 0, length);
-
+         return new String( data, 0, length );
       }
    }
 
@@ -1319,17 +1317,15 @@ public class TypeSupports
                   int bytesToWrite = Math.min (object[ i ].length (), MAX_STRING_SIZE - 1);
                   buffer.put (object[ i ].getBytes (), 0, bytesToWrite);
                }
-               buffer.put ((byte) 0);
-               buffer.position (pos + MAX_STRING_SIZE);
+               buffer.put( (byte) 0 );
+               buffer.position( pos + MAX_STRING_SIZE );
             }
-
          }
       }
 
       @Override
       public String[] deserialize( ByteBuffer buffer, String[] object, int count )
       {
-
          String[] data;
          if ( object == null )
          {
@@ -1357,7 +1353,6 @@ public class TypeSupports
                data[ i ] = extractString (rawBuffer);
             }
          }
-
          return data;
       }
    }
@@ -1397,21 +1392,21 @@ public class TypeSupports
       //
       {
          final Map<Class<?>, TypeSupport<?>> map = new HashMap<> ();
-         map.put( String.class, StringTypeSupport.INSTANCE);
-         map.put( Short.class, ShortTypeSupport.INSTANCE);
-         map.put( Float.class, FloatTypeSupport.INSTANCE);
-         map.put( Byte.class, ByteTypeSupport.INSTANCE);
-         map.put( Integer.class, IntegerTypeSupport.INSTANCE);
-         map.put( Double.class, DoubleTypeSupport.INSTANCE);
+         map.put( String.class, StringTypeSupport.INSTANCE );
+         map.put( Short.class, ShortTypeSupport.INSTANCE );
+         map.put( Float.class, FloatTypeSupport.INSTANCE );
+         map.put( Byte.class, ByteTypeSupport.INSTANCE );
+         map.put( Integer.class, IntegerTypeSupport.INSTANCE );
+         map.put( Double.class, DoubleTypeSupport.INSTANCE );
 
-         map.put( String[].class, StringArrayTypeSupport.INSTANCE);
-         map.put( short[].class, ShortArrayTypeSupport.INSTANCE);
-         map.put( float[].class, FloatArrayTypeSupport.INSTANCE);
-         map.put( byte[].class, ByteArrayTypeSupport.INSTANCE);
-         map.put( int[].class, IntegerArrayTypeSupport.INSTANCE);
-         map.put(double[].class, DoubleArrayTypeSupport.INSTANCE);
+         map.put( String[].class, StringArrayTypeSupport.INSTANCE );
+         map.put( short[].class, ShortArrayTypeSupport.INSTANCE );
+         map.put( float[].class, FloatArrayTypeSupport.INSTANCE );
+         map.put( byte[].class, ByteArrayTypeSupport.INSTANCE );
+         map.put( int[].class, IntegerArrayTypeSupport.INSTANCE );
+         map.put( double[].class, DoubleArrayTypeSupport.INSTANCE );
 
-         rootMap.put (Void.class, Collections.unmodifiableMap (map));
+         rootMap.put( Void.class, Collections.unmodifiableMap( map ) );
       }
 
       //
@@ -1419,21 +1414,21 @@ public class TypeSupports
       //
       {
          final Map<Class<?>, TypeSupport<?>> map = new HashMap<> ();
-         map.put( String.class, new STSTypeSupport<> (StringTypeSupport.INSTANCE, 0));
-         map.put( Short.class, new STSTypeSupport<> (ShortTypeSupport.INSTANCE, 0));
-         map.put( Float.class, new STSTypeSupport<> (FloatTypeSupport.INSTANCE, 0));
-         map.put( Byte.class, new STSTypeSupport<> (ByteTypeSupport.INSTANCE, 1));
-         map.put( Integer.class, new STSTypeSupport<> (IntegerTypeSupport.INSTANCE, 0));
-         map.put( Double.class, new STSTypeSupport<> (DoubleTypeSupport.INSTANCE, 4));
+         map.put( String.class, new STSTypeSupport<>( StringTypeSupport.INSTANCE, 0 ) );
+         map.put( Short.class, new STSTypeSupport<>( ShortTypeSupport.INSTANCE, 0 ) );
+         map.put( Float.class, new STSTypeSupport<>( FloatTypeSupport.INSTANCE, 0 ) );
+         map.put( Byte.class, new STSTypeSupport<>( ByteTypeSupport.INSTANCE, 1 ) );
+         map.put( Integer.class, new STSTypeSupport<>( IntegerTypeSupport.INSTANCE, 0 ) );
+         map.put( Double.class, new STSTypeSupport<>( DoubleTypeSupport.INSTANCE, 4 ) );
 
-         map.put( String[].class, new STSTypeSupport<> (StringArrayTypeSupport.INSTANCE, 0));
-         map.put( short[].class, new STSTypeSupport<> (ShortArrayTypeSupport.INSTANCE, 0));
-         map.put( float[].class, new STSTypeSupport<> (FloatArrayTypeSupport.INSTANCE, 0));
-         map.put( byte[].class, new STSTypeSupport<> (ByteArrayTypeSupport.INSTANCE, 1));
-         map.put( int[].class, new STSTypeSupport<> (IntegerArrayTypeSupport.INSTANCE, 0));
-         map.put( double[].class, new STSTypeSupport<> (DoubleArrayTypeSupport.INSTANCE, 4));
+         map.put( String[].class, new STSTypeSupport<>( StringArrayTypeSupport.INSTANCE, 0 ) );
+         map.put( short[].class, new STSTypeSupport<>( ShortArrayTypeSupport.INSTANCE, 0 ) );
+         map.put( float[].class, new STSTypeSupport<>( FloatArrayTypeSupport.INSTANCE, 0 ) );
+         map.put( byte[].class, new STSTypeSupport<>( ByteArrayTypeSupport.INSTANCE, 1 ) );
+         map.put( int[].class, new STSTypeSupport<>( IntegerArrayTypeSupport.INSTANCE, 0 ) );
+         map.put( double[].class, new STSTypeSupport<>( DoubleArrayTypeSupport.INSTANCE, 4 ) );
 
-         rootMap.put( Alarm.class, Collections.unmodifiableMap (map));
+         rootMap.put( Alarm.class, Collections.unmodifiableMap( map ) );
       }
 
       //
@@ -1455,7 +1450,7 @@ public class TypeSupports
          map.put( int[].class, new TimeTypeSupport<> (IntegerArrayTypeSupport.INSTANCE, 0));
          map.put( double[].class, new TimeTypeSupport<> (DoubleArrayTypeSupport.INSTANCE, 4));
 
-         rootMap.put( Timestamped.class, Collections.unmodifiableMap (map));
+         rootMap.put( Timestamped.class, Collections.unmodifiableMap( map ) );
       }
 
       //
@@ -1477,7 +1472,7 @@ public class TypeSupports
          map.put( int[].class, new GraphicTypeSupport<> (IntegerArrayTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
          map.put( double[].class, new GraphicTypeSupport<> (DoubleArrayTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
 
-         rootMap.put (Graphic.class, Collections.unmodifiableMap (map));
+         rootMap.put( Graphic.class, Collections.unmodifiableMap( map ) );
       }
 
       //
@@ -1485,21 +1480,21 @@ public class TypeSupports
       //
       {
          final Map<Class<?>, TypeSupport<?>> map = new HashMap<> ();
-         // there is no real Control<String>
+         // Note: EPICS has no real support for Control<String>
          map.put( Short.class, new ControlTypeSupport<> (ShortTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
          map.put( Float.class, new ControlTypeSupport<> (FloatTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
          map.put( Byte.class, new ControlTypeSupport<> (ByteTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
          map.put( Integer.class, new ControlTypeSupport<> (IntegerTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
          map.put( Double.class, new ControlTypeSupport<> (DoubleTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
 
-         // there is no real Control<String[]>
+         // Note: EPICS has no real support for Control<String[]>
          map.put( short[].class, new ControlTypeSupport<> (ShortArrayTypeSupport.INSTANCE, 0, ShortTypeSupport.INSTANCE));
          map.put( float[].class, new ControlTypeSupport<> (FloatArrayTypeSupport.INSTANCE, 0, FloatTypeSupport.INSTANCE));
          map.put( byte[].class, new ControlTypeSupport<> (ByteArrayTypeSupport.INSTANCE, 1, ByteTypeSupport.INSTANCE));
          map.put( int[].class, new ControlTypeSupport<> (IntegerArrayTypeSupport.INSTANCE, 0, IntegerTypeSupport.INSTANCE));
          map.put( double[].class, new ControlTypeSupport<> (DoubleArrayTypeSupport.INSTANCE, 0, DoubleTypeSupport.INSTANCE));
 
-         rootMap.put (Control.class, Collections.unmodifiableMap (map));
+         rootMap.put( Control.class, Collections.unmodifiableMap( map ) );
       }
 
       typeSupportMap = Collections.unmodifiableMap( rootMap );
