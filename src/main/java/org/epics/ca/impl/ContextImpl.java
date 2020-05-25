@@ -252,8 +252,9 @@ public class ContextImpl implements AutoCloseable, Constants
       // Attempt to spawn the CA Repeater if not already running.
       try
       {
-         final boolean caRepeaterDebugMode = Boolean.parseBoolean( System.getProperty( "CA_DEBUG", "false" ) );
-         CARepeaterStarter.startRepeaterIfNotAlreadyRunning( repeaterPort, caRepeaterDebugMode );
+         final boolean caRepeaterDebugEnable = Boolean.parseBoolean( System.getProperty( "CA_REPEATER_DEBUG", "false" ) );
+         final boolean caRepeaterOutputCapture = Boolean.parseBoolean( System.getProperty( "CA_REPEATER_OUTPUT_CAPTURE", "false" ) );
+         CARepeaterStarter.startRepeaterIfNotAlreadyRunning( repeaterPort, caRepeaterDebugEnable, caRepeaterOutputCapture );
       }
       catch ( RuntimeException ex )
       {
@@ -420,7 +421,7 @@ public class ContextImpl implements AutoCloseable, Constants
 
    public void repeaterConfirm( InetSocketAddress responseFrom )
    {
-      logger.log( Level.FINE, "Repeater registration confirmed from: " + responseFrom );
+      logger.fine( "Repeater registration confirmed from: " + responseFrom );
 
       ScheduledFuture<?> sf = repeaterRegistrationFuture;
       if ( sf != null )
@@ -519,6 +520,13 @@ public class ContextImpl implements AutoCloseable, Constants
       {
          return;
       }
+
+      // Shutdown repeater if the options is set.
+      if ( Boolean.parseBoolean( System.getProperty( "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE", "false" ) ) )
+      {
+         CARepeaterStarter.shutdownLastStartedRepeater();
+      }
+
 
       channelSearchManager.cancel();
       broadcastTransport.get().close ();
@@ -705,7 +713,7 @@ public class ContextImpl implements AutoCloseable, Constants
 
       // any address
       InetSocketAddress connectAddress = new InetSocketAddress (0);
-      logger.log( Level.FINER, "Creating datagram socket to: " + connectAddress);
+      logger.finer( "Creating datagram socket to: " + connectAddress);
 
       DatagramChannel channel = null;
       try
@@ -973,7 +981,7 @@ public class ContextImpl implements AutoCloseable, Constants
                logger.finest( "Interrupted Exception" );
             }
          }
-         logger.log( Level.FINEST,"Opening socket to CA server " + address + ", attempt " + (tryCount + 1) + "." );
+         logger.finest( "Opening socket to CA server " + address + ", attempt " + (tryCount + 1) + "." );
 
          try
          {
