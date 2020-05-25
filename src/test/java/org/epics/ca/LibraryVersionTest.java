@@ -4,9 +4,11 @@ package org.epics.ca;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.Test;
 
 import java.net.URL;
+import java.util.logging.Logger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -20,6 +22,9 @@ public class LibraryVersionTest
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
+
+   private static final Logger logger = LibraryLogManager.getLogger( LibraryVersionTest.class );
+
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
@@ -36,12 +41,12 @@ public class LibraryVersionTest
       {
          // Note: the version string will have to be updated on every new release.
          // However, new releases should not be published until all the unit tests pass.
-         System.out.println( "Test is running from JAR. Version is: "  + versionString + "'." );
+         logger.info( "Test is running from JAR. Version is: "  + versionString + "'." );
          assertThat( LibraryVersion.getAsString(), is("1.3.0-SNAPSHOT" ) );
       }
       else
       {
-         System.out.println( "Test is running from class file without manifest. Version is: '" + versionString + "'." );
+         logger.info( "Test is running from class file without manifest. Version is: '" + versionString + "'." );
          assertThat( LibraryVersion.getAsString(), is("<unknown>") );
       }
    }
