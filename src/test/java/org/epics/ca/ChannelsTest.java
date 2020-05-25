@@ -1,6 +1,9 @@
+/*- Package Declaration ------------------------------------------------------*/
+
 package org.epics.ca;
 
 import org.epics.ca.annotation.CaChannel;
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,16 +13,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
 
 class ChannelsTest
 {
+
+/*- Public attributes --------------------------------------------------------*/
+/*- Private attributes -------------------------------------------------------*/
+
+   private static final Logger logger = LibraryLogManager.getLogger( ChannelsTest.class );
+
    private Context context;
    private EpicsChannelAccessTestServer channelAccessTestServer;
+
+/*- Main ---------------------------------------------------------------------*/
+/*- Constructor --------------------------------------------------------------*/
+/*- Public methods -----------------------------------------------------------*/
+/*- Package-level methods ----------------------------------------------------*/
 
    @BeforeEach
    void setUp()
@@ -31,7 +49,9 @@ class ChannelsTest
    @AfterEach
    void tearDown()
    {
+      logger.info( "Closing context." );
       context.close ();
+      logger.info( "Shutting down EPICSChannelAccessTestServer." );
       channelAccessTestServer.shutdown();
    }
 
@@ -43,21 +63,26 @@ class ChannelsTest
          channel1.connect ();
          channel1.put (0);
 
+         final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
          try ( Channel<Integer> channel = context.createChannel ("simple", Integer.class) )
          {
             channel.connect ();
 
-            Executors.newSingleThreadScheduledExecutor ().schedule (() -> {
+            executorService.schedule( () -> {
                channel1.put (12);
-               System.out.println ("Value set to 12");
+               logger.info("Value set to 12");
             }, 2, TimeUnit.SECONDS);
-            long start = System.currentTimeMillis ();
+            long start = System.currentTimeMillis();
             Channels.waitForValue (channel, 12);
             long end = System.currentTimeMillis ();
-            System.out.println ("value reached within " + (end - start));
+            logger.info("value reached within " + (end - start));
             long time = end - start;
             // Check whether the time waited was approximately 2 seconds
             assertTrue (time > 1900 && time < 2100);
+         }
+         finally
+         {
+            executorService.shutdown();
          }
       }
    }
@@ -75,19 +100,19 @@ class ChannelsTest
    @Test
    void testAnnotations()
    {
-      AnnotatedClass test = new AnnotatedClass ();
+      final AnnotatedClass annotatedTestClass = new AnnotatedClass();
 
       // Connect annotated channels
-      Channels.create (context, test);
+      Channels.create( context, annotatedTestClass );
 
-      test.getDoubleChannel ().put (1.0);
-      test.getDoubleChannel ().put (10.0);
+      annotatedTestClass.getDoubleChannel().put (1.0 );
+      annotatedTestClass.getDoubleChannel().put (10.0 );
       // Use of startsWith as it is a double channel and will return something like 10.0 or 10.000 depending on the precision
-      assertTrue( test.getStringChannel ().get ().startsWith ("10") );
-      assertEquals(2, test.getStringChannels ().size () );
+      assertTrue( annotatedTestClass.getStringChannel ().get ().startsWith ("10") );
+      assertEquals(2, annotatedTestClass.getStringChannels ().size() );
 
       // Close annotated channels
-      Channels.close (test);
+      Channels.close( annotatedTestClass );
    }
 
    @Test
@@ -133,7 +158,6 @@ class ChannelsTest
       {
          return stringChannels;
       }
-
    }
 
    static class AnnotatedClassMacros
@@ -145,6 +169,9 @@ class ChannelsTest
       {
          return doubleChannel;
       }
-
    }
+
+/*- Private methods ---------------------------------------------------------*/
+/*- Nested Classes -----------------------------------------------------------*/
+
 }
