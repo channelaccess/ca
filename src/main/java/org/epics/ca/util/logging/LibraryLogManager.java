@@ -3,7 +3,6 @@ package org.epics.ca.util.logging;
 
 /*- Imported packages --------------------------------------------------------*/
 
-import java.io.IOException;
 import java.util.logging.*;
 
 /*- Interface Declaration ----------------------------------------------------*/
