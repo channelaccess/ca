@@ -43,6 +43,9 @@ public class CARepeaterStarterTest
    @BeforeAll
    static void beforeAll()
    {
+      // This is a guard condition. There is no point in checking the behaviour
+      // of the CARepeaterStarterTest class if the network stack is not appropriately
+      // configured for channel access.
       assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
    }
 
@@ -131,7 +134,7 @@ public class CARepeaterStarterTest
    @Test
    void testIsRepeaterRunning_detectsShareableSocketWhenReservedInSameJvm() throws Throwable
    {
-      try ( DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(testPort, true ) )
+      try ( DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
       {
          assertThat( CARepeaterStarter.isRepeaterRunning( testPort), is(true  ) );
       }
