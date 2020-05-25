@@ -417,14 +417,7 @@ public final class Messages
       boolean ignore = true;
       try
       {
-         startCAMessage (transport,
-                         (short) 15,
-                         0,
-                         (short) dataType,
-                         dataCount,
-                         sid,
-                         ioid);
-
+         startCAMessage( transport, (short) 15,0, (short) dataType, dataCount, sid, ioid );
          ignore = false;
       }
       finally
