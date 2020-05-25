@@ -74,9 +74,9 @@ class MonitorNotificationTask<T> implements Runnable
          try
          {
             final T latestValue = valueSupplier.get();
-            logger.log(Level.FINEST, String.format("Notifying consumer '%s' with value: '%s'... ", valueConsumer, latestValue));
+            logger.finest( String.format("Notifying consumer '%s' with value: '%s'... ", valueConsumer, latestValue ) );
             valueConsumer.accept(latestValue);
-            logger.log(Level.FINEST, "Notification completed ok");
+            logger.finest( "Notification completed ok" );
          }
          catch ( RuntimeException ex )
          {
