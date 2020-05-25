@@ -10,6 +10,7 @@ import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -115,6 +116,41 @@ class LibraryLogManagerTest
       }
       final long elapsedTimeInMillis = stopWatch.getTime( TimeUnit.MILLISECONDS );
       noDebugLogger.info( "Sending 1,000,000 messages to disabled debug took " + elapsedTimeInMillis + "ms" );
+   }
+
+   @Test
+   void logMessage()
+   {
+      // Note: see the reference below for further details about the format options available for logging.
+      // https://docs.oracle.com/javase/1.5.0/docs/api/java/text/MessageFormat.html
+
+      // String formatting options
+      logger.log( Level.INFO, "STRING formatting options:" );
+      logger.log( Level.INFO, "My msg with '{0}' format specifier is: {0}",  "Hello" );
+      logger.log( Level.INFO, "My msg with '{0} {1}' format specifier is: {0} {1}\n", new String[] { "Hello", "world !" } );
+
+      // Number formatting options
+      logger.log( Level.INFO, "NUMBER formatting options:" );
+      logger.log( Level.INFO, "My msg with '{0,number}' format specifier is: {0,number}", 123456789.987654321 );
+      logger.log( Level.INFO, "My msg with '{0,number,integer}' specifier is: {0,number,integer}", 123456789.987654321 );
+      logger.log( Level.INFO, "My msg with '{0,number,currency}' specifier is: {0,number,currency}", 123456789.987654321 );
+      logger.log( Level.INFO, "My msg with '{0,number,percent}' specifier is: {0,number,percent}\n", 123456789.987654321 );
+
+      // Date formatting options
+      logger.log( Level.INFO, "DATE formatting options:" );
+      logger.log( Level.INFO, "My msg with '{0,date}' format specifier is: {0,date}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,date,short}' specifier is: {0,date,short}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,date,medium}' specifier is: {0,date,medium}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,date,long}' specifier is: {0,date,long}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,date,full}' specifier is: {0,date,full}\n", new Date() );
+
+      // Time formatting options
+      logger.log( Level.INFO, "TIME formatting options:" );
+      logger.log( Level.INFO, "My msg with '{0,time}' format specifier is: {0,time}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,time,short}' specifier is: {0,time,short}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,time,medium}' specifier is: {0,time,medium}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,time,long}' specifier is: {0,time,long}", new Date() );
+      logger.log( Level.INFO, "My msg with '{0,time,full}' specifier is: {0,time,full}\n", new Date() );
    }
 
 /*- Private methods ----------------------------------------------------------*/
