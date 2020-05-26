@@ -124,11 +124,11 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
     *
     * The following properties are supported:
     * <ul>
-    * <li> BlockingQueueSingleWorkerMonitorNotificationServiceImpl,NumberOfThreads,BufferSize</li>
-    * <li> BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,NumberOfThreads,BufferSize</li>
+    * <li> BlockingQueueSingleWorkerMonitorNotificationServiceImpl,XXXX[,BufferSize]</li>
+    * <li> BlockingQueueMultipleWorkerMonitorNotificationServiceImpl[,NumberOfThreads][,BufferSize]</li>
     * <li> DisruptorOldMonitorNotificationServiceImpl</li>
     * <li> DisruptorNewMonitorNotificationServiceImpl</li>
-    * <li> StripedExecutorServiceMonitorNotificationServiceImpl,NumberOfThreads</li>
+    * <li> StripedExecutorServiceMonitorNotificationServiceImpl[,NumberOfThreads]</li>
     * </ul>
     *
     * @param serviceConfiguration specifies the properties of the service instances that
@@ -156,7 +156,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
       {
          case StripedExecutorServiceMonitorNotificationServiceImpl:
          {
-            int totalNumberOfServiceThreads = (args.length == 2) ? NumberUtils.toInt(args[ 1 ], NUMBER_OF_SERVICE_THREADS_DEFAULT) : NUMBER_OF_SERVICE_THREADS_DEFAULT;
+            final int totalNumberOfServiceThreads = (args.length == 2) ? NumberUtils.toInt( args[ 1 ], NUMBER_OF_SERVICE_THREADS_DEFAULT) : NUMBER_OF_SERVICE_THREADS_DEFAULT;
             serviceFactory = new StripedExecutorServiceMonitorNotificationServiceFactory( totalNumberOfServiceThreads );
          }
          break;
@@ -190,10 +190,8 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
          default:
          case BlockingQueueMultipleWorkerMonitorNotificationServiceImpl:
          {
-            final int totalNumberOfServiceThreads = (args.length >= 2) ? NumberUtils.toInt(args[ 1 ], NUMBER_OF_SERVICE_THREADS_DEFAULT)
-                                                             : NUMBER_OF_SERVICE_THREADS_DEFAULT;
-
-            final int notificationValueBufferQueueSize = (args.length == 3) ? NumberUtils.toInt(args[ 2 ], NOTIFICATION_VALUE_BUFFER_SIZE_DEFAULT ) : NOTIFICATION_VALUE_BUFFER_SIZE_DEFAULT ;
+            final int totalNumberOfServiceThreads = (args.length >= 2) ? NumberUtils.toInt(args[ 1 ], NUMBER_OF_SERVICE_THREADS_DEFAULT) : NUMBER_OF_SERVICE_THREADS_DEFAULT;
+            final int notificationValueBufferQueueSize = (args.length == 3) ? NumberUtils.toInt(args[ 2 ], NOTIFICATION_VALUE_BUFFER_SIZE_DEFAULT ) : NOTIFICATION_VALUE_BUFFER_SIZE_DEFAULT;
 
             serviceFactory = new BlockingQueueMonitorNotificationServiceFactory( totalNumberOfServiceThreads, notificationValueBufferQueueSize );
          }
@@ -234,19 +232,19 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
     */
    public static void shutdownExecutor( ExecutorService executorService )
    {
-      logger.log (Level.FINEST, "Starting executor shutdown sequence..." );
+      logger.finest( "Starting executor shutdown sequence..." );
 
       executorService.shutdown();
       try
       {
-         logger.log ( Level.FINEST, "Waiting 2 seconds for tasks to finish..." );
+         logger.finest( "Waiting 2 seconds for tasks to finish..." );
          if ( executorService.awaitTermination(2, TimeUnit.SECONDS ) )
          {
-            logger.log ( Level.FINEST, "Executor terminated ok." );
+            logger.finest( "Executor terminated ok." );
          }
          else
          {
-            logger.log ( Level.FINEST, "Executor did not yet terminate. Forcing termination..." );
+            logger.finest( "Executor did not yet terminate. Forcing termination..." );
             executorService.shutdownNow();
             executorService.awaitTermination(2, TimeUnit.SECONDS );
          }
@@ -256,7 +254,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
          logger.log ( Level.WARNING, "Interrupted whilst waiting for tasks to finish. Propagating interrupt." );
          Thread.currentThread().interrupt();
       }
-      logger.log ( Level.FINEST, "Executor shutdown sequence completed." );
+      logger.finest( "Executor shutdown sequence completed." );
    }
 
 /*- Private methods ----------------------------------------------------------*/
