@@ -40,11 +40,11 @@ class ChannelTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( ChannelTest.class );
+   private static EpicsChannelAccessTestServer server;
 
    private static final double DELTA = 1e-10;
-
-   private static EpicsChannelAccessTestServer server;
-   private static final int TIMEOUT_SEC = 5;
+   private static final int TIMEOUT_MILLISEC = 5000;
+   private static final int TEST_SLEEP_INTERVAL_MILLISEC = 500;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -77,7 +77,7 @@ class ChannelTest
             assertThat( channel.getConnectionState(), is( ConnectionState.NEVER_CONNECTED ) );
             try
             {
-               channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS);
                fail( "connected on non-existent channel, timeout expected");
             }
             catch ( TimeoutException tc )
@@ -92,7 +92,7 @@ class ChannelTest
             assertThat( channel, notNullValue()  );
             assertThat( channel.getName(), is( "adc01" ));
             assertThat( channel.getConnectionState(), is( ConnectionState.NEVER_CONNECTED ) );
-            channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+            channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
             assertThat( channel.getConnectionState(), is( ConnectionState.CONNECTED ) );
             assertThat( channel.getName(), is( "adc01" ));
          }
@@ -102,7 +102,7 @@ class ChannelTest
          {
             assertThat( channel, notNullValue()  );
             assertThat( channel.getConnectionState(), is( ConnectionState.NEVER_CONNECTED ) );
-            channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+            channel.connectAsync().get(TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS);
             assertThat( channel.getConnectionState(), is( ConnectionState.CONNECTED ) );
          }
       }
@@ -141,11 +141,11 @@ class ChannelTest
             assertThat( unregisteredEventCount.get(), is( 0 ));
             cl2.close();
 
-            channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+            channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS);
             assertThat( channel.getConnectionState(), is( ConnectionState.CONNECTED ) );
 
             // we need to sleep here to catch any possible multiple/invalid events
-            Thread.sleep(TIMEOUT_SEC * 1000);
+            Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
 
             assertThat( connectedCount.get(), is( 1 ));
             assertThat( disconnectedCount.get(), is( 0 ));
@@ -153,7 +153,7 @@ class ChannelTest
             channel.close();
 
             // we need to sleep here to catch any possible multiple/invalid events
-            Thread.sleep(TIMEOUT_SEC * 1000);
+            Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
 
             // NOTE: close does not notify disconnect
             assertThat( connectedCount.get(), is( 1 ));
@@ -178,7 +178,9 @@ class ChannelTest
                if ( c == channel )
                {
                   if ( ar == AccessRights.READ_WRITE )
+                  {
                      aclCount.incrementAndGet();
+                  }   
                }
             });
             assertThat( rl, notNullValue() );
@@ -188,18 +190,18 @@ class ChannelTest
             assertThat( unregisteredEventCount.get(), is( 0 ));
             cl2.close();
 
-            channel.connectAsync().get( TIMEOUT_SEC, TimeUnit.SECONDS);
+            channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS);
             assertThat( channel.getAccessRights(), is(AccessRights.READ_WRITE ) );
 
             // we need to sleep here to catch any possible multiple/invalid events
-            Thread.sleep(TIMEOUT_SEC * 1000);
+            Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
 
             assertThat( aclCount.get(), is( 1 ));
             assertThat( unregisteredEventCount.get(), is( 0 ));
             channel.close();
 
             // we need to sleep here to catch any possible multiple/invalid events
-            Thread.sleep(TIMEOUT_SEC * 1000);
+            Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
             assertThat( aclCount.get(), is( 1 ));
             assertThat( unregisteredEventCount.get(), is( 0 ));
          }
@@ -213,7 +215,7 @@ class ChannelTest
       {
          try ( Channel<Double> channel = context.createChannel("adc01", Double.class) )
          {
-            channel.connectAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+            channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
 
             final Map<String, Object> props = channel.getProperties();
             final Object nativeTypeCode = props.get(Constants.ChannelProperties.nativeTypeCode.name());
@@ -235,7 +237,7 @@ class ChannelTest
    interface GenericIntegerConsumer extends Consumer<Integer> {}
 
 
-   @MethodSource( "getArgumentsForTestMonitorNotificationServiceImplementations" )
+   @MethodSource( "getArgumentsForMonitorNotificationServiceImplementations" )
    @ParameterizedTest
    void testMonitorDisconnectionBehaviour( String serviceImpl ) throws InterruptedException
    {
@@ -258,20 +260,23 @@ class ChannelTest
             channel.put(testValue);
             final Consumer<Integer> consumer = Mockito.mock( GenericIntegerConsumer.class );
             channel.addValueMonitor( consumer );
-            Thread.sleep(1000);
-            Mockito.verify(consumer, Mockito.times(1)).accept(testValue);
+            Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
+            Mockito.verify( consumer, Mockito.times(1)).accept( testValue );
 
             // Destroy the test server which will create a channel disconnection event.
             // Verify that the monitor did not receive a new update
             server.shutdown();
-            Thread.sleep(1000 );
+            Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
             Mockito.verifyNoMoreInteractions( consumer );
 
             // Now recreate the server and check that the monitor received an update with the default value
             // for this PV
             server = EpicsChannelAccessTestServer.start();
-            Thread.sleep(1000);
+            Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
             Mockito.verify(consumer, Mockito.times(1)).accept(defautAdcValue);
+
+            // Cleanup the test server
+            server.shutdown();
          }
       }
    }
@@ -281,13 +286,13 @@ class ChannelTest
    {
       try ( Context context = new Context() )
       {
-         try ( Channel<Integer> channel = context.createChannel("counter", Integer.class) )
+         try ( Channel<Integer> channel = context.createChannel("100msCounter", Integer.class) )
          {
             channel.connect();
             try
             {
-               channel.addValueMonitor(null);
-               fail("null handler accepted");
+               channel.addValueMonitor(null );
+               fail( "null handler accepted" );
             }
             catch ( NullPointerException iae )
             {
@@ -296,9 +301,8 @@ class ChannelTest
 
             try
             {
-               channel.addValueMonitor(( value ) -> {
-               }, 0);
-               fail("empty mask accepted");
+               channel.addValueMonitor( (value) -> {}, 0 );
+               fail( "empty mask accepted" );
             }
             catch ( IllegalArgumentException iae )
             {
@@ -306,22 +310,19 @@ class ChannelTest
             }
 
             // note: we accept currently non-valid masks to allow future/unstandard extensions
-            try ( Monitor<Integer> m = channel.addValueMonitor(( value ) -> {
-            }, Monitor.VALUE_MASK)
-            )
+            try ( Monitor<Integer> monitor = channel.addValueMonitor( (value) -> {}, Monitor.VALUE_MASK) )
             {
-               assertNotNull(m);
+               assertNotNull(monitor);
             }
 
             final AtomicInteger monitorCount = new AtomicInteger();
-            final Monitor<Integer> m = channel.addValueMonitor(( value ) -> monitorCount.incrementAndGet(), Monitor.VALUE_MASK);
-            assertNotNull(m);
-            Thread.sleep(TIMEOUT_SEC * 1000);
-            m.close();
-            m.close();
+            final Monitor<Integer> monitor = channel.addValueMonitor( (value) -> monitorCount.incrementAndGet(), Monitor.VALUE_MASK);
+            assertNotNull( monitor );
+            Thread.sleep( 1000 );
+            monitor.close();
             final int monitors = monitorCount.get();
-            assertThat( monitors, greaterThanOrEqualTo( TIMEOUT_SEC ) ); // 1 + TIMEOUT_SEC (where one can be missed)
-            Thread.sleep(TIMEOUT_SEC * 1000);
+            assertThat( monitorCount.get(), greaterThanOrEqualTo( 10 ) );
+            Thread.sleep( 1000 );
             assertThat( monitorCount.get(), is( monitors ));
          }
       }
@@ -341,7 +342,7 @@ class ChannelTest
             {
                channel.connect();
 
-               int[] value = channel.getAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               int[] value = channel.getAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
                assertThat( value, notNullValue()  );
 
                final int LARGE_PRIME = 15485863;
@@ -351,10 +352,10 @@ class ChannelTest
                   value[ i ] += LARGE_PRIME;
                }
 
-               final Status putStatus = channel.putAsync(value).get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               final Status putStatus = channel.putAsync(value).get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS);
                assertThat( putStatus, is( Status.NORMAL) );
 
-               value = channel.getAsync().get(TIMEOUT_SEC, TimeUnit.SECONDS);
+               value = channel.getAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS);
                assertThat( channel, notNullValue() );
 
                for ( int i = 0; i < value.length; i++ )
@@ -379,7 +380,7 @@ class ChannelTest
    }
 
    @ParameterizedTest
-   @MethodSource( "getArgumentsForTestMonitorNotificationServiceImplementations" )
+   @MethodSource( "getArgumentsForMonitorNotificationServiceImplementations" )
    void testContextCloseAlsoClosesMonitorNotifier( String serviceImpl )
    {
       assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ) );
@@ -405,10 +406,10 @@ class ChannelTest
    }
 
    @ParameterizedTest
-   @MethodSource( "getArgumentsForTestMonitorNotificationServiceImplementations" )
+   @MethodSource( "getArgumentsForMonitorNotificationServiceImplementations" )
    void testChannelCloseDoesNotCloseMonitorNotifier( String serviceImpl )
    {
-      assertThat(MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ) );
+      assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ) );
 
       final Properties contextProperties = new Properties();
       contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
@@ -421,26 +422,26 @@ class ChannelTest
 
          final NotificationConsumer<Integer> notificationConsumer = NotificationConsumer.getNormalConsumer();
          NotificationConsumer.clearCurrentTotalNotificationCount();
-         NotificationConsumer.setExpectedTotalNotificationCount(2);
+         NotificationConsumer.setExpectedTotalNotificationCount( 2 );
          channel.addValueMonitor(notificationConsumer);
          channel.addValueMonitor(notificationConsumer);
-         assertThat(MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 2L ));
+         assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 2L ));
          NotificationConsumer.awaitExpectedTotalNotificationCount();
 
          // Note: closing a channel does NOT currently close the MonitorNotificationService.
          // Therefore the count of created instances is not reset to zero.
          // TODO: we might want to look at this behaviour in the future and decide whether it needs to change !
          channel.close();
-         assertThat(MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 2L ));
+         assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 2L ));
 
       }
       // After we close the context the MonitorNotificationService gets closed and the count is reset again.
-      assertThat(MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ) );
+      assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ) );
    }
 
    @ParameterizedTest
-   @MethodSource( "getArgumentsForTestMonitorNotificationServiceImplementations" )
-   void testMonitorCloseDoesNotAlsoClosesMonitorNotifier( String serviceImpl )
+   @MethodSource( "getArgumentsForMonitorNotificationServiceImplementations" )
+   void testMonitorCloseDoesNotAlsoCloseMonitorNotifier( String serviceImpl )
    {
       assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ) );
 
@@ -475,7 +476,7 @@ class ChannelTest
       assertThat(MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ) );
    }
 
-   @MethodSource( "getArgumentsForTestValuePutAndGet" )
+   @MethodSource( "getArgumentsForTestPutAndGetValue" )
    @ParameterizedTest
    <T> void testPutAndGetValue( String channelName, Class<T> clazz, T expectedValue, boolean async ) throws Throwable
    {
@@ -488,7 +489,7 @@ class ChannelTest
 
             if ( async )
             {
-               Status status = channel.putAsync( expectedValue ).get( TIMEOUT_SEC, TimeUnit.SECONDS );
+               Status status = channel.putAsync( expectedValue ).get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
                assertTrue( status.isSuccessful() );
             }
             else
@@ -499,7 +500,7 @@ class ChannelTest
             final T value;
             if ( async )
             {
-               value = channel.getAsync().get( TIMEOUT_SEC, TimeUnit.SECONDS );
+               value = channel.getAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
                assertNotNull( value );
             }
             else
@@ -514,67 +515,68 @@ class ChannelTest
    }
 
    @SuppressWarnings( "unchecked" )
-   @MethodSource( "getArgumentsForTestMetadataPutAndGet" )
+   @MethodSource( "getArgumentsForTestPutAndGetMetadata" )
    @ParameterizedTest
-   <T, ST, MT extends Metadata<T>> void testPutAndGetMetadata( String channelName, Class<T> clazz, Class<ST> scalarClazz, T expectedValue, Class<? extends Metadata<T>> meta, Alarm<?> expectedAlarm, Control<?, Double> expectedMeta, boolean async ) throws Throwable
+   <T, ST, MT extends Metadata<T>> void testPutAndGetMetadata( String channelName, Class<T> type, Class<ST> scalarType, T expectedValue, Class<? extends Metadata<T>> metaType, Alarm<?> expectedAlarm, Control<?, Double> expectedMeta, boolean async ) throws Throwable
    {
-      if ( meta.equals( Control.class ) || meta.equals( Graphic.class ) )
+      logger.info( "testPutAndGetMetadata invoked with args: " + String.format( "'%s', '%s', '%s', '%s', '%s'.",channelName, type.getSimpleName(), scalarType.getSimpleName(), metaType.getSimpleName(), async ) );
+      if ( ( metaType.equals( Control.class ) || metaType.equals( Graphic.class ) ) && ( type.equals( String.class ) || type.equals( String[].class ) ) )
       {
-         if ( scalarClazz.equals( String.class ) || scalarClazz.equals( String[].class ) )
-         {
-            return;
-         }
+         logger.info( "Skipping test because EPICS does not support this combination !");
+         return;
       }
 
+      logger.info( "Creating context...");
       try ( Context context = new Context() )
       {
-         try ( Channel<T> channel = context.createChannel(channelName, clazz) )
+         logger.info( "Done. Creating channel...");
+         try ( Channel<T> channel = context.createChannel(channelName, type) )
          {
             channel.connect();
 
             if ( async )
             {
-               Status status = channel.putAsync( expectedValue ).get( TIMEOUT_SEC, TimeUnit.SECONDS );
-               assertTrue(status.isSuccessful());
+               Status status = channel.putAsync( expectedValue ).get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
+               assertTrue( status.isSuccessful() );
             }
             else
             {
-               channel.putNoWait(expectedValue);
+               channel.putNoWait( expectedValue );
             }
 
             final MT value;
             if ( async )
             {
-               value = (MT) channel.getAsync( meta ).get( TIMEOUT_SEC, TimeUnit.SECONDS );
+               value = (MT) channel.getAsync( metaType ).get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
                assertNotNull(value);
             }
             else
             {
-               value = channel.get( meta );
+               value = channel.get( metaType );
             }
 
-            if ( Alarm.class.isAssignableFrom( meta ) )
+            if ( Alarm.class.isAssignableFrom( metaType ) )
             {
                final Alarm<T> v = (Alarm<T>) value;
                assertThat( v.getAlarmStatus(), is( expectedAlarm.getAlarmStatus()));
                assertThat( v.getAlarmSeverity(), is( expectedAlarm.getAlarmSeverity()));
             }
 
-            if ( Timestamped.class.isAssignableFrom( meta ) )
+            if ( Timestamped.class.isAssignableFrom( metaType ) )
             {
                final Timestamped<T> v = (Timestamped<T>) value;
                long dt = System.currentTimeMillis() - v.getMillis();
-               assertTrue(dt < (TIMEOUT_SEC * 1000 ) );
+               assertTrue(dt < (TIMEOUT_MILLISEC ) );
             }
 
-            if ( Graphic.class.isAssignableFrom( meta ) )
+            if ( Graphic.class.isAssignableFrom( metaType ) )
             {
                final Graphic<T, ST> v = (Graphic<T, ST>) value;
 
                assertThat( v.getUnits(),is( expectedMeta.getUnits()) );
-               if ( scalarClazz.equals(Double.class) || scalarClazz.equals(Float.class) )
+               if ( scalarType.equals(Double.class) || scalarType.equals(Float.class) )
                {
-                  assertEquals(expectedMeta.getPrecision(), v.getPrecision());
+                  assertEquals( expectedMeta.getPrecision(), v.getPrecision());
                }
 
                // no NaN or other special values allowed
@@ -586,13 +588,12 @@ class ChannelTest
                assertThat( ((Number) v.getUpperWarning()).doubleValue(), closeTo(expectedMeta.getUpperWarning(), DELTA ));
             }
 
-            if ( Control.class.isAssignableFrom( meta ) )
+            if ( Control.class.isAssignableFrom( metaType ) )
             {
                final Control<T, ST> v = (Control<T, ST>) value;
                assertThat( ((Number) v.getLowerControl()).doubleValue(), closeTo(expectedMeta.getLowerControl(), DELTA ) );
                assertThat( ((Number) v.getUpperControl()).doubleValue(), closeTo(expectedMeta.getUpperControl(), DELTA ) );
             }
-
             assertThat( value.getValue(), is( expectedValue ) );
 
          }
@@ -612,7 +613,7 @@ class ChannelTest
 
             if ( async )
             {
-               final Status status = channel.putAsync( expectedValue ).get( TIMEOUT_SEC, TimeUnit.SECONDS );
+               final Status status = channel.putAsync( expectedValue ).get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
                assertTrue( status.isSuccessful() );
             }
             else
@@ -625,7 +626,7 @@ class ChannelTest
             final Class<? extends Metadata> gec = clazz.isArray() ? GraphicEnumArray.class : GraphicEnum.class;
             if ( async )
             {
-               value =  (Alarm<T>) channel.getAsync( gec ).get( TIMEOUT_SEC, TimeUnit.SECONDS );
+               value =  (Alarm<T>) channel.getAsync( gec ).get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
                assertNotNull( value );
             }
             else
@@ -645,13 +646,13 @@ class ChannelTest
 
 /*- Private methods ----------------------------------------------------------*/
 
-   private static Stream<Arguments> getArgumentsForTestMonitorNotificationServiceImplementations()
+   private static Stream<Arguments> getArgumentsForMonitorNotificationServiceImplementations()
    {
       final List<String> serviceImpls = MonitorNotificationServiceFactoryCreator.getAllServiceImplementations();
       return serviceImpls.stream().map(Arguments::of);
    }
 
-   private static Stream<Arguments> getArgumentsForTestValuePutAndGet()
+   private static Stream<Arguments> getArgumentsForTestPutAndGetValue()
    {
       // Note: precision == 3
       final List<Boolean> asyncOptions = Arrays.asList( false, true );
@@ -672,7 +673,7 @@ class ChannelTest
                           Arguments.of( "adc01", double[].class, new double[] { 12.82, 3.112 }, async ) ) );
    }
 
-   private static Stream<Arguments> getArgumentsForTestMetadataPutAndGet()
+   private static Stream<Arguments> getArgumentsForTestPutAndGetMetadata()
    {
       final Alarm<Double> alarm = new Alarm<>();
       alarm.setAlarmStatus (AlarmStatus.UDF_ALARM);
@@ -692,38 +693,38 @@ class ChannelTest
 
       // precision == 3
       @SuppressWarnings( "rawtypes" )
-      final List<Class<? extends Metadata>> clazzOptions = Arrays.asList( Alarm.class, Timestamped.class, Control.class, Graphic.class );
+      final List<Class<? extends Metadata>> metaTypeOptions = Arrays.asList( Alarm.class, Timestamped.class, Control.class, Graphic.class );
 
       final List<Boolean> asyncOptions = Arrays.asList( false, true );
-      return clazzOptions.stream()
-            .flatMap(( clazz) ->
-                Stream.of( Arguments.of( "adc01", String.class, String.class, "12.346", clazz, alarm, meta, false ),
-                           Arguments.of( "adc01", Short.class, Short.class, (short) 123, clazz, alarm, meta, false ),
-                           Arguments.of( "adc01", Float.class, Float.class, -123.4f, clazz, alarm, meta, false ),
-                           Arguments.of( "adc01", Byte.class, Byte.class, (byte) 100, clazz, alarm, meta, false ),
-                           Arguments.of( "adc01", Integer.class, Integer.class, 123456, clazz, alarm, meta, false ),
-                           Arguments.of( "adc01", Double.class, Double.class, 12.3456, clazz, alarm, meta, false ),
+      return metaTypeOptions.stream()
+            .flatMap(( metaType) ->
+                Stream.of( Arguments.of( "adc01", String.class, String.class, "12.346", metaType, alarm, meta, false ),
+                           Arguments.of( "adc01", Short.class, Short.class, (short) 123, metaType, alarm, meta, false ),
+                           Arguments.of( "adc01", Float.class, Float.class, -123.4f, metaType, alarm, meta, false ),
+                           Arguments.of( "adc01", Byte.class, Byte.class, (byte) 100, metaType, alarm, meta, false ),
+                           Arguments.of( "adc01", Integer.class, Integer.class, 123456, metaType, alarm, meta, false ),
+                           Arguments.of( "adc01", Double.class, Double.class, 12.3456, metaType, alarm, meta, false ),
 
-                           Arguments.of( "adc01", String.class, String.class, "12.346", clazz, alarm, meta, true ),
-                           Arguments.of( "adc01", Short.class, Short.class, (short) 123, clazz, alarm, meta, true ),
-                           Arguments.of( "adc01", Float.class, Float.class, -123.4f, clazz, alarm, meta, true ),
-                           Arguments.of( "adc01", Byte.class, Byte.class, (byte) 100, clazz, alarm, meta, true ),
-                           Arguments.of( "adc01", Integer.class, Integer.class, 123456, clazz, alarm, meta, true ),
-                           Arguments.of( "adc01", Double.class, Double.class, 12.3456, clazz, alarm, meta, true ),
+                           Arguments.of( "adc01", String.class, String.class, "12.346", metaType, alarm, meta, true ),
+                           Arguments.of( "adc01", Short.class, Short.class, (short) 123, metaType, alarm, meta, true ),
+                           Arguments.of( "adc01", Float.class, Float.class, -123.4f, metaType, alarm, meta, true ),
+                           Arguments.of( "adc01", Byte.class, Byte.class, (byte) 100, metaType, alarm, meta, true ),
+                           Arguments.of( "adc01", Integer.class, Integer.class, 123456, metaType, alarm, meta, true ),
+                           Arguments.of( "adc01", Double.class, Double.class, 12.3456, metaType, alarm, meta, true ),
 
-                           Arguments.of( "adc01", String[].class, String.class, new String[] { "12.356", "3.112" }, clazz, alarm, meta, false ),
-                           Arguments.of( "adc01", short[].class, Short.class, new short[] { (short) 123, (short) -321 }, clazz, alarm, meta, false ),
-                           Arguments.of( "adc01", float[].class, Float.class, new float[] { -123.4f, 321.98f }, clazz, alarm, meta, false ),
-                           Arguments.of( "adc01", byte[].class, Byte.class, new byte[] { (byte) 120, (byte) -120 }, clazz, alarm, meta, false ),
-                           Arguments.of( "adc01", int[].class, Integer.class, new int[] { 123456, 654321 }, clazz, alarm, meta, false ),
-                           Arguments.of( "adc01", double[].class, Double.class, new double[] { 12.82, 3.112 }, clazz, alarm, meta, false ),
+                           Arguments.of( "adc01", String[].class, String.class, new String[] { "12.356", "3.112" }, metaType, alarm, meta, false ),
+                           Arguments.of( "adc01", short[].class, Short.class, new short[] { (short) 123, (short) -321 }, metaType, alarm, meta, false ),
+                           Arguments.of( "adc01", float[].class, Float.class, new float[] { -123.4f, 321.98f }, metaType, alarm, meta, false ),
+                           Arguments.of( "adc01", byte[].class, Byte.class, new byte[] { (byte) 120, (byte) -120 }, metaType, alarm, meta, false ),
+                           Arguments.of( "adc01", int[].class, Integer.class, new int[] { 123456, 654321 }, metaType, alarm, meta, false ),
+                           Arguments.of( "adc01", double[].class, Double.class, new double[] { 12.82, 3.112 }, metaType, alarm, meta, false ),
 
-                           Arguments.of( "adc01", String[].class, String.class, new String[] { "12.356", "3.112" }, clazz, alarm, meta, true ),
-                           Arguments.of( "adc01", short[].class, Short.class, new short[] { (short) 123, (short) -321 }, clazz, alarm, meta, true ),
-                           Arguments.of( "adc01", float[].class, Float.class, new float[] { -123.4f, 321.98f }, clazz, alarm, meta, true ),
-                           Arguments.of( "adc01", byte[].class, Byte.class, new byte[] { (byte) 120, (byte) -120 }, clazz, alarm, meta, true ),
-                           Arguments.of( "adc01", int[].class, Integer.class, new int[] { 123456, 654321 }, clazz, alarm, meta, true ),
-                           Arguments.of( "adc01", double[].class, Double.class, new double[] { 12.82, 3.112 }, clazz, alarm, meta, true ) )
+                           Arguments.of( "adc01", String[].class, String.class, new String[] { "12.356", "3.112" }, metaType, alarm, meta, true ),
+                           Arguments.of( "adc01", short[].class, Short.class, new short[] { (short) 123, (short) -321 }, metaType, alarm, meta, true ),
+                           Arguments.of( "adc01", float[].class, Float.class, new float[] { -123.4f, 321.98f }, metaType, alarm, meta, true ),
+                           Arguments.of( "adc01", byte[].class, Byte.class, new byte[] { (byte) 120, (byte) -120 }, metaType, alarm, meta, true ),
+                           Arguments.of( "adc01", int[].class, Integer.class, new int[] { 123456, 654321 }, metaType, alarm, meta, true ),
+                           Arguments.of( "adc01", double[].class, Double.class, new double[] { 12.82, 3.112 }, metaType, alarm, meta, true ) )
       );
    }
 
