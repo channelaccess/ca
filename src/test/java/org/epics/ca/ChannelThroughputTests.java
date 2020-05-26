@@ -7,7 +7,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -16,7 +15,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -29,7 +27,7 @@ class ChannelThroughputTests
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LibraryLogManager.getLogger(ChannelThroughputTests.class );
+   private static final Logger logger = LibraryLogManager.getLogger( ChannelThroughputTests.class );
    private EpicsChannelAccessTestServer server;
 
 /*- Main ---------------------------------------------------------------------*/
@@ -58,9 +56,9 @@ class ChannelThroughputTests
     */
    @ParameterizedTest
    @ValueSource( ints = { 1, 10, 100, 1000, 2000, 5000 } )
-   void TestGet( int numberOfGets )
+   void testGet( int numberOfGets )
    {
-      logger.info( String.format("Starting Get throughput test for %d CA gets", numberOfGets ) );
+      logger.info( String.format( "Starting Get throughput test for %d CA gets", numberOfGets ) );
       try ( final Context context = new Context() )
       {
          final Channel<Integer> channel = context.createChannel("adc01", Integer.class );
@@ -74,7 +72,7 @@ class ChannelThroughputTests
          long elapseTimeInMilliseconds = stopWatch.getTime(TimeUnit.MILLISECONDS);
 
          logger.info( "RESULTS:");
-         logger.info( String.format("- Synchronous PutAndGet with %d puts/gets took %s ms. Average: %3f ms.", numberOfGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfGets));
+         logger.info( String.format("- Synchronous Get with %d gets took %s ms. Average: %3f ms.", numberOfGets, elapseTimeInMilliseconds, (float) elapseTimeInMilliseconds / (float) numberOfGets));
          logger.info( "" );
       }
    }
@@ -89,7 +87,7 @@ class ChannelThroughputTests
     */
    @ParameterizedTest
    @ValueSource( ints = { 1, 10, 100, 1000, 2000, 5000 } )
-   void TestPutAndGet( int numberOfPutsAndGets )
+   void testPutAndGet( int numberOfPutsAndGets )
    {
       try ( final Context context = new Context() )
       {
@@ -122,7 +120,7 @@ class ChannelThroughputTests
     */
    @ParameterizedTest
    @MethodSource( "getArgumentsForTestPutAndMonitor" )
-   void TestPutAndMonitor( String serviceImpl, int numberOfPuts )
+   void testPutAndMonitor( String serviceImpl, int numberOfPuts )
    {
       logger.info( String.format("Starting PutAndMonitor throughput test using monitor notification impl: '%s' and for %d CA puts", serviceImpl, numberOfPuts ) );
       final Properties contextProperties = new Properties();
@@ -181,15 +179,15 @@ class ChannelThroughputTests
     */
    @ParameterizedTest
    @MethodSource( "getArgumentsForTestFastCounterMonitor" )
-   void TestFastCounterMonitor( String serviceImpl, int numberOfNotifications )
+   void testFastCounterMonitor( String serviceImpl, int numberOfNotifications )
    {
-      logger.info( String.format("Starting FastCounterMonitor throughput test using impl: '%s'...", serviceImpl ) );
+      logger.info( String.format("Starting FastCounterMonitor throughput test using impl: '%s'and for '%d' notifications...", serviceImpl, numberOfNotifications ) );
       final Properties contextProperties = new Properties();
       contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
 
       try ( final Context context = new Context( contextProperties ) )
       {
-         final Channel<Integer> channel = context.createChannel("fastCounter", Integer.class );
+         final Channel<Integer> channel = context.createChannel("1msCounter", Integer.class );
          channel.connect();
          final List<Monitor<Integer>> monitorList = new ArrayList<>();
 
