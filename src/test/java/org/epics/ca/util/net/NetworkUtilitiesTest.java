@@ -1,6 +1,6 @@
 /*- Package Declaration ------------------------------------------------------*/
 
-package org.epics.ca.impl.util;
+package org.epics.ca.util.net;
 
 
 /*- Imported packages --------------------------------------------------------*/
