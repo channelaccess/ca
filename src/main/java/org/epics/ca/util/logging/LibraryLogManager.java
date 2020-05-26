@@ -107,10 +107,25 @@ public class LibraryLogManager
          System.out.println( "\nWARNING: More than one logger defined for class: '" + clazz.getSimpleName() + "'.\n" );
       }
       logger.setLevel( debugLevel );
+
       return logger;
    }
 
+
 /*- Package-level methods ----------------------------------------------------*/
+
+   /**
+    * Provided to enable tests only.
+    * @param logger the logger whose handlers are to be disposed.
+    */
+   static void disposeLogger( Logger logger)
+   {
+      if ( logger.getHandlers().length == 1 )
+      {
+         logger.removeHandler( flushingStandardOutputStreamHandler );
+      }
+   }
+
 /*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/
 
