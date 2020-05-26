@@ -156,7 +156,7 @@ public class CARepeaterStarter
       }
       else
       {
-         logger.fine( "NO CA Rpeaters need terminating." );
+         logger.fine( "There are NO CA Repeaters that need terminating." );
       }
    }
 
