@@ -19,6 +19,7 @@ import org.epics.ca.util.logging.LibraryLogManager;
 import java.io.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -92,12 +93,12 @@ public class EpicsChannelAccessTestServer
     */
    public static EpicsChannelAccessTestServer start()
    {
-      logger.info( "Starting the EPICS Channel Access Test Server..." );
+      logger.info( "The EPICS Channel Access Test Server is starting..." );
 
-      final EpicsChannelAccessTestServer server;
+      final EpicsChannelAccessTestServer epicsChannelAccessTestServer;
       try
       {
-          server = new EpicsChannelAccessTestServer();
+         epicsChannelAccessTestServer = new EpicsChannelAccessTestServer();
       }
       catch ( CAException ex )
       {
@@ -107,14 +108,14 @@ public class EpicsChannelAccessTestServer
       }
 
       // Display basic information about the CA context associated with the server.
-      server.printContextInfo();
+      epicsChannelAccessTestServer.printContextInfo();
 
       // Start the server in a separate daemon thread that will continue until shut down.
-      server.startInSeparateThread();
+      epicsChannelAccessTestServer.startInSeparateThread();
 
       // Return the reference to the server (which will allow it to be shutdown when required).
       logger.info( "The EPICS Channel Access Test Server was initialised and is running.\n" );
-      return server;
+      return epicsChannelAccessTestServer;
    }
 
    /**
@@ -122,10 +123,35 @@ public class EpicsChannelAccessTestServer
     */
    public void shutdown()
    {
-      logger.info( "Shutting down the EPICS Channel Access Test Server..." );
-      executor.shutdownNow();
-      destroyContextWithoutPropagatingExceptions();
-      logger.info( "The EPICS Channel Access Test Server was shutdown." );
+      logger.info( "The EPICS Channel Access Test Server is shutting down..." );
+      try
+      {
+         logger.finer( "Making executor shutdown request." );
+         executor.shutdownNow();
+         logger.finer( "Request submitted." );
+      }
+      catch ( RuntimeException ex )
+      {
+         logger.log( Level.WARNING, "Executor shutdown request generated exception.", ex );
+      }
+
+      try
+      {
+         logger.finer( "Waiting for executor termination." );
+         if( executor.awaitTermination(100, TimeUnit.MILLISECONDS ) )
+         {
+            logger.finer( "Executor terminated OK." );
+         }
+         else
+         {
+            logger.warning("Executor termination timeout." );
+         }
+      }
+      catch ( InterruptedException ex )
+      {
+         logger.warning("Received interrupt request whilst waiting for executor termination." );
+      }
+      logger.info( "The EPICS Channel Access Test Server shutdown process completed." );
    }
 
 
@@ -198,10 +224,13 @@ public class EpicsChannelAccessTestServer
    {
       try
       {
+         logger.finer( "Destroying context." );
          context.destroy();
+         logger.finer( "Context was destroyed." );
       }
-      catch ( IllegalStateException | CAException  ex )
+      catch ( IllegalStateException | CAException ex )
       {
+         logger.log( Level.WARNING, "Context destroy operation raised exception. Will interrupt calling thread.", ex );
          Thread.currentThread().interrupt();
       }
    }
@@ -238,7 +267,7 @@ public class EpicsChannelAccessTestServer
       mpv.setPrecision ((short) 3);
       server.registerProcessVaribale (mpv);
 
-      // Some other PV's used in the Example program
+      // Create some other PV's needed for the PSI CA Client Library Example program
       final MemoryProcessVariable mpv2 = new MemoryProcessVariable ("adc02", null, DBR_Double.TYPE, new double[] { 1.04, 33.31 });
       server.registerProcessVaribale( mpv2 );
       final MemoryProcessVariable mpv3 = new MemoryProcessVariable ("adc03", null, DBR_Double.TYPE, new double[] { 19.78, 53.11 });
@@ -261,11 +290,11 @@ public class EpicsChannelAccessTestServer
       server.registerProcessVaribale( enumPV );
 
       // counter PV
-      final CounterProcessVariable counter = new CounterProcessVariable ("counter", null, -10, 10, 1, 1000, -7, 7, -9, 9);
+      final CounterProcessVariable counter = new CounterProcessVariable ("100msCounter", null, -10, 10, 1, 100, -7, 7, -9, 9);
       server.registerProcessVaribale (counter);
 
       // fast counter PV
-      final CounterProcessVariable fastCounter = new CounterProcessVariable("fastCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
+      final CounterProcessVariable fastCounter = new CounterProcessVariable("1msCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
       server.registerProcessVaribale(fastCounter);
 
       // simple in-memory 1MB array
