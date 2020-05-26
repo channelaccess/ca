@@ -23,7 +23,7 @@ class StripedExecutorServiceMonitorNotificationServiceTest
     * Data for the test below.
     * @return the data.
     */
-   private static Stream<Arguments> getArgumentsForTestsWithSameConsumer()
+   private static Stream<Arguments> getArgumentsForTestThroughputUntilLastValueReceived()
    {
       return Stream.of( Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,1",   10_000, 123L, 456L ),
                         Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,5",   10_000, 123L, 456L ),
@@ -46,47 +46,50 @@ class StripedExecutorServiceMonitorNotificationServiceTest
     * @param <T> the notification type.
     */
    @ParameterizedTest
-   @MethodSource( "getArgumentsForTestsWithSameConsumer" )
-   <T> void testStripedExecutorServiceImplThroughputWithSameConsumers( String serviceImpl, int notifications, T notifyValue1, T notifyValue2 )
+   @MethodSource( "getArgumentsForTestThroughputUntilLastValueReceived" )
+   <T> void testThroughputUntilLastValueReceived( String serviceImpl, int notifications, T notifyValue1, T notifyValue2 )
    {
       final int consumerProcessingTimeInMicroseconds = 100;
       final ConsumerType consumerType = ConsumerType.NORMAL;
-      new MonitorNotificationServiceTest().testThroughputWithSameConsumer( serviceImpl, notifications, notifyValue1, notifyValue2,  consumerType, consumerProcessingTimeInMicroseconds );
+      new MonitorNotificationServiceTest().testThroughputUntilLastValueReceived( serviceImpl, notifications, notifyValue1, notifyValue2, consumerType, consumerProcessingTimeInMicroseconds );
    }
 
    /**
     * Data for the test below.
     * @return the data.
     */
-   private static Stream<Arguments> getArgumentsForTestsWithDifferentConsumers()
+   private static Stream<Arguments> getArgumentsForTestThroughputUntilExpectedNotificationsReceived()
    {
-      return Stream.of( Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,1",   50_000, 123L, ConsumerType.NORMAL                 ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,2",   50_000, 123L, ConsumerType.NORMAL                 ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,4",   50_000, 123L, ConsumerType.NORMAL                 ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,8",   50_000, 123L, ConsumerType.NORMAL                 ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,16",  50_000, 123L, ConsumerType.NORMAL                 ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,32",  50_000, 123L, ConsumerType.NORMAL                 ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,64",  50_000, 123L, ConsumerType.NORMAL                 ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,128", 50_000, 123L, ConsumerType.NORMAL                 ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,1",   50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,2",   50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,4",   50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,8",   50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,16",  50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,32",  50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,64",  50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,128", 50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
+      return Stream.of( Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,1",    50_000, 123L, ConsumerType.NORMAL                 ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,2",    50_000, 123L, ConsumerType.NORMAL                 ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,4",    50_000, 123L, ConsumerType.NORMAL                 ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,8",    50_000, 123L, ConsumerType.NORMAL                 ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,16",   50_000, 123L, ConsumerType.NORMAL                 ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,32",   50_000, 123L, ConsumerType.NORMAL                 ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,64",   50_000, 123L, ConsumerType.NORMAL                 ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,128",  50_000, 123L, ConsumerType.NORMAL                 ),
 
-// Currently (2018-07-24 this test is taken out of the build because it takes too long.
-//                       Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,1",   50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
+                        // Note: some of the tests below with only a few threads are currently (2020-05-26) removed from
+                        // the test sequence because they take too long.
+                        // Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,1", 50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
+                        // Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,2", 50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
+                        // Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,4", 50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,8",    50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,16",   50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,32",   50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,64",   50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,128",  50_000, 123L, ConsumerType.SLOW_WITH_BUSY_WAIT    ),
 
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,2",   50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,4",   50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,8",   50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,16",  50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,32",  50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,64",  50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,128", 50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ) );
+                        // Note: some of the tests below with only a few threads are currently (2020-05-26) removed from
+                        // the test sequence because they take too long.
+                        // Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,1", 50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
+                        // Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,2", 50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
+                        // Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,4", 50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,8",    50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,16",   50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,32",   50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,64",   50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,128",  50_000, 123L, ConsumerType.SLOW_WITH_THREAD_SLEEP ) );
    }
 
    /**
@@ -97,11 +100,13 @@ class StripedExecutorServiceMonitorNotificationServiceTest
     * @param <T> the notification type.
     */
    @ParameterizedTest
-   @MethodSource( "getArgumentsForTestsWithDifferentConsumers" )
-   <T> void testStripedExecutorServiceImplThroughputWithDifferentConsumers( String serviceImpl, int notifications, T notifyValue, ConsumerType consumerType )
+   @MethodSource( "getArgumentsForTestThroughputUntilExpectedNotificationsReceived" )
+   <T> void testThroughputUntilExpectedNotificationsReceived( String serviceImpl, int notifications, T notifyValue, ConsumerType consumerType )
    {
       final int consumerProcessingTimeInMicroseconds = ( consumerType == ConsumerType.NORMAL ) ? 1 : 100;
-      new MonitorNotificationServiceTest().testThroughputWithDifferentConsumers( serviceImpl, notifications, notifyValue, consumerType, consumerProcessingTimeInMicroseconds );
+
+      // Call test in main package
+      new MonitorNotificationServiceTest().testThroughputUntilExpectedNotificationsReceived( serviceImpl, notifications, notifyValue, consumerType, consumerProcessingTimeInMicroseconds );
    }
 
 }
