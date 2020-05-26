@@ -629,7 +629,7 @@ class TCPTransportTest
       // Verify the timing was no greater than expected
       assertTrue(elapsedTimeInMicroseconds < maximumExecutionTimeInMicroseconds,
                  "Actual Execution Time was: "  + elapsedTimeInMicroseconds + " us. " +
-                          "Maximum Execution Time was: " + maximumExecutionTimeInMicroseconds + " us" );
+                 "Maximum Execution Time was: " + maximumExecutionTimeInMicroseconds + " us" );
    }
 
 
@@ -649,7 +649,7 @@ class TCPTransportTest
    // Also the first test always runs slower
    private static Stream<Arguments> getArgumentsForCaLatencyTest()
    {
-      return Stream.of ( Arguments.of( Level.FINEST, 100_000 ),
+      return Stream.of ( Arguments.of( Level.INFO, 100_000 ),
                          Arguments.of( Level.INFO, 10000 ),
                          Arguments.of( Level.INFO, 10000 ),
                          Arguments.of( Level.INFO, 10000 ),
@@ -662,7 +662,7 @@ class TCPTransportTest
    {
       // Change the setting below for the required debug level.
       // This will be used for all tests except the CA Latency Test
-      return Stream.of ( Arguments.of( Level.ALL ) );
+      return Stream.of ( Arguments.of( Level.INFO ) );
    }
 
 /*- Nested Classes -----------------------------------------------------------*/
