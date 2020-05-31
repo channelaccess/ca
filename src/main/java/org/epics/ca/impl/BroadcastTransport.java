@@ -211,7 +211,7 @@ public class BroadcastTransport implements ReactorHandler, Transport
          }
          catch ( Throwable ioex )
          {
-            logger.log(Level.WARNING, "Failed to sent a datagram to:" + broadcastAddress, ioex);
+            logger.log(Level.WARNING, "Failed to send a datagram to:" + broadcastAddress, ioex);
          }
       }
    }
