@@ -242,7 +242,7 @@ public class ResponseHandlers
       Validate.notNull( header );
       Validate.notNull( payloadBuffer );
 
-      transport.getContext().repeaterConfirm (responseFrom );
+      transport.getContext().repeaterConfirm( responseFrom );
    }
 
    public static void exceptionResponse( InetSocketAddress responseFrom, Transport transport, Header header, ByteBuffer payloadBuffer )
