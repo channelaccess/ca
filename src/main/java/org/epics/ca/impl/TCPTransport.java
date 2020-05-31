@@ -33,7 +33,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
    /**
     * Connection status.
     */
-   private final AtomicBoolean closed = new AtomicBoolean ();
+   private final AtomicBoolean closed = new AtomicBoolean();
 
    /**
     * Context instance.
@@ -123,8 +123,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
     * @param priority the CA message priority.
     */
    public TCPTransport( ContextImpl context, TransportClient client, ResponseHandler responseHandler,
-                        SocketChannel channel, short remoteTransportRevision, int priority
-   )
+                        SocketChannel channel, short remoteTransportRevision, int priority )
    {
       this.context = context;
       this.responseHandler = responseHandler;
@@ -132,30 +131,28 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
       this.remoteTransportRevision = remoteTransportRevision;
       this.priority = priority;
 
-      socketAddress = (InetSocketAddress) channel.socket ().getRemoteSocketAddress ();
+      socketAddress = (InetSocketAddress) channel.socket().getRemoteSocketAddress ();
 
       // initialize buffers
-      receiveBuffer = ByteBuffer.allocateDirect (INITIAL_RX_BUFFER_SIZE);
-      sendBuffer = ByteBuffer.allocateDirect (INITIAL_TX_BUFFER_SIZE);
+      receiveBuffer = ByteBuffer.allocateDirect( INITIAL_RX_BUFFER_SIZE );
+      sendBuffer = ByteBuffer.allocateDirect( INITIAL_TX_BUFFER_SIZE );
 
       // acquire transport
-      acquire (client);
+      acquire( client );
 
       // read echo period and start timer (watchdog)
-      long echoPeriod = (long) (context.getConnectionTimeout () * 1000);
+      final long echoPeriod = (long) (context.getConnectionTimeout () * 1000);
       if ( echoPeriod >= 0 )
       {
-         echoTimer = context.getScheduledExecutor ().scheduleWithFixedDelay (
-               this,
-               0,
-               echoPeriod,
-               TimeUnit.MILLISECONDS);
+         echoTimer = context.getScheduledExecutor ().scheduleWithFixedDelay (this, 0, echoPeriod, TimeUnit.MILLISECONDS);
       }
       else
+      {
          echoTimer = null;
+      }
 
       // add to registry
-      context.getTransportRegistry ().put (socketAddress, this);
+      context.getTransportRegistry().put( socketAddress, this );
    }
 
    /**
@@ -167,7 +164,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
    public void close( boolean remotelyClosed )
    {
 
-      if ( closed.getAndSet (true) )
+      if ( closed.getAndSet (true ) )
       {
          return;
       }
@@ -179,7 +176,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
       }
 
       // remove from registry
-      context.getTransportRegistry ().remove (socketAddress, priority);
+      context.getTransportRegistry().remove( socketAddress, priority );
 
       // flush first
       if ( !remotelyClosed )
@@ -187,11 +184,11 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
          flush();
       }
 
-      closedNotifyClients ();
+      closedNotifyClients();
 
       logger.finer ("Connection to " + socketAddress + " closed.");
 
-      context.getReactor ().unregisterAndClose (channel);
+      context.getReactor().unregisterAndClose( channel );
    }
 
    /**
@@ -205,8 +202,9 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
          // check if still acquired
          int refs = owners.size ();
          if ( refs == 0 )
+         {
             return;
-
+         }
          logger.log(Level.FINE,"Transport to " + socketAddress + " still has " + refs + " client(s) active and closing...");
          clients = new TransportClient[ refs ];
          owners.toArray (clients);
@@ -340,7 +338,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
                // more data to be read pretty soon.
                // Note: flow control only works with monitors !
                logger.finest(  "Disabling flow control...");
-               disableFlowControl ();
+               disableFlowControl();
                break;
             }
 
@@ -553,11 +551,11 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
     */
    protected void disableFlowControl()
    {
-      if ( flowControlState.getAndSet (false) )
+      if ( flowControlState.getAndSet(false) )
       {
-         flowControlChangeRequest.set (Boolean.FALSE);
+         flowControlChangeRequest.set( Boolean.FALSE );
          // send MUST not be done in this (read) thread
-         flush ();
+         flush();
       }
    }
 
