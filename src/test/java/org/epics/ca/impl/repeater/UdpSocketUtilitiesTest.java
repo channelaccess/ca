@@ -845,6 +845,8 @@ class UdpSocketUtilitiesTest
    // 8.0 Test data transfer capabilities on current platform
    // -------------------------------------------------------------------------
 
+   //  Note: data transfer should always work regardless of whether the socket
+   // is reserved
    @ValueSource( booleans = { true, false } )
    @ParameterizedTest
    void integrationTestDataTransfer( boolean bindSendSocket ) throws Exception
@@ -858,7 +860,14 @@ class UdpSocketUtilitiesTest
          // Verify that the send socket is bound or unbound as requested.
          assertThat( sendSocket.isBound(), is( bindSendSocket ) );
 
-         // Configure the destination address to send to
+         // Configure the destination address to send to by "connecting" to the destination socket.
+         // Notes: 
+         // 1. connect has different semantics for UDP compared with TCP. It does not imply
+         //    an active connection to the remote socket. In the current context it means the
+         //    default destination to send to when the send packet does not explicitly provide
+         //    this information.
+         // 2. an alternative approach would be to skip the connect operation and to configure
+         //    the destination directly in the send packet.
          sendSocket.connect( InetAddress.getLoopbackAddress(), 12345 );
          assertThat( sendSocket.isConnected(), is(true));
 
