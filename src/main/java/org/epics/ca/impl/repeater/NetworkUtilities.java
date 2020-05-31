@@ -50,14 +50,12 @@ public class NetworkUtilities
       }
    }
 
-/*- Package-level methods ----------------------------------------------------*/
-
    /**
     * Returns an indication of whether a VPN is currently active on the local network.
     *
     * @return the indicator
     */
-   static boolean isVpnActive()
+   public static boolean isVpnActive()
    {
       final List<Inet4Address> addrList = new ArrayList<>();
       try
@@ -80,6 +78,8 @@ public class NetworkUtilities
       logger.info( "An active VPN has NOT been detected." );
       return false;
    }
+
+/*- Package-level methods ----------------------------------------------------*/
 
    /**
     * Returns a list of any IPV4 internet addresses that have been assigned to the local interfaces.
