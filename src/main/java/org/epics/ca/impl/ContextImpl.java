@@ -105,12 +105,12 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Timer.
     */
-   protected final ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor ();
+   protected final ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
 
    /**
     * General executor service (e.g. event dispatcher).
     */
-   protected final ExecutorService executorService = Executors.newSingleThreadExecutor ();
+   protected final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
    /**
     * Factory to be used for creating MonitorNotificationService instances.
@@ -191,12 +191,12 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Closed flag.
     */
-   private final AtomicBoolean closed = new AtomicBoolean ();
+   private final AtomicBoolean closed = new AtomicBoolean();
 
    /**
     * Beacon handler map.
     */
-   protected final Map<InetSocketAddress, BeaconHandler> beaconHandlers = new HashMap<> ();
+   protected final Map<InetSocketAddress, BeaconHandler> beaconHandlers = new HashMap<>();
 
 
 /*- Main ---------------------------------------------------------------------*/
@@ -266,7 +266,7 @@ public class ContextImpl implements AutoCloseable, Constants
       repeaterRegistrationFuture = timer.scheduleWithFixedDelay( new RepeaterRegistrationTask( repeaterLocalAddress ),
                                                                  CA_REPEATER_INITIAL_DELAY,
                                                                  CA_REPEATER_REGISTRATION_INTERVAL,
-                                                                 TimeUnit.SECONDS );
+                                                                 TimeUnit.MILLISECONDS );
 
       channelSearchManager = new ChannelSearchManager( broadcastTransport.get() );
       monitorNotificationServiceFactory = MonitorNotificationServiceFactoryCreator.create( monitorNotifierConfigImpl );
@@ -432,11 +432,13 @@ public class ContextImpl implements AutoCloseable, Constants
    {
       if ( event.allowEnqueue () )
       {
-         executorService.execute (event);
+         executorService.execute( event );
          return true;
       }
       else
+      {
          return false;
+      }
    }
 
    public void beaconAnomalyNotify()
@@ -526,7 +528,6 @@ public class ContextImpl implements AutoCloseable, Constants
       {
          CARepeaterStarter.shutdownLastStartedRepeater();
       }
-
 
       channelSearchManager.cancel();
       broadcastTransport.get().close ();
