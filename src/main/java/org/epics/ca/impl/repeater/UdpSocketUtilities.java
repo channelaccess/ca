@@ -146,6 +146,8 @@ class UdpSocketUtilities
 
       // Attempt to bind the newly created socket to the specified port.
       // SocketException, SecurityException -->
+
+      logger.finest( "Binding to: " + wildcardBindAddress );
       socket.bind( wildcardBindAddress );
 
       // Validate the post-condition that the configured socket reuse mode is
@@ -172,7 +174,7 @@ class UdpSocketUtilities
    {
       boolean isAvailable;
 
-      logger.finest("Checking whether a UDP socket is available for target address '" + targetSocketAddress + "'.");
+      logger.finest( "Checking whether a UDP socket is available for target address '" + targetSocketAddress + "'." );
 
       // Need to create unbound first so that we can configure the socket as we want it.
       // SocketException -->
