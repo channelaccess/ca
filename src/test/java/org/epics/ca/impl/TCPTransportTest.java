@@ -5,8 +5,11 @@ package org.epics.ca.impl;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.epics.ca.impl.reactor.Reactor;
 import org.epics.ca.util.logging.LibraryLogManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -18,14 +21,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -47,6 +49,7 @@ class TCPTransportTest
 
    private static final Logger logger = LibraryLogManager.getLogger( TCPTransportTest.class );
 
+   private ContextImpl context;
    private SocketChannel channel;
    private TCPTransport transport;
    private ResponseHandlers.ResponseHandler handler;
@@ -61,16 +64,16 @@ class TCPTransportTest
    void setupTcpTransport()
    {
       // Create a mock for the first argument of the TCPTransport constructor
-      final ContextImpl context = Mockito.mock (ContextImpl.class);
+      context = Mockito.mock( ContextImpl.class );
 
       // Create a mock for the second argument
-      final TransportClient client = Mockito.mock (TransportClient.class);
+      final TransportClient client = Mockito.mock( TransportClient.class);
 
       // Create a mock for the third argument
-      handler = Mockito.mock (ResponseHandlers.ResponseHandler.class);
+      handler = Mockito.mock( ResponseHandlers.ResponseHandler.class );
 
       // Create a mock for the fourth argument
-      channel = Mockito.mock (SocketChannel.class);
+      channel = Mockito.mock( SocketChannel.class );
 
       // Create some values for the other arguments passed to the constructor
       final short minorRevision = 2;
@@ -80,38 +83,43 @@ class TCPTransportTest
       // mocking behaviour...
       // Note: INetSocketAddress cant be mocked (because it declares hashcode and equals as final).
       // So we create a real one here. For the purpose of the test the difference is irrelevant.
-      final InetSocketAddress socketAddress = new InetSocketAddress(1234);
+      final InetSocketAddress socketAddress = new InetSocketAddress(1234 );
 
       @SuppressWarnings( "rawtypes" )
-      final ScheduledFuture scheduledFuture = Mockito.mock(ScheduledFuture.class );
+      final ScheduledFuture scheduledFuture = Mockito.mock( ScheduledFuture.class );
 
       final ScheduledExecutorService scheduledExecutorService = Mockito.mock ( ScheduledExecutorService.class );
       final TransportRegistry transportRegistry = Mockito.mock( TransportRegistry.class );
       final Socket socket = Mockito.mock( Socket.class );
 
       // Now provide the mocking behavioural support to allow the TCPTransport constructor to get invoked.
-      Mockito.when( channel.socket ()).thenReturn (socket);
-      Mockito.when( socket.getRemoteSocketAddress ()).thenReturn (socketAddress);
-      Mockito.when( context.getScheduledExecutor ()).thenReturn (scheduledExecutorService);
+      Mockito.when( channel.socket() ).thenReturn( socket );
+      Mockito.when( socket.getRemoteSocketAddress() ).thenReturn( socketAddress );
+      Mockito.when( context.getScheduledExecutor() ).thenReturn( scheduledExecutorService );
 
       //noinspection unchecked
       Mockito.when( scheduledExecutorService.scheduleWithFixedDelay( any(), ArgumentMatchers.anyLong(), ArgumentMatchers.anyLong(), any() ) )
             .thenReturn( scheduledFuture );
-      Mockito.when( context.getTransportRegistry ()).thenReturn (transportRegistry);
+      Mockito.when( context.getTransportRegistry() ).thenReturn( transportRegistry );
 
       // Ok, we now have everything in place to construct our TCPTransport that we will test/
       // Go and build the test object.
-      transport = new TCPTransport (context, client, handler, channel, minorRevision, priority);
+      transport = new TCPTransport( context, client, handler, channel, minorRevision, priority );
    }
 
-
-   @MethodSource( "getDefaultDebugLevelForTests" )
-   @ParameterizedTest
-   void testCaCommandWithNoPayload_HeaderSuppliedInOneChunk( Level debugLevel ) throws IOException
+   @AfterEach
+   void afterEach()
    {
-      // Set the required debug level
-      setGlobalLoggingLevel( debugLevel );
+      final Reactor reactor = Mockito.mock( Reactor.class );
+      final ArgumentCaptor<SelectableChannel> captor = ArgumentCaptor.forClass( SelectableChannel.class );
+      Mockito.when( context.getReactor() ).thenReturn( reactor );
+      transport.close( false );
+      verify( reactor ).unregisterAndClose( captor.capture() );
+   }
 
+   @Test
+   void testCaCommandWithNoPayload_HeaderSuppliedInOneChunk() throws IOException
+   {
       // We will use CA_PROTO_EVENT_CANCEL as an example as
       // (a) it has no payload
       // (b) it allows interesting values for some of the header fields
@@ -151,7 +159,7 @@ class TCPTransportTest
       Mockito.when (selectionKey.readyOps ()).thenReturn (1);
 
       // Go ahead and trigger the processing which reads data from the socket.
-      transport.handleEvent (selectionKey);
+      transport.handleEvent( selectionKey );
 
       // Now verify our expectation that the handler class gets called with the expected arguments
       ArgumentCaptor<InetSocketAddress> captor1 = ArgumentCaptor.forClass (InetSocketAddress.class);
@@ -182,13 +190,9 @@ class TCPTransportTest
       verifyNoMoreInteractions (handler);
    }
 
-   @MethodSource( "getDefaultDebugLevelForTests" )
-   @ParameterizedTest
-   void testCaCommandWithNoPayload_HeaderSuppliedInTwoChunks( Level debugLevel ) throws IOException
+   @Test
+   void testCaCommandWithNoPayload_HeaderSuppliedInTwoChunks() throws IOException
    {
-      // Set the required debug level
-      setGlobalLoggingLevel( debugLevel );
-
       // We will use CA_PROTO_EVENT_CANCEL as an example as
       // (a) it has no payload
       // (b) it allows interesting values for some of the header fields
@@ -267,13 +271,9 @@ class TCPTransportTest
       verifyNoMoreInteractions (handler);
    }
 
-   @MethodSource( "getDefaultDebugLevelForTests" )
-   @ParameterizedTest
-   void testCaCommandWithPayload_HeaderSuppliedInOneChunk( Level debugLevel ) throws IOException
+   @Test
+   void testCaCommandWithPayload_HeaderSuppliedInOneChunk() throws IOException
    {
-      // Set the required debug level
-      setGlobalLoggingLevel( debugLevel );
-
       // We will use CA_PROTO_READ_NOTIFY with an element count of 1 and a long payload as an example
       final short cmdVersion = 0x000F;
       final short payloadSize = 0x0004; // DBR_LONG has a payload size of 4 bytes
@@ -327,13 +327,13 @@ class TCPTransportTest
       ArgumentCaptor<Transport> captor2 = ArgumentCaptor.forClass (Transport.class);
       ArgumentCaptor<Header> captor3 = ArgumentCaptor.forClass (Header.class);
       ArgumentCaptor<ByteBuffer> captor4 = ArgumentCaptor.forClass (ByteBuffer.class);
-      verify (handler).handleResponse (captor1.capture (), captor2.capture (), captor3.capture (), captor4.capture ());
+      verify( handler ).handleResponse (captor1.capture (), captor2.capture (), captor3.capture (), captor4.capture ());
 
       // Verify that the passed InetSocketAddress had the expected port
       assertEquals (1234, captor1.getValue ().getPort ());
 
       // Verify that the transport reference was passed as expected
-      assertEquals (transport, captor2.getValue ());
+      assertEquals( transport, captor2.getValue ());
 
       // Verify all the values in the supplied header
       assertEquals (0x000F, captor3.getValue ().command);
@@ -356,13 +356,9 @@ class TCPTransportTest
       verifyNoMoreInteractions (handler);
    }
 
-   @MethodSource( "getDefaultDebugLevelForTests" )
-   @ParameterizedTest
-   void testCaCommandWithPayload_HeaderSuppliedInTwoChunks( Level debugLevel ) throws IOException
+   @Test
+   void testCaCommandWithPayload_HeaderSuppliedInTwoChunks() throws IOException
    {
-      // Set the required debug level
-      setGlobalLoggingLevel( debugLevel );
-
       // We will use CA_PROTO_READ_NOTIFY with an element count of 1 and a float payload as an example
       final short cmdVersion = 0x000F;
       final short payloadSize = 0x0004; // DBR_FLOAT has a payload size of 4 bytes
@@ -453,13 +449,9 @@ class TCPTransportTest
       verifyNoMoreInteractions( handler );
    }
 
-   @MethodSource( "getDefaultDebugLevelForTests" )
-   @ParameterizedTest
-   void testCaCommandWithPayload_HeaderAndPayloadSplitDifferently( Level debugLevel ) throws IOException
+   @Test
+   void testCaCommandWithPayload_HeaderAndPayloadSplitDifferently() throws IOException
    {
-      // Set the required debug level
-      setGlobalLoggingLevel( debugLevel );
-
       // We will use CA_PROTO_READ_NOTIFY with an element count of 1 and a long payload as an example
       final short cmdVersion = 0x000F;
       final short payloadSize = 0x0004; // DBR_LONG has a payload size of 4 bytes
@@ -544,11 +536,8 @@ class TCPTransportTest
 
    @MethodSource( "getArgumentsForCaLatencyTest" )
    @ParameterizedTest
-   void testCaReadLatency( Level debugLevel, int maximumExecutionTimeInMicroseconds) throws IOException
+   void testCaReadLatency( int maximumExecutionTimeInMicroseconds) throws IOException
    {
-      // Set the required debug level
-      setGlobalLoggingLevel( debugLevel );
-
       // We will use CA_PROTO_READ_NOTIFY with an element count of 1 and a long payload as an example
       final short cmdVersion = 0x000F;
       final short payloadSize = 0x0004; // DBR_LONG has a payload size of 4 bytes
@@ -635,34 +624,17 @@ class TCPTransportTest
 
 /*- Private methods ----------------------------------------------------------*/
 
-   private void setGlobalLoggingLevel( Level level )
-   {
-      final Logger rootLogger = LogManager.getLogManager ().getLogger ("");
-      rootLogger.setLevel( level );
-      for ( Handler h : rootLogger.getHandlers () )
-      {
-         h.setLevel( level );
-      }
-   }
 
-   // When debugging is on we have to reduce the latency requirement to make it less strict.
-   // Also the first test always runs slower
+   // Note: the first test always runs slower
    private static Stream<Arguments> getArgumentsForCaLatencyTest()
    {
-      return Stream.of ( Arguments.of( Level.INFO, 100_000 ),
-                         Arguments.of( Level.INFO, 10000 ),
-                         Arguments.of( Level.INFO, 10000 ),
-                         Arguments.of( Level.INFO, 10000 ),
-                         Arguments.of( Level.INFO, 10000 ),
-                         Arguments.of( Level.INFO, 10000 ),
-                         Arguments.of( Level.INFO, 10000 ) );
-   }
-
-   private static Stream<Arguments> getDefaultDebugLevelForTests()
-   {
-      // Change the setting below for the required debug level.
-      // This will be used for all tests except the CA Latency Test
-      return Stream.of ( Arguments.of( Level.INFO ) );
+      return Stream.of ( Arguments.of( 100_000 ),
+                         Arguments.of( 10000 ),
+                         Arguments.of( 10000 ),
+                         Arguments.of( 10000 ),
+                         Arguments.of( 10000 ),
+                         Arguments.of( 10000 ),
+                         Arguments.of( 10000 ) );
    }
 
 /*- Nested Classes -----------------------------------------------------------*/
