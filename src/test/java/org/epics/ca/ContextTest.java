@@ -13,7 +13,9 @@ import java.util.Properties;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -32,6 +34,16 @@ class ContextTest
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
 /*- Package-level access methods ---------------------------------------------*/
+
+   @BeforeEach()
+   void beforeEach()
+   {
+      // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
+      if ( NetworkUtilities.isVpnActive() )
+      {
+         fail( "This test is not supported when a VPN connection is active on the local network interface." );
+      }
+   }
 
    @Test
    void testConstructor_withNoProperties_doesNotThrow()
@@ -61,7 +73,7 @@ class ContextTest
       final Exception ex = assertThrows( IllegalArgumentException.class, () -> {
          try ( Context context = new Context( null ) )
          {
-            logger.warning("The new context was successfully created." );
+            logger.warning("The new context was created but shouldn't have been." );
          }
       } );
       assertThat( ex.getMessage(), is( "null properties" ) );
@@ -157,8 +169,7 @@ class ContextTest
    @Test
    void testClose()
    {
-
-      Context context = new Context ();
+      final Context context = new Context ();
       context.close ();
 
       // duplicate close() is OK
@@ -166,8 +177,8 @@ class ContextTest
 
       try
       {
-         context.createChannel (TEST_CHANNEL_NAME, Double.class);
-         fail ("creation of a channel on closed context must fail");
+         context.createChannel( TEST_CHANNEL_NAME, Double.class );
+         fail ( "creation of a channel on closed context must fail" );
       }
       catch ( RuntimeException rt )
       {
@@ -176,12 +187,21 @@ class ContextTest
 
       try
       {
-         context.createChannel (TEST_CHANNEL_NAME, Double.class, Constants.CHANNEL_PRIORITY_DEFAULT);
-         fail ("creation of a channel on closed context must fail");
+         context.createChannel( TEST_CHANNEL_NAME, Double.class, Constants.CHANNEL_PRIORITY_DEFAULT );
+         fail( "creation of a channel on closed context must fail" );
       }
       catch ( RuntimeException rt )
       {
          // expected
+      }
+   }
+
+   @Test
+   void testRepeaterRegistration() throws InterruptedException
+   {
+      try ( Context context = new Context() )
+      {
+         Thread.sleep( 5000 );
       }
    }
 
