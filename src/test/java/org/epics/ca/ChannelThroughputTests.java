@@ -5,6 +5,7 @@ package org.epics.ca;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
+import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
 
@@ -28,22 +31,28 @@ class ChannelThroughputTests
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( ChannelThroughputTests.class );
-   private EpicsChannelAccessTestServer server;
+   private EpicsChannelAccessTestServer channelAccessTestServer;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
 
    @BeforeEach
-   void setUp()
+   void beforeEach()
    {
-      server = EpicsChannelAccessTestServer.start();
+      // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
+      if ( NetworkUtilities.isVpnActive() )
+      {
+         fail( "This test is not supported when a VPN connection is active on the local network interface." );
+      }
+
+      channelAccessTestServer = EpicsChannelAccessTestServer.start();
    }
 
    @AfterEach
-   void tearDown()
+   void afterEach()
    {
-      server.shutdown();
+      channelAccessTestServer.shutdown();
    }
 
    /**
