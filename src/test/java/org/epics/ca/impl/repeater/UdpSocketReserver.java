@@ -13,8 +13,7 @@ import java.util.logging.Logger;
 /*- Class Declaration --------------------------------------------------------*/
 
 /**
- * Reserves a UDP socket for a user-specified time interval. This class was
- * created mainly for test purposes.
+ * Test helper class which reserves a UDP socket for a user-specified time interval.
  */
 class UdpSocketReserver
 {
