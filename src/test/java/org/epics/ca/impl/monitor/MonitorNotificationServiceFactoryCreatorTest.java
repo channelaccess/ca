@@ -180,8 +180,7 @@ class MonitorNotificationServiceFactoryCreatorTest
          {
             logger.info( "Creating a service...");
 
-            final MonitorNotificationService<Long> service = factory.getServiceForConsumer(v -> {
-            });
+            final MonitorNotificationService<Long> service = factory.getServiceForConsumer( v -> {} );
             final int numberOfThreadsAfterServiceCreate = Thread.getAllStackTraces().keySet().size();
             logger.info( String.format("The number of threads in the system after service create was: %d", numberOfThreadsAfterServiceCreate));
 
