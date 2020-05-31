@@ -382,11 +382,14 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    {
       if ( !connectIssued.getAndSet (true) )
       {
-         // this has to be submitted immediately
-         initiateSearch ();
+         // BUG FIX: it is important that the future is defined
+         // before initiating the search. This avoids a race condition
+         // which occurs when the JVM is under load/
+         final CompletableFuture<Channel<T>> future = new CompletableFuture<>();
+         connectFuture.set( future );
 
-         CompletableFuture<Channel<T>> future = new CompletableFuture<> ();
-         connectFuture.set (future);
+         initiateSearch();
+
          return future;
       }
       else
