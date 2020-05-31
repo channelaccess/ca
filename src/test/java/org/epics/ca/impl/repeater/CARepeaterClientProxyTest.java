@@ -5,16 +5,16 @@ package org.epics.ca.impl.repeater;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.util.logging.LibraryLogManager;
 import org.epics.ca.util.net.InetAddressUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
+import java.util.logging.Logger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -30,6 +30,9 @@ class CARepeaterClientProxyTest
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
+
+   private static final Logger logger = LibraryLogManager.getLogger( CARepeaterClientProxyTest.class );
+
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
@@ -48,6 +51,13 @@ class CARepeaterClientProxyTest
       assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
    }
 
+   @AfterEach
+   void afterEach()
+   {
+      // After each test clean up the resources associated with any UdpSocketReceiver instances.
+      UdpSocketReceiver.cancel();   
+   }  
+   
    @Test
    void testConstructor_nullArgument_throwsNullPointerException()
    {
@@ -122,19 +132,19 @@ class CARepeaterClientProxyTest
    // -------------------------------------------------------------------------
 
    @Test
-   void integrationTestSendCaVersionMessage() throws SocketException, ExecutionException, InterruptedException
+   void integrationTestSendCaVersionMessage() throws SocketException
    {
-      final UdpReceiver udpReceiver = new UdpReceiver();
-      final Future<DatagramPacket> future = udpReceiver.arm( 3333 );
+      final Future<DatagramPacket> future = UdpSocketReceiver.create( 31245 );
 
-      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 3333 ) ) )
+      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 31245 ) ) )
       {
-           System.out.println( "About to send..." );
+           logger.info( "About to send..." );
            proxy.sendCaVersionMessage();
       }
 
-      System.out.println( "Sent. Waiting for data..." );
-      final DatagramPacket receivePacket = future.get();
+      // Allow a small time window for the data to be received.
+      logger.info( "Sent. Waiting 100ms for data to be received..." );
+      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 100, TimeUnit.MILLISECONDS ) );
 
       // Check the received length is exactly the size of the header.
       assertThat( receivePacket.getLength(), is( CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ) );
@@ -151,19 +161,19 @@ class CARepeaterClientProxyTest
    }
 
    @Test
-   void integrationTestSendCaBeaconMessage() throws SocketException, ExecutionException, InterruptedException, UnknownHostException
+   void integrationTestSendCaBeaconMessage() throws SocketException, UnknownHostException
    {
-      final UdpReceiver udpReceiver = new UdpReceiver();
-      final Future<DatagramPacket> future = udpReceiver.arm( 3333 );
+      final Future<DatagramPacket> future = UdpSocketReceiver.create( 31246 );
 
-      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 3333 ) ) )
+      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 31246 ) ) )
       {
-         System.out.println( "About to send..." );
+         logger.info( "About to send..." );
          proxy.sendCaServerBeaconMessage( (short) 99, (short) 4444, 0x12345678, InetAddress.getByAddress( new byte[] {(byte) 0Xaa, (byte) 0Xbb, (byte) 0Xcc, (byte) 0Xdd } ) );
       }
 
-      System.out.println( "Sent. Waiting for data..." );
-      final DatagramPacket receivePacket = future.get();
+      // Allow a small time window for the data to be received.
+      logger.info( "Sent. Waiting 100ms for data to be received..." );
+      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 100, TimeUnit.MILLISECONDS ) );
 
       // Check the received length is exactly the size of the header.
       assertThat( receivePacket.getLength(), is( CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ) );
@@ -180,19 +190,19 @@ class CARepeaterClientProxyTest
    }
 
    @Test
-   void integrationTestSendRepeaterConfirmMessage() throws SocketException, ExecutionException, InterruptedException
+   void integrationTestSendRepeaterConfirmMessage() throws SocketException
    {
-      final UdpReceiver udpReceiver = new UdpReceiver();
-      final Future<DatagramPacket> future = udpReceiver.arm( 3333 );
+      final Future<DatagramPacket> future = UdpSocketReceiver.create( 31247 );
 
-      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 3333 ) ) )
+      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 31247 ) ) )
       {
-         System.out.println( "About to send..." );
+         logger.info( "About to send..." );
          proxy.sendCaRepeaterConfirmMessage( InetAddress.getLoopbackAddress() );
       }
 
-      System.out.println( "Sent. Waiting for data..." );
-      final DatagramPacket receivePacket = future.get();
+      // Allow a small time window for the data to be received.
+      logger.info( "Sent. Waiting 100ms for data to be received..." );
+      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 100, TimeUnit.MILLISECONDS ) );
 
       // Check the received length is exactly the size of the header.
       assertThat( receivePacket.getLength(), is( CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ) );
@@ -230,48 +240,5 @@ class CARepeaterClientProxyTest
 /*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/
 
-   /**
-    * Utility class to verify UDP data transfer.
-    */
-   private static class UdpReceiver
-   {
-      // The size of the receive buffer needs to be larger than the maximum size of
-      // any message that this receiver will check. For the CA Repeater there are
-      // only three message types to think about and they all fit into the standard
-      // header structure of 16 bytes. The buffer needs to be larger than this so
-      // that we can verify the message size that was sent without worrying that it
-      // may have been truncated.
-      private static final int BUFSIZE = CARepeaterMessage.CA_MESSAGE_HEADER_SIZE + 1;
-
-      @SuppressWarnings( "SameParameterValue" )
-      private Future<DatagramPacket> arm( int port )
-      {
-         System.out.println( "Arming UDP Receiver..." );
-         final ExecutorService executor = Executors.newSingleThreadExecutor();
-         return executor.submit(() -> {
-            final DatagramPacket receivePacket = new DatagramPacket( new byte[ BUFSIZE], BUFSIZE );
-            System.out.println( "Receive thread started" );
-            try( final DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(port, true ) )
-            {
-               try
-               {
-                  System.out.println( "Listening on socket " + listeningSocket.getLocalSocketAddress() );
-                  listeningSocket.receive( receivePacket );
-                  System.out.println( "Received new packet from: " + receivePacket.getSocketAddress());
-               }
-               catch ( Exception ex )
-               {
-                  System.out.println( "Exception thrown !" + ex.getMessage() );
-               }
-               System.out.println( "Receive thread completed" );
-            }
-            catch ( SocketException e )
-            {
-               e.printStackTrace();
-            }
-            return receivePacket;
-         });
-      }
-   }
 }
 
