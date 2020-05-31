@@ -95,15 +95,15 @@ public interface Constants
 
 
    /**
-    * Initial delay in seconds between creation of a new Context and the
+    * Initial delay in milliseconds between creation of a new Context and the
     * first attempt to register with the CA Repeater.
     */
-   int CA_REPEATER_INITIAL_DELAY = 0;
+   int CA_REPEATER_INITIAL_DELAY = 500;
 
    /**
-    * CA Repeater attempted registration interval in seconds.
+    * CA Repeater attempted registration interval in milliseconds.
     */
-    int CA_REPEATER_REGISTRATION_INTERVAL = 60;
+    int CA_REPEATER_REGISTRATION_INTERVAL = 60_000;
 
    /**
     * CA protocol message header size.
