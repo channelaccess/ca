@@ -3,7 +3,11 @@ package org.epics.ca.util.logging;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.apache.commons.lang3.Validate;
+
 import java.util.logging.*;
+
+import static org.epics.ca.Constants.CA_LIBRARY_LOG_LEVEL;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -52,23 +56,25 @@ public class LibraryLogManager
 
    /**
     * Returns a logger for the specified class that will send messages to the
-    * standard output stream providing their log level exceeds the debug
-    * level defined by the CA_DEBUG system property.
+    * standard output stream providing their log level exceeds the level defined 
+    * by the CA_LIBRARY_LOG_LEVEL system property.
     *
-    * When CA_DEBUG is defined and set to anything other than "0" or "false"
-    * ALL debug messages will be supported. Otherwise only messages of level
-    * INFO and above will be emitted.
+    * When CA_LIBRARY_LOG_LEVEL is not defined all messages of Level.INFO and above
+    * will be logged.
     *
-    * @param clazz the class that the logger will be associated with
-    *     when logging messages.
-    *
+    * @param clazz the class that the log messages will be associated with.
     * @return the configured logger.
+    * 
+    * throws NullPointerException if clazz was null.
+    * throws IllegalArgumentException if the string token associated with
+    * CA_DEBUG could not be interpreted as a valid log level.
     */
    public static Logger getLogger( Class<?> clazz)
    {
-      final String debugProperty = System.getProperty( "CA_DEBUG", "false" );
-      final boolean debuggingDisabled = debugProperty.toLowerCase().equals( "false" ) || debugProperty.equals( "0" );
-      final Level logLevel = debuggingDisabled ? Level.INFO : Level.ALL;
+      Validate.notNull( clazz );
+      
+      final String debugProperty = System.getProperty( CA_LIBRARY_LOG_LEVEL, Level.INFO.toString());
+      final Level logLevel = Level.parse( debugProperty );
       return getLogger( clazz, logLevel );
    }
 
