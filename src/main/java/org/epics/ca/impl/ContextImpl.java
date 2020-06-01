@@ -54,9 +54,9 @@ public class ContextImpl implements AutoCloseable, Constants
    private static final Logger logger = LibraryLogManager.getLogger( ContextImpl.class );
 
    /**
-    * Debug level, turns on low-level debugging.
+    * Debug level
     */
-   protected int debugLevel = 0;
+   protected Level debugLevel = Level.INFO;
 
    /**
     * A space-separated list of broadcast address for process variable name resolution.
@@ -252,9 +252,9 @@ public class ContextImpl implements AutoCloseable, Constants
       // Attempt to spawn the CA Repeater if not already running.
       try
       {
-         final boolean caRepeaterDebugEnable = Boolean.parseBoolean( System.getProperty( "CA_REPEATER_DEBUG", "false" ) );
-         final boolean caRepeaterOutputCapture = Boolean.parseBoolean( System.getProperty( "CA_REPEATER_OUTPUT_CAPTURE", "false" ) );
-         CARepeaterStarter.startRepeaterIfNotAlreadyRunning( repeaterPort, caRepeaterDebugEnable, caRepeaterOutputCapture );
+         final Level caRepeaterDebugLevel =  Level.parse( System.getProperty( CA_REPEATER_LOG_LEVEL, Level.INFO.toString() ) );
+         final boolean caRepeaterOutputCapture = Boolean.parseBoolean( System.getProperty( CA_REPEATER_OUTPUT_CAPTURE, "false" ) );
+         CARepeaterStarter.startRepeaterIfNotAlreadyRunning( repeaterPort, caRepeaterDebugLevel, caRepeaterOutputCapture );
       }
       catch ( RuntimeException ex )
       {
@@ -634,35 +634,37 @@ public class ContextImpl implements AutoCloseable, Constants
    protected void loadConfig( Properties properties )
    {
       // dump version
-      logger.log( Level.CONFIG, "Java CA v" + LibraryVersion.getAsString() );
+      logger.config( "Java CA v" + LibraryVersion.getAsString() );
 
       addressList = readStringProperty (properties, Context.Configuration.EPICS_CA_ADDR_LIST.toString (), addressList);
-      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_ADDR_LIST.toString () + ": " + addressList);
+      logger.config( Context.Configuration.EPICS_CA_ADDR_LIST.toString () + ": " + addressList);
 
       autoAddressList = readBooleanProperty (properties, Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString (), autoAddressList);
-      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString () + ": " + autoAddressList);
+      logger.config( Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString () + ": " + autoAddressList);
 
       connectionTimeout = readFloatProperty (properties, Context.Configuration.EPICS_CA_CONN_TMO.toString (), connectionTimeout);
       connectionTimeout = Math.max (0.1f, connectionTimeout);
-      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_CONN_TMO.toString () + ": " + connectionTimeout);
+      logger.config( Context.Configuration.EPICS_CA_CONN_TMO.toString () + ": " + connectionTimeout);
 
       beaconPeriod = readFloatProperty (properties, Context.Configuration.EPICS_CA_BEACON_PERIOD.toString (), beaconPeriod);
       beaconPeriod = Math.max (0.1f, beaconPeriod);
-      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_BEACON_PERIOD.toString () + ": " + beaconPeriod);
+      logger.config( Context.Configuration.EPICS_CA_BEACON_PERIOD.toString () + ": " + beaconPeriod);
 
       repeaterPort = readIntegerProperty (properties, Context.Configuration.EPICS_CA_REPEATER_PORT.toString (), repeaterPort);
-      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_REPEATER_PORT.toString () + ": " + repeaterPort);
+      logger.config( Context.Configuration.EPICS_CA_REPEATER_PORT.toString () + ": " + repeaterPort);
 
       serverPort = readIntegerProperty (properties, Context.Configuration.EPICS_CA_SERVER_PORT.toString (), serverPort);
-      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_SERVER_PORT.toString () + ": " + serverPort);
+      logger.config( Context.Configuration.EPICS_CA_SERVER_PORT.toString () + ": " + serverPort);
 
       maxArrayBytes = readIntegerProperty (properties, Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString (), maxArrayBytes);
       if ( maxArrayBytes > 0 )
-         maxArrayBytes = Math.max (1024, maxArrayBytes);
-      logger.log( Level.CONFIG, Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString () + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
+      {
+         maxArrayBytes = Math.max( 1024, maxArrayBytes );
+      }   
+      logger.config( Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString () + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
 
       monitorNotifierConfigImpl = readStringProperty(properties, CA_MONITOR_NOTIFIER_IMPL, CA_MONITOR_NOTIFIER_DEFAULT_IMPL);
-      logger.log( Level.CONFIG, "CA_MONITOR_NOTIFIER_IMPL: " + monitorNotifierConfigImpl);
+      logger.config("CA_MONITOR_NOTIFIER_IMPL: " + monitorNotifierConfigImpl);
    }
 
    /**
@@ -672,12 +674,8 @@ public class ContextImpl implements AutoCloseable, Constants
     */
    protected void initializeLogger( Properties properties )
    {
-      debugLevel = readIntegerProperty( properties, CA_DEBUG, debugLevel );
-
-      if ( debugLevel > 0 )
-      {
-         logger.setLevel( Level.ALL );
-      }
+      final String debugProperty = readStringProperty( properties, CA_REPEATER_LOG_LEVEL, Level.INFO.toString() );
+      debugLevel = Level.parse( debugProperty );
    }
 
    protected BroadcastTransport initializeUDPTransport()
