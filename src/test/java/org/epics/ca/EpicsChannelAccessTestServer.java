@@ -13,10 +13,11 @@ import gov.aps.jca.dbr.DBR_Int;
 
 import com.cosylab.epics.caj.cas.util.DefaultServerImpl;
 import com.cosylab.epics.caj.cas.util.MemoryProcessVariable;
-import com.cosylab.epics.caj.cas.util.examples.CounterProcessVariable;
 import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +42,7 @@ public class EpicsChannelAccessTestServer
 
    private final ExecutorService executor;
    private final ServerContext context;
+   private final List<ControllableCounterProcessVariable> counterList = new ArrayList<>();
 
 
 /*- Main ---------------------------------------------------------------------*/
@@ -84,6 +86,7 @@ public class EpicsChannelAccessTestServer
 
 /*- Public methods -----------------------------------------------------------*/
 
+   static Thread recordedThread;
    /**
     * Starts the EPICS CA Test Server and returns a reference which will
     * allow it to be shut down in the future.
@@ -115,6 +118,8 @@ public class EpicsChannelAccessTestServer
 
       // Return the reference to the server (which will allow it to be shutdown when required).
       logger.info( "The EPICS Channel Access Test Server was initialised and is running.\n" );
+
+      recordedThread = Thread.currentThread();
       return epicsChannelAccessTestServer;
    }
 
@@ -124,21 +129,16 @@ public class EpicsChannelAccessTestServer
    public void shutdown()
    {
       logger.info( "The EPICS Channel Access Test Server is shutting down..." );
-      try
-      {
-         logger.finer( "Making executor shutdown request." );
-         executor.shutdownNow();
-         logger.finer( "Request submitted." );
-      }
-      catch ( RuntimeException ex )
-      {
-         logger.log( Level.WARNING, "Executor shutdown request generated exception.", ex );
-      }
+
+      // The counters need special attention since they have their own threads
+      // which must be terminated on exit.
+      counterList.forEach( ControllableCounterProcessVariable::shutdown );
+      destroyContextWithoutPropagatingExceptions();
 
       try
       {
          logger.finer( "Waiting for executor termination." );
-         if( executor.awaitTermination(100, TimeUnit.MILLISECONDS ) )
+         if( executor.awaitTermination(10000, TimeUnit.MILLISECONDS ) )
          {
             logger.finer( "Executor terminated OK." );
          }
@@ -174,7 +174,7 @@ public class EpicsChannelAccessTestServer
          try
          {
             // Zero means run and block forever.
-            context.run(0 );
+            context.run( 0 );
          }
          catch( CAException ex )
          {
@@ -182,10 +182,13 @@ public class EpicsChannelAccessTestServer
             logger.log( Level.WARNING, msg, ex );
             throw new RuntimeException( msg, ex );
          }
-         finally
-         {
-            destroyContextWithoutPropagatingExceptions();
-         }
+//         finally
+//         {
+//            destroyContextWithoutPropagatingExceptions();
+//         }
+        logger.info( "Making executor shutdown request." );
+         executor.shutdownNow();
+         logger.info( "Done" );
       } );
    }
 
@@ -290,12 +293,15 @@ public class EpicsChannelAccessTestServer
       server.registerProcessVaribale( enumPV );
 
       // counter PV
-      final CounterProcessVariable counter = new CounterProcessVariable ("100msCounter", null, -10, 10, 1, 100, -7, 7, -9, 9);
-      server.registerProcessVaribale (counter);
+      final ControllableCounterProcessVariable counter = ControllableCounterProcessVariable.start("100msCounter", null, -10, 10, 1, 100, -7, 7, -9, 9);
+      server.registerProcessVaribale( counter );
 
       // fast counter PV
-      final CounterProcessVariable fastCounter = new CounterProcessVariable("1msCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
+      final ControllableCounterProcessVariable fastCounter = ControllableCounterProcessVariable.start( "1msCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
       server.registerProcessVaribale(fastCounter);
+
+      counterList.add( counter );
+      counterList.add( fastCounter );
 
       // simple in-memory 1MB array
       final int[] arrayValue = new int[ 1024 * 1024 ];
