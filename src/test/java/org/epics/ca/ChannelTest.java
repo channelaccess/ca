@@ -5,6 +5,7 @@ package org.epics.ca;
 
 import org.epics.ca.data.*;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
+import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,7 +41,7 @@ class ChannelTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( ChannelTest.class );
-   private static EpicsChannelAccessTestServer server;
+   private static EpicsChannelAccessTestServer channelAccessTestServer;
 
    private static final double DELTA = 1e-10;
    private static final int TIMEOUT_MILLISEC = 5000;
@@ -60,15 +61,17 @@ class ChannelTest
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
 
-      //System.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
-      //System.setProperty( "EPICS_CA_AUTO_ADDR_LIST", "NO" );
+      // One could consider tieing down more precisely the address to which the EPICS Test
+      // Server will get bound. Currently (2020-06-01) this is not necessary.
+      // System.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
+      // System.setProperty( "EPICS_CA_AUTO_ADDR_LIST", "NO" );
       channelAccessTestServer = EpicsChannelAccessTestServer.start();
    }
 
    @AfterEach
    void afterEach()
    {
-      server.shutdown();
+      channelAccessTestServer.shutdown();
    }
 
    @Test
@@ -257,7 +260,12 @@ class ChannelTest
             channel.addConnectionListener(( c, h ) -> logger.info( String.format( "Channel '%s', new connection state is: '%s' ", c.getName(), c.getConnectionState() ) ) );
 
             // Connect to some channel and get the default value (= value on creation) for the test PV
-            channel.connect();
+            assertDoesNotThrow( () -> {
+               logger.info( "connecting async..." );
+               channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
+               logger.info( "connected." );
+            } );
+
             final int defautAdcValue = channel.get();
 
             // Change the PV value to something else, allow the change to propagate
@@ -271,18 +279,9 @@ class ChannelTest
 
             // Destroy the test server which will create a channel disconnection event.
             // Verify that the monitor did not receive a new update
-            server.shutdown();
+            channelAccessTestServer.shutdown();
             Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
             Mockito.verifyNoMoreInteractions( consumer );
-
-            // Now recreate the server and check that the monitor received an update with the default value
-            // for this PV
-            server = EpicsChannelAccessTestServer.start();
-            Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
-            Mockito.verify(consumer, Mockito.times(1)).accept(defautAdcValue);
-
-            // Cleanup the test server
-            server.shutdown();
          }
       }
    }
@@ -346,7 +345,7 @@ class ChannelTest
          {
             try ( Channel<int[]> channel = context.createChannel("large", int[].class) )
             {
-               channel.connect();
+               assertDoesNotThrow( () -> channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS ) );
 
                int[] value = channel.getAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
                assertThat( value, notNullValue()  );
@@ -396,7 +395,7 @@ class ChannelTest
       final Context context = new Context( contextProperties );
 
       final Channel<Integer> channel = context.createChannel ("adc01", Integer.class);
-      channel.connect();
+      assertDoesNotThrow( () -> channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS ) );
       assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ) );
 
       final NotificationConsumer<Integer> notificationConsumer = NotificationConsumer.getNormalConsumer();
@@ -422,7 +421,7 @@ class ChannelTest
       try( final Context context = new Context( contextProperties ) )
       {
          final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
-         channel.connect();
+         assertDoesNotThrow( () -> channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS ) );
 
          assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ));
 
@@ -458,7 +457,7 @@ class ChannelTest
          assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ));
 
          final Channel<Integer> channel = context.createChannel("adc01", Integer.class);
-         channel.connect();
+         assertDoesNotThrow( () -> channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS ) );
 
          assertThat( MonitorNotificationServiceFactoryCreator.getServiceCount(), is( 0L ));
 
@@ -484,13 +483,16 @@ class ChannelTest
 
    @MethodSource( "getArgumentsForTestPutAndGetValue" )
    @ParameterizedTest
-   <T> void testPutAndGetValue( String channelName, Class<T> clazz, T expectedValue, boolean async ) throws Throwable
+   <T> void testPutAndGetValue( String channelName, Class<T> type, T expectedValue, boolean async ) throws Throwable
    {
+      logger.info( "testPutAndGetValue invoked with args: " + String.format( "'%s', '%s', '%s'.", channelName, type.getSimpleName(), async ) );
+
       try ( Context context = new Context() )
       {
-         try ( Channel<T> channel = context.createChannel( channelName, clazz) )
+         try ( Channel<T> channel = context.createChannel( channelName, type) )
          {
-            channel.connect();
+            assertDoesNotThrow( () -> channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS ) );
+
             final T t = channel.get();
 
             if ( async )
@@ -538,7 +540,8 @@ class ChannelTest
          logger.info( "Done. Creating channel...");
          try ( Channel<T> channel = context.createChannel(channelName, type) )
          {
-            channel.connect();
+            logger.info( "Done. connecting channel...");
+            assertDoesNotThrow( () -> channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS ) );
 
             if ( async )
             {
@@ -615,7 +618,7 @@ class ChannelTest
          // put
          try ( Channel<T> channel = context.createChannel( channelName, clazz ) )
          {
-            channel.connect();
+            assertDoesNotThrow( () -> channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS ) );
 
             if ( async )
             {
@@ -703,7 +706,7 @@ class ChannelTest
 
       final List<Boolean> asyncOptions = Arrays.asList( false, true );
       return metaTypeOptions.stream()
-            .flatMap(( metaType) ->
+            .flatMap( (metaType) ->
                 Stream.of( Arguments.of( "adc01", String.class, String.class, "12.346", metaType, alarm, meta, false ),
                            Arguments.of( "adc01", Short.class, Short.class, (short) 123, metaType, alarm, meta, false ),
                            Arguments.of( "adc01", Float.class, Float.class, -123.4f, metaType, alarm, meta, false ),
