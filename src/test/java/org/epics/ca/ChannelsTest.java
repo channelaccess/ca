@@ -3,6 +3,7 @@
 package org.epics.ca;
 
 import org.epics.ca.annotation.CaChannel;
+import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,8 +18,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -40,14 +40,20 @@ class ChannelsTest
 /*- Package-level methods ----------------------------------------------------*/
 
    @BeforeEach
-   void setUp()
+   void beforeEach()
    {
+      // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
+      if ( NetworkUtilities.isVpnActive() )
+      {
+         fail( "This test is not supported when a VPN connection is active on the local network interface." );
+      }
+
       channelAccessTestServer = EpicsChannelAccessTestServer.start();
       context = new Context();
    }
 
    @AfterEach
-   void tearDown()
+   void afterEach()
    {
       logger.info( "Closing context." );
       context.close ();
