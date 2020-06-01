@@ -230,14 +230,20 @@ task udpMessageSniffer( type:JavaExec ) {
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
     classpath fatJarWithTests
-    args '5064'
+    args '5065'
 }
 
 // Run the TargetPlatformTestRunner Program directly from Gradle.
-task runJava( type: JavaExec ) {
+task targetPlatformTestRunner( type: JavaExec ) {
     // Both these properties MUST be asserted when running the tests.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
+
+    systemProperty 'CA_DEBUG', '0'
+    systemProperty 'CA_REPEATER_DEBUG', 'false'
+    systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
+    systemProperty 'CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE', 'true'
+
     main = 'org.epics.ca.TargetPlatformTestRunner'
     classpath fatJarWithTests
     // Notes: Enable the appropriate option below:
@@ -246,9 +252,9 @@ task runJava( type: JavaExec ) {
     // args '-class', <fq_class_name> = run all the tests defined in the class.
     // args '-method', <fq_class_name#method_name> = run the specified test.
 
-    // args '-package', 'org.epics.ca.impl'
+    args '-package', 'org.epics.ca'
     // args '-class', 'org.epics.ca.ChannelTest'
-    args '-method', 'org.epics.ca.ChannelTest#testMonitorDisconnectionBehaviour'
+    // args '-method', 'org.epics.ca.ChannelTest#testMonitorDisconnectionBehaviour'
 
 }
 
@@ -258,8 +264,8 @@ task example( type: JavaExec ) {
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
     systemProperty 'CA_DEBUG', 'false'
-    systemProperty 'CA_REPEATER_DEBUG', 'true'
-    systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'true'
+    systemProperty 'CA_REPEATER_DEBUG', 'false'
+    systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
     systemProperty 'CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE', 'true'
     main = 'org.epics.ca.Example'
     classpath fatJarWithTests
