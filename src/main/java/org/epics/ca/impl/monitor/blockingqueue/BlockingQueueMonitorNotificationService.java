@@ -18,7 +18,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @ThreadSafe
@@ -69,7 +68,6 @@ public class BlockingQueueMonitorNotificationService<T> implements MonitorNotifi
     }
 
 /*- Public methods -----------------------------------------------------------*/
-
 
    /**
     * {@inheritDoc}
@@ -167,7 +165,7 @@ public class BlockingQueueMonitorNotificationService<T> implements MonitorNotifi
    @Override
    public void close()
    {
-
+      logger.finest( "Closing monitor notification service." );
    }
 
 /*- Private methods ----------------------------------------------------------*/
