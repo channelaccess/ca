@@ -130,10 +130,8 @@ class CARepeater
       {
          throw new IllegalStateException( "This CA Repeater instance has already been shutdown." );
       }
-
       shutdownRequest.set( true );
       listeningSocket.close();
-      executorService.shutdown();
    }
 
 /*- Private methods ----------------------------------------------------------*/
@@ -187,6 +185,7 @@ class CARepeater
             logger.log( Level.WARNING, "An exception was thrown whilst waiting for a datagram.", ex );
          }
       }
+      executorService.shutdown();
    }
 
    /**
@@ -438,7 +437,6 @@ class CARepeater
             Thread.currentThread().interrupt();
             throw new Exception(msg, ex);
          }
-
       }
 
       logger.finest( "" );
@@ -469,7 +467,6 @@ class CARepeater
       logger.finest( "The datagram packet is now of length " + newLength + " bytes." );
       return outputPacket;
    }
-
 
 /*- Nested Classes -----------------------------------------------------------*/
 
