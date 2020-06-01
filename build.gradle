@@ -18,8 +18,12 @@ println "The Java version being used for this gradle build is: ${JavaVersion.cur
 
 // Define the coordinates for the build products.
 group = 'org.epics'
-archivesBaseName = 'ca'
 version = '1.3.0'
+
+// Note: currently (2020-06-01) the inspection error flagged up by IntelliJ is incorrect and has been suppressed.
+//noinspection GroovyUnusedAssignment
+archivesBaseName = 'ca'
+
 
 ext.isReleaseVersion = ! version.endsWith( "SNAPSHOT")
 
@@ -28,7 +32,10 @@ ext.isReleaseVersion = ! version.endsWith( "SNAPSHOT")
 // ext.deployPSI = "X" // Don't care about the value just whether its defined or not.
 
 // Define which version of the Java compiler to use.
+// Note: currently (2020-06-01) the inspection errors flagged up by IntelliJ are incorrect and have been suppressed.
+//noinspection GroovyUnusedAssignment
 sourceCompatibility = JavaVersion.VERSION_1_8
+//noinspection GroovyUnusedAssignment
 targetCompatibility = JavaVersion.VERSION_1_8
 
 // Check that the gradle build is been performed on the expected Java platform.
