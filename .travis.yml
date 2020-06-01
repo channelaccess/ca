@@ -23,7 +23,7 @@ dist: bionic
 # Define the required Java support
 language: java
 jdk:
-  - openjdk11
+  - openjdk8
 
 # Cache maven repository to speed up builds.
 cache:
