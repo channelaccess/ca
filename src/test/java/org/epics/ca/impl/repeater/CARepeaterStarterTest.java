@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.net.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,7 +33,7 @@ public class CARepeaterStarterTest
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterStarterTest.class );
    private static final int testPort = 5065;
-   private static final boolean caRepeaterDebugEnable = true;
+   private static final Level caRepeaterDebugLevel = Level.ALL;
    private static final boolean caRepeaterOutputCaptureEnable = false;
 
 /*- Main ---------------------------------------------------------------------*/
@@ -72,7 +73,7 @@ public class CARepeaterStarterTest
    {
       logger.info( "Cleaning up after test..." );
       logger.finest( "Collecting final output..." );
-      Thread.sleep( 1000 );
+      Thread.sleep( 500 );
       logger.finest( "Flushing Streams..." );
       System.out.flush();
       System.err.flush();
@@ -89,28 +90,28 @@ public class CARepeaterStarterTest
    void testStartRepeaterInSeparateJvmProcess() throws Throwable
    {
       logger.info( "Starting CA Repeater in separate process." );
-      final Process process = CARepeaterStarter.startRepeaterInSeparateJvmProcess( testPort, caRepeaterDebugEnable, caRepeaterOutputCaptureEnable );
+      final Process process = CARepeaterStarter.startRepeaterInSeparateJvmProcess( testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable );
       logger.info( "The CA Repeater process was created." );
       logger.info( "Verifying that the CA Repeater process is reported as being alive..." );
       assertThat( process.isAlive(), is( true ) );
       logger.info( "OK" );
-      logger.info( "Waiting a couple of seconds to allow the spawned process time to reserve the listening port..." );
-      Thread.sleep( 2000 );
+      logger.info( "Waiting a moment to allow the spawned process time to reserve the listening port..." );
+      Thread.sleep( 500 );
       logger.info( "Waiting completed." );
       final boolean alreadyTerminated = process.waitFor(1, TimeUnit.SECONDS );
       assertThat( alreadyTerminated, is( false ) );
       logger.info( "Verifying that the CA Repeater process is reported as being alive..." );
       assertThat( process.isAlive(), is( true ) );
       logger.info( "OK" );
-      logger.info( "Letting the CA Repeater run for 2 seconds..." );
-      Thread.sleep( 2000 );
+      logger.info( "Letting the CA Repeater run for a few moments..." );
+      Thread.sleep( 500 );
       logger.info( "Verifying that the CA Repeater is detected as running..." );
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
       logger.info( "OK" );
       logger.info( "Killing the CA Repeater process..." );
       process.destroy();
       logger.info( "Killed !" );
-      Thread.sleep( 1000 );
+      Thread.sleep( 500 );
       logger.info( "Verifying that the CA Repeater process is no longer reported as being alive..." );
       assertThat( process.isAlive(), is( false ) );
       logger.info( "OK" );
@@ -124,10 +125,10 @@ public class CARepeaterStarterTest
    {
       final CARepeater repeater = new CARepeater( testPort );
       repeater.start();
-      Thread.sleep( 1000 );
+      Thread.sleep( 500 );
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
       repeater.shutdown();
-      Thread.sleep( 1000 );
+      Thread.sleep( 500 );
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( false ) );
    }
 
@@ -187,7 +188,7 @@ public class CARepeaterStarterTest
       assertThat( "Test error: The test process did not start.", process.isAlive(), is( true ) );
 
       // Allow some time for the CA Repeater to reserve the socket
-      Thread.sleep( 1000 );
+      Thread.sleep( 500 );
 
       assertThat( "The isRepeaterRunning method failed to detect that the socket was reserved.",
                   CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
