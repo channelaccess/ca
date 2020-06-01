@@ -131,3 +131,7 @@ This log describes the functionality of tagged versions within the repository.
   * [Issue #88](https://github.com/channelaccess/ca/issues/88) Refactor general-purpose network related functions into separate class.
   * [Issue #89](https://github.com/channelaccess/ca/issues/89) Start repeater registration process immediately after CA Repeater
 
+  ###### Test Results:   
+  * MacOsX:
+  * Linux RHEL7:
+  * Windows 10:
