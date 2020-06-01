@@ -124,8 +124,8 @@ test {
     // Both these properties MUST be asserted when running the tests.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
-    systemProperty 'CA_DEBUG', '0'
-    systemProperty 'CA_REPEATER_DEBUG', 'false'
+    systemProperty 'CA_LIBRARY_LOG_LEVEL', 'INFO'
+    systemProperty 'CA_REPEATER_LOG_LEVEL', 'INFO'
     systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
     systemProperty 'CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE', 'true'
     testLogging {
@@ -238,9 +238,8 @@ task targetPlatformTestRunner( type: JavaExec ) {
     // Both these properties MUST be asserted when running the tests.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
-
-    systemProperty 'CA_DEBUG', '0'
-    systemProperty 'CA_REPEATER_DEBUG', 'false'
+    systemProperty 'CA_LIBRARY_LOG_LEVEL', 'INFO'
+    systemProperty 'CA_REPEATER_LOG_LEVEL', 'INFO'
     systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
     systemProperty 'CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE', 'true'
 
@@ -263,8 +262,8 @@ task example( type: JavaExec ) {
     // Both these properties MUST be asserted when running the tests.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
-    systemProperty 'CA_DEBUG', 'false'
-    systemProperty 'CA_REPEATER_DEBUG', 'false'
+    systemProperty 'CA_LIBRARY_LOG_LEVEL', 'INFO'
+    systemProperty 'CA_REPEATER_LOG_LEVEL', 'INFO'
     systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
     systemProperty 'CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE', 'true'
     main = 'org.epics.ca.Example'
