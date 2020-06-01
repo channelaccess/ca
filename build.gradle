@@ -194,6 +194,11 @@ task fatJarWithTests(type: Jar) {
     with testJar
 }
 
+task epicsChannelAccessTestServer( type:JavaExec ) {
+    main = 'org.epics.ca.EpicsChannelAccessTestServer'
+    classpath fatJarWithTests
+}
+
 task udpSocketTester( type:JavaExec ) {
     main = 'org.epics.ca.impl.repeater.UdpSocketTester'
     // Both these properties MUST be asserted when running any of the programs or tests in this project
