@@ -164,6 +164,8 @@ public class DisruptorOldMonitorNotificationService<T> implements MonitorNotific
    @Override
    public void close()
    {
+      logger.finest( "Closing monitor notification service." );
+      
       // TODO: examine whether this implementation is good enough to meet the service guarantee
       // TODO: that all threads should have been destroyed before exit.
 
