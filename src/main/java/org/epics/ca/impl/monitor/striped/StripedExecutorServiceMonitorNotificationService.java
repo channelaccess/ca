@@ -13,7 +13,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 
 import java.util.function.Consumer;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -108,7 +107,10 @@ public class StripedExecutorServiceMonitorNotificationService<T> implements Moni
     * potentially still needed to work with other Consumers.
     */
    @Override
-   public void close() {}
+   public void close()
+   {
+      logger.finest( "Closing monitor notification service." );
+   }
 
 /*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/
