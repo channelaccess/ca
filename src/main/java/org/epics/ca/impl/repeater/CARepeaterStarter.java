@@ -33,10 +33,6 @@ public class CARepeaterStarter
 
    private static final AtomicReference<Process> lastStartedProcess =  new AtomicReference<>();
 
-   public static void shutdownProcessStreamConsumer()
-   {
-
-   }
 
 /*- Main ---------------------------------------------------------------------*/
 
