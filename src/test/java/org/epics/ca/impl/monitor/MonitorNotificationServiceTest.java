@@ -45,7 +45,10 @@ public class MonitorNotificationServiceTest
    @MethodSource( "getMonitorNotificationServiceImplementations" )
    void testGetNotifierForConsumer_ThrowsNullPointerExceptionWhenConsumerNull( String serviceImpl )
    {
-      assertThrows( NullPointerException.class, () -> MonitorNotificationServiceFactoryCreator.create(serviceImpl ).getServiceForConsumer(null ) );
+      try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create( serviceImpl ) )
+      {
+         assertThrows( NullPointerException.class, () -> factory.getServiceForConsumer(null) );
+      }   
    }
 
    @ParameterizedTest
