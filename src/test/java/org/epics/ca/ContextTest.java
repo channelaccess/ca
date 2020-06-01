@@ -199,9 +199,15 @@ class ContextTest
    @Test
    void testRepeaterRegistration() throws InterruptedException
    {
+      System.setProperty( "CA_DEBUG", "0");
+      System.setProperty( "CA_REPEATER_DEBUG", "true");
+      System.setProperty( "CA_REPEATER_OUTPUT_CAPTURE", "true");
+      System.setProperty( "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE", "true");
+
       try ( Context context = new Context() )
       {
-         Thread.sleep( 5000 );
+         // This needs to be longer than the CA_REPEATER_INITIAL_DELAY value of currently 500ms.
+         Thread.sleep( 600 );
       }
    }
 
