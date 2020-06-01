@@ -193,7 +193,7 @@ public class CARepeaterStarter
 
       final List<String> commandLine = Arrays.asList( "java",
                                                       "-cp", classPath,
-                                                      "-DCA_DEBUG=" + debugLevel,
+                                                      "-DCA_LIBRARY_LOG_LEVEL=" + debugLevel,
                                                       "-Djava.net.preferIPv4Stack=true",
                                                       "-Djava.net.preferIPv6Stack=false",
                                                       classWithMainMethod,
