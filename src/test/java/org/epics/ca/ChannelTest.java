@@ -54,9 +54,15 @@ class ChannelTest
    @BeforeEach
    void beforeEach()
    {
-      System.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
-      System.setProperty( "EPICS_CA_AUTO_ADDR_LIST", "NO" );
-      server = EpicsChannelAccessTestServer.start();
+      // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
+      if ( NetworkUtilities.isVpnActive() )
+      {
+         fail( "This test is not supported when a VPN connection is active on the local network interface." );
+      }
+
+      //System.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
+      //System.setProperty( "EPICS_CA_AUTO_ADDR_LIST", "NO" );
+      channelAccessTestServer = EpicsChannelAccessTestServer.start();
    }
 
    @AfterEach
