@@ -11,9 +11,9 @@ public interface Constants
    }
 
    /**
-    * String value of the JVM property key to turn on debugging.
+    * Defines the value of the JVM property key to specify the level of the log messages emitted by the library.
     */
-   String CA_DEBUG = "CA_DEBUG";
+   String CA_LIBRARY_LOG_LEVEL = "CA_LIBRARY_LOG_LEVEL";
 
    /**
     * String value of the JVM property key to strip hostname returned by InetAddress.getLocalHost().getHostName().
@@ -89,11 +89,20 @@ public interface Constants
    int CA_SERVER_PORT = CA_PORT_BASE + 2 * CA_MAJOR_PROTOCOL_REVISION;
 
    /**
+    * Defines the value of the JVM property key to specify the level of the log messages emitted by the CA Repeater.
+    */
+   String CA_REPEATER_LOG_LEVEL = "CA_REPEATER_LOG_LEVEL";
+
+   /**
+    * Defines the value of the JVM property key to specify whether the output of the CA Repeater should be captured.
+    */
+   String CA_REPEATER_OUTPUT_CAPTURE = "CA_REPEATER_OUTPUT_CAPTURE";
+
+   /**
     * Default CA repeater port.
     */
    int CA_REPEATER_PORT = CA_PORT_BASE + 2 * CA_MAJOR_PROTOCOL_REVISION + 1;
-
-
+   
    /**
     * Initial delay in milliseconds between creation of a new Context and the
     * first attempt to register with the CA Repeater.
