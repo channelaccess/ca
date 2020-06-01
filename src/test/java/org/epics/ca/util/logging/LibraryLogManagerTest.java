@@ -31,8 +31,8 @@ class LibraryLogManagerTest
    @Test
    void testGetLogger_withDebugEnabled()
    {
-      System.setProperty( "CA_DEBUG", "1" );
-      final Logger debugLogger = LibraryLogManager.getLogger(LibraryLogManagerTest.class );
+      System.setProperty( "CA_DEBUG", Level.ALL.toString() );
+      final Logger debugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
       debugLogger.finest( "** This log message is at level FINEST **" );
       debugLogger.finer( "** This log message is at level FINER **" );
       debugLogger.fine( "** This log message is at level FINE **" );
@@ -47,7 +47,7 @@ class LibraryLogManagerTest
    @Test
    void testGetLogger_withDebugDisabled()
    {
-      System.setProperty( "CA_DEBUG", "0" );
+      System.setProperty( "CA_DEBUG", Level.OFF.toString() );
       final Logger noDebugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
       noDebugLogger.finest( "** This log message is at level FINEST **" );
       noDebugLogger.finer( "** This log message is at level FINER **" );
@@ -89,9 +89,9 @@ class LibraryLogManagerTest
    }
 
    @RepeatedTest( 3 )
-   void testFinest_performanceWithDebugDisabled()
+   void testFinest_performanceWithDebugFullyDisabled()
    {
-      System.setProperty( "CA_DEBUG", "0" );
+      System.setProperty( "CA_DEBUG", Level.INFO.toString() );
       final Logger noDebugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
       final StopWatch stopWatch = StopWatch.createStarted();
       for ( int i = 0; i < 1_000_000; i++  )
@@ -99,14 +99,14 @@ class LibraryLogManagerTest
          noDebugLogger.finest("** This log message is at level FINEST **");
       }
       final long elapsedTimeInMicroseconds = stopWatch.getTime( TimeUnit.MICROSECONDS );
-      noDebugLogger.info( "Sending 1,000,000 messages to DISABLED debug took " + elapsedTimeInMicroseconds + "us" );
+      noDebugLogger.info( "Sending 1,000,000 messages to DISABLED debug took " + elapsedTimeInMicroseconds + " us" );
       LibraryLogManager.disposeLogger( noDebugLogger );
    }
 
    @RepeatedTest( 3 )
-   void testFinest_performanceWithDebugEnabled()
+   void testFinest_performanceWithDebugFullyEnabled()
    {
-      System.setProperty( "CA_DEBUG", "1" );
+      System.setProperty( "CA_DEBUG", Level.ALL.toString() );
       final Logger debugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
       final StopWatch stopWatch = StopWatch.createStarted();
       for ( int i = 0; i < 1_000; i++  )
@@ -114,7 +114,23 @@ class LibraryLogManagerTest
          debugLogger.finest("** This log message is at level FINEST **");
       }
       final long elapsedTimeInMillis = stopWatch.getTime( TimeUnit.MILLISECONDS );
-      debugLogger.info( "Sending 1,000 messages to ENABLED debug took " + elapsedTimeInMillis + "ms" );
+      debugLogger.info( "Sending 1,000 messages to FULLY ENABLED debug took " + elapsedTimeInMillis + "ms" );
+      LibraryLogManager.disposeLogger( debugLogger );
+   }
+
+   @Test
+   void testFinest_performanceWithDebugPartiallyEnabled()
+   {
+      System.setProperty( "CA_DEBUG", Level.FINER.toString() );
+      final Logger debugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
+      final StopWatch stopWatch = StopWatch.createStarted();
+      for ( int i = 0; i < 1_000; i++  )
+      {
+         debugLogger.finer("** This log message is at level FINER **");
+         debugLogger.finest("** This log message is at level FINEST **");
+      }
+      final long elapsedTimeInMillis = stopWatch.getTime( TimeUnit.MILLISECONDS );
+      debugLogger.info( "Sending 1,000 messages to PARTIALLY ENABLED debug took " + elapsedTimeInMillis + "ms" );
       LibraryLogManager.disposeLogger( debugLogger );
    }
 
