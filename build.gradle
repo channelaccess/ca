@@ -121,6 +121,8 @@ dependencies {
 }
 
 test {
+    println "The test target has been invoked."
+
     // Note: this configuration is automatically used for all gradle-triggered tests.
     useJUnitPlatform()
 
@@ -131,11 +133,12 @@ test {
     systemProperty 'CA_REPEATER_LOG_LEVEL', 'INFO'
     systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
     systemProperty 'CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE', 'true'
+
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
         outputs.upToDateWhen {false}
-        showStandardStreams = true
+        showStandardStreams = false
     }
 }
 
