@@ -281,8 +281,8 @@ artifacts {
 
 jacocoTestReport {
     reports {
-        xml.enabled true
-        html.enabled true
+        xml.enabled (project.properties["covxml"] ? true : false)
+        html.enabled (project.properties["covxml"] ? false : true)
     }
 }
 
