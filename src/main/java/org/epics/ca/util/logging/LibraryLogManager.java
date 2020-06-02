@@ -75,6 +75,7 @@ public class LibraryLogManager
       
       final String debugProperty = System.getProperty( CA_LIBRARY_LOG_LEVEL, Level.INFO.toString());
       final Level logLevel = Level.parse( debugProperty );
+      System.out.println( "Returning logger which will log messages at Level " + logLevel.toString() + " and above"  );
       return getLogger( clazz, logLevel );
    }
 
