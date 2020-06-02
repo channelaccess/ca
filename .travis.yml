@@ -44,7 +44,7 @@ before_script:
 
 script:
   - echo -n "*** LIFECYCLE STARTED - 'script' *************************************************************************"
-  - ./gradlew test -DCA_LIBRARY_LOG_LEVEL=WARNING -DCA_REPEATER_LOG_LEVEL=WARNING -DCA_REPEATER_OUTPUT_CAPTURE=false -DCA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE=true
+  - ./gradlew test
   - echo -n "*** LIFECYCLE COMPLETED - 'script' ***********************************************************************"
 
 # The Travis Lifecycle 'deploy' phase is optional and runs after the Travis Lifecycle 'script' phase has completed.
