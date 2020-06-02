@@ -167,14 +167,14 @@ class MonitorNotificationServiceFactoryCreatorTest
    @ParameterizedTest
    void testServiceImplResourceDisposeBehaviour( String serviceImpl )
    {
-      logger.info( String.format("Testing resource dispose behaviour of service implementation: '%s'", serviceImpl + ",50"));
+      logger.info( String.format( "Testing resource dispose behaviour of service implementation: '%s'", serviceImpl + ",50" ) );
       final int numberOfThreadsBaseline = Thread.getAllStackTraces().keySet().size();
-      logger.info( String.format("The number of baseline threads in the system was: %d", numberOfThreadsBaseline));
+      logger.info( String.format( "The number of baseline threads in the system was: %d", numberOfThreadsBaseline ) );
 
       try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create(serviceImpl + ",50" ) )
       {
          final int numberOfThreadsAfterFactoryCreate = Thread.getAllStackTraces().keySet().size();
-         logger.info( String.format("The number of threads in the system after factory create was: %d", numberOfThreadsAfterFactoryCreate));
+         logger.info( String.format( "The number of threads in the system after factory create was: %d", numberOfThreadsAfterFactoryCreate));
 
          for ( int i = 0; i < 3; i++ )
          {
@@ -182,21 +182,21 @@ class MonitorNotificationServiceFactoryCreatorTest
 
             final MonitorNotificationService<Long> service = factory.getServiceForConsumer( v -> {} );
             final int numberOfThreadsAfterServiceCreate = Thread.getAllStackTraces().keySet().size();
-            logger.info( String.format("The number of threads in the system after service create was: %d", numberOfThreadsAfterServiceCreate));
+            logger.info( String.format( "The number of threads in the system after service create was: %d", numberOfThreadsAfterServiceCreate ) );
 
-            service.publish(123L);
+            service.publish( 123L );
             final int numberOfThreadsAfterServiceFirstPublish = Thread.getAllStackTraces().keySet().size();
-            logger.info( String.format("The number of threads in the system after service first publish was: %d", numberOfThreadsAfterServiceFirstPublish));
+            logger.info( String.format( "The number of threads in the system after service first publish was: %d", numberOfThreadsAfterServiceFirstPublish ) );
 
             service.close();
             final int numberOfThreadsAfterServiceClose = Thread.getAllStackTraces().keySet().size();
-            logger.info( String.format("The number of threads in the system after service close was: %d", numberOfThreadsAfterServiceClose));
+            logger.info( String.format( "The number of threads in the system after service close was: %d", numberOfThreadsAfterServiceClose ) );
          }
       }
       final int numberOfThreadsAfterFactoryClose = Thread.getAllStackTraces().keySet().size();
 
-      logger.info( String.format("The number of threads in the system after factory close was: %d\n", numberOfThreadsAfterFactoryClose));
-      logger.info( String.format("Still running: %s ", Thread.getAllStackTraces().keySet()));
+      logger.info( String.format( "The number of threads in the system after factory close was: %d\n", numberOfThreadsAfterFactoryClose ) );
+      logger.info( String.format( "Still running: %s ", Thread.getAllStackTraces().keySet() ) );
       assertEquals( numberOfThreadsBaseline, numberOfThreadsAfterFactoryClose );
    }
 
