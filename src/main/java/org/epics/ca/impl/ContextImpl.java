@@ -396,7 +396,7 @@ public class ContextImpl implements AutoCloseable, Constants
          if ( transport != null )
          {
             // multiple defined PV or reconnect request (same server address)
-            if ( !transport.getRemoteAddress ().equals (serverAddress) )
+            if ( !transport.getRemoteAddress ().equals( serverAddress) )
             {
                logger.log( Level.INFO,"More than one PVs with name '" + channel.getName () +
                      "' detected, additional response from: " + serverAddress);
