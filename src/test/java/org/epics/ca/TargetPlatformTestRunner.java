@@ -17,6 +17,7 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.epics.ca.Constants.CA_LIBRARY_LOG_LEVEL;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.*;
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -80,7 +81,9 @@ public class TargetPlatformTestRunner
    public TargetPlatformTestRunner()
    {
       this.summaryGeneratingListener = new SummaryGeneratingListener();
-      this.loggingListener = LoggingListener.forJavaUtilLogging( Level.INFO );
+      final String debugProperty = System.getProperty( "TARGET_PLATFORM_TEST_RUNNER_LOG_LEVEL", Level.INFO.toString() );
+      final Level logLevel = Level.parse( debugProperty );
+      this.loggingListener = LoggingListener.forJavaUtilLogging( logLevel );
    }
 
 /*- Public methods -----------------------------------------------------------*/
