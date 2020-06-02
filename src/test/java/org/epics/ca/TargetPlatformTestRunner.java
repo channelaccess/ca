@@ -17,7 +17,6 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.epics.ca.Constants.CA_LIBRARY_LOG_LEVEL;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.*;
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -159,7 +158,7 @@ public class TargetPlatformTestRunner
 
       try
       {
-         logger.info("RUNNING TEST(S)...");
+         logger.info( "RUNNING TEST(S)...");
          launcher.execute( testPlan );
          logger.info( "TEST(S) COMPLETED." );
       }
