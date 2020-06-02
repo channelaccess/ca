@@ -31,8 +31,7 @@ class LibraryLogManagerTest
    @Test
    void testGetLogger_withDebugEnabled()
    {
-      System.setProperty( "CA_DEBUG", Level.ALL.toString() );
-      final Logger debugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
+      final Logger debugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class, Level.ALL );
       debugLogger.finest( "** This log message is at level FINEST **" );
       debugLogger.finer( "** This log message is at level FINER **" );
       debugLogger.fine( "** This log message is at level FINE **" );
@@ -40,15 +39,13 @@ class LibraryLogManagerTest
       debugLogger.info( "** This log message is at level INFO **" );
       debugLogger.warning( "** This log message is at level WARNING **" );
       debugLogger.severe( "** This log message is at level SEVERE **" );
-      System.clearProperty( "CA_DEBUG" );
       LibraryLogManager.disposeLogger( debugLogger );
    }
 
    @Test
    void testGetLogger_withDebugDisabled()
    {
-      System.setProperty( "CA_DEBUG", Level.OFF.toString() );
-      final Logger noDebugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
+      final Logger noDebugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class, Level.OFF );
       noDebugLogger.finest( "** This log message is at level FINEST **" );
       noDebugLogger.finer( "** This log message is at level FINER **" );
       noDebugLogger.fine( "** This log message is at level FINE **" );
@@ -91,8 +88,7 @@ class LibraryLogManagerTest
    @RepeatedTest( 3 )
    void testFinest_performanceWithDebugFullyDisabled()
    {
-      System.setProperty( "CA_DEBUG", Level.INFO.toString() );
-      final Logger noDebugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
+      final Logger noDebugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class, Level.INFO );
       final StopWatch stopWatch = StopWatch.createStarted();
       for ( int i = 0; i < 1_000_000; i++  )
       {
@@ -106,8 +102,7 @@ class LibraryLogManagerTest
    @RepeatedTest( 3 )
    void testFinest_performanceWithDebugFullyEnabled()
    {
-      System.setProperty( "CA_DEBUG", Level.ALL.toString() );
-      final Logger debugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
+      final Logger debugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class, Level.ALL );
       final StopWatch stopWatch = StopWatch.createStarted();
       for ( int i = 0; i < 1_000; i++  )
       {
@@ -121,8 +116,7 @@ class LibraryLogManagerTest
    @Test
    void testFinest_performanceWithDebugPartiallyEnabled()
    {
-      System.setProperty( "CA_DEBUG", Level.FINER.toString() );
-      final Logger debugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class );
+      final Logger debugLogger = LibraryLogManager.getLogger( LibraryLogManagerTest.class, Level.FINER);
       final StopWatch stopWatch = StopWatch.createStarted();
       for ( int i = 0; i < 1_000; i++  )
       {
