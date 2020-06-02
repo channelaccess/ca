@@ -133,7 +133,7 @@ class CARepeaterTest
       //  a new client. We then flip the socket into receive mode and check that
       // the socket receives a repeater confirm message.
       // SocketException -->
-      try( DatagramSocket testSocket = UdpSocketUtilities.createEphemeralSendSocket(true ) )
+      try ( DatagramSocket testSocket = UdpSocketUtilities.createEphemeralSendSocket(true ) )
       {
          // Create a datagram packet containing a REPEATER_REGISTER message
          // UnknownHostException -->
