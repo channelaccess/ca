@@ -604,7 +604,6 @@ class ChannelTest
                assertThat( ((Number) v.getUpperControl()).doubleValue(), closeTo(expectedMeta.getUpperControl(), DELTA ) );
             }
             assertThat( value.getValue(), is( expectedValue ) );
-
          }
       }
    }
