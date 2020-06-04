@@ -140,7 +140,7 @@ class UdpSocketUtilitiesTest
    {
       // Note: a port value of zero means the "ephemeral port": some high value port
       // allocated by the operating system.
-      final InetSocketAddress ephemeralAddress = new InetSocketAddress(0);
+      final InetSocketAddress ephemeralAddress = new InetSocketAddress(0 );
       assertThat(ephemeralAddress.toString(), is("0.0.0.0/0.0.0.0:0"));
       assertThat(ephemeralAddress.isUnresolved(), is(false));
       assertThat(ephemeralAddress.getPort(), is(0));
@@ -155,7 +155,7 @@ class UdpSocketUtilitiesTest
    {
       // Note: an empty hostname String gets resolved to the loopback address also known
       // as the 'localhost'.
-      final InetSocketAddress emptyHostnameAddress = new InetSocketAddress("", 1234);
+      final InetSocketAddress emptyHostnameAddress = new InetSocketAddress("", 1234 );
       assertThat(emptyHostnameAddress.toString(), is("localhost/127.0.0.1:1234"));
       assertThat(emptyHostnameAddress.isUnresolved(), is(false));
       assertThat(emptyHostnameAddress.getPort(), is(1234));
@@ -169,7 +169,7 @@ class UdpSocketUtilitiesTest
    void testInetSocketAddresss_constructor_withHostnameStringSetToLocalhost()
    {
       // Note: an hostname set to 'localhost' gets resolved to the loopback address.
-      final InetSocketAddress loopbackAddress = new InetSocketAddress("localhost", 1234);
+      final InetSocketAddress loopbackAddress = new InetSocketAddress("localhost", 1234 );
       assertThat(loopbackAddress.toString(), is("localhost/127.0.0.1:1234"));
       assertThat(loopbackAddress.isUnresolved(), is(false));
       assertThat(loopbackAddress.getPort(), is(1234));
@@ -183,7 +183,7 @@ class UdpSocketUtilitiesTest
    void testInetSocketAddresss_constructor_withHostnameStringSetToResolvableHost() throws UnknownHostException
    {
       // Note: an hostname set to 'psi.ch' gets resolved to PSI's IP address
-      final InetSocketAddress resolvableHostAddress = new InetSocketAddress("psi.ch", 1234);
+      final InetSocketAddress resolvableHostAddress = new InetSocketAddress("psi.ch", 1234 );
       assertThat(resolvableHostAddress.isUnresolved(), is(false));
       assertThat(resolvableHostAddress.toString(), is("psi.ch/192.33.120.32:1234"));
       assertThat(resolvableHostAddress.getPort(), is(1234));
@@ -198,7 +198,7 @@ class UdpSocketUtilitiesTest
    {
       // Note: If the InetAddress parameter is set to null then this explicitly
       // selects the  wildcard address.
-      final InetSocketAddress nullHostAddress = new InetSocketAddress((InetAddress) null, 1234);
+      final InetSocketAddress nullHostAddress = new InetSocketAddress( (InetAddress) null, 1234 );
       assertThat(nullHostAddress.toString(), is("0.0.0.0/0.0.0.0:1234"));
       assertThat(nullHostAddress.isUnresolved(), is(false));
       assertThat(nullHostAddress.getPort(), is(1234));
@@ -213,7 +213,7 @@ class UdpSocketUtilitiesTest
    {
       // Note: If the InetAddress parameter is set to null then this explicitly
       // selects the  wildcard address.
-      final InetSocketAddress unresolvableHostAddress = InetSocketAddress.createUnresolved("somehost", 1234);
+      final InetSocketAddress unresolvableHostAddress = InetSocketAddress.createUnresolved("somehost", 1234 );
       assertThat(unresolvableHostAddress.toString(), is("somehost:1234"));
       assertThat(unresolvableHostAddress.isUnresolved(), is(true));
       assertThat(unresolvableHostAddress.getPort(), is(1234));
@@ -285,18 +285,18 @@ class UdpSocketUtilitiesTest
    @Test
    void testIsSocketAvailable_noSocketsCreated_returnsTrue()
    {
-      final InetSocketAddress wildcardAddress = new InetSocketAddress(11111 );
+      final InetSocketAddress wildcardAddress = new InetSocketAddress( 11111 );
       assertThat(UdpSocketUtilities.isSocketAvailable (wildcardAddress), is(true ) );
    }
 
-   @RepeatedTest( 1000 )
+   @RepeatedTest( 100 )
    void testIsSocketAvailable_MultipleOpenAndClose() throws SocketException
    {
-      final InetSocketAddress wildcardAddress = new InetSocketAddress(11111);
-      assertThat(UdpSocketUtilities.isSocketAvailable(wildcardAddress), is(true));
-      try ( DatagramSocket dummy = UdpSocketUtilities.createBroadcastAwareListeningSocket(11111, true) )
+      final InetSocketAddress wildcardAddress = new InetSocketAddress( 11111 );
+      assertThat(UdpSocketUtilities.isSocketAvailable(wildcardAddress), is(true ) );
+      try ( DatagramSocket dummy = UdpSocketUtilities.createBroadcastAwareListeningSocket( 11111, true ) )
       {
-         assertThat(UdpSocketUtilities.isSocketAvailable(wildcardAddress), is(false));
+         assertThat( UdpSocketUtilities.isSocketAvailable(wildcardAddress), is(false ) );
       }
    }
 
@@ -337,39 +337,39 @@ class UdpSocketUtilitiesTest
 
       // Create a broadcast-aware socket in the current JVM and check that it is correctly detected as unavailable.
       final InetSocketAddress wildcardSocketAddress = new InetSocketAddress( testPort );
-      try( DatagramSocket socketInUse = UdpSocketUtilities.createBroadcastAwareListeningSocket(testPort, true ) )
+      try( DatagramSocket socketInUse = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
       {
-         assertThat(UdpSocketUtilities.isSocketAvailable(wildcardSocketAddress ), is(false ) );
+         assertThat( UdpSocketUtilities.isSocketAvailable(wildcardSocketAddress ), is(false ) );
       }
 
       // Check that after the socket has autoclosed the socket is once again available
-      assertThat(UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(true ) );
+      assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(true ) );
 
       // Spawn a test that will occupy the test socket for 5 seconds.
       final String classPath =  System.getProperty( "java.class.path", "<java.class.path not found>" );
       final String classWithMainMethod =  UdpSocketReserver.class.getName();
-      final String wildcarAddress ="0.0.0.0";
-      final int testTimeInMilliseconds = 2000;
+      final String wildcardAddress ="0.0.0.0";
+      final int socketReserveTimeInMilliseconds = 3000;
       final List<String> commandLine = Arrays.asList( "java", "-cp", classPath,
                                                       "-Djava.net.preferIPv4Stack=true",
                                                       "-Djava.net.preferIPv6Stack=false",
                                                       classWithMainMethod,
-                                                      wildcarAddress,
+                                                      wildcardAddress,
                                                       String.valueOf( testPort ),
-                                                      String.valueOf( testTimeInMilliseconds ) );
-      final Process process = new ProcessBuilder().command( commandLine ).inheritIO().start();
+                                                      String.valueOf( socketReserveTimeInMilliseconds ) );
+      final Process process = new ProcessBuilder().command( commandLine ).start();
 
       // After only one second check that the socket is no longer available.
       ProcessStreamConsumer.consumeFrom( process );
       assertThat( process.isAlive(), is( true ) );
-      process.waitFor( 1, TimeUnit.SECONDS );
+      process.waitFor( 2000, TimeUnit.MILLISECONDS );
       assertThat( process.isAlive(), is( true ) );
       assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(false ) );
 
       // Wait for the process to die and check that the socket has become available again
       process.waitFor();
       assertThat( process.exitValue(), is( 0 ) );
-      assertThat(UdpSocketUtilities.isSocketAvailable(wildcardSocketAddress ), is(true ) );
+      assertThat( UdpSocketUtilities.isSocketAvailable(wildcardSocketAddress ), is(true ) );
    }
 
    @ValueSource( booleans = { false, true } )
@@ -605,7 +605,7 @@ class UdpSocketUtilitiesTest
       int maxDatagramLength = bufferSize;
       try ( DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket(true ) )
       {
-         for ( int i = 0; i < bufferSize; i = i + 100 )
+         for ( int i = 0; i < bufferSize; i = i + 1000 )
          {
             packet.setLength( i );
             sendSocket.send( packet );
