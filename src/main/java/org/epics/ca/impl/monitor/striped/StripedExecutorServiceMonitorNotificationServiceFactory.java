@@ -14,7 +14,6 @@ import org.epics.ca.util.logging.LibraryLogManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -42,7 +41,7 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
     * on a StripedExecutorService, multiple notification threads and an unbounded
     * value notification buffer.
     *
-    * @param numberOfThreads the number of threads that for the StripedExecutorService.
+    * @param numberOfThreads the number of threads for the StripedExecutorService.
     */
    public StripedExecutorServiceMonitorNotificationServiceFactory( int numberOfThreads )
    {
@@ -50,7 +49,7 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
       this.numberOfThreads = numberOfThreads;
 
       final int numberOfThreadsBaseline = Thread.getAllStackTraces().keySet().size();
-      logger.finest( String.format("The number of baseline threads in the system is: %d", numberOfThreadsBaseline));
+      logger.finest( String.format( "The number of baseline threads in the system is: %d", numberOfThreadsBaseline ) );
       logger.info( String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory is being created with %d threads and an unlimited notification entry buffer size...", numberOfThreads ) );
       stripedExecutorService = new StripedExecutorService( numberOfThreads );
    }
