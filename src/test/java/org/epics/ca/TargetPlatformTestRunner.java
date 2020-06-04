@@ -105,11 +105,11 @@ public class TargetPlatformTestRunner
       System.out.println( "[2] Run all the tests in the package named 'repeater'." );
       System.out.println( "java -cp ca-1.2.3-all-with-tests.jar org.epics.ca.TargetPlatformTestRunner -package org.epics.ca.impl.repeater\n" );
       System.out.println( "\n" );
-      System.out.println( "[3] Run all the tests in the class named 'org.epics.ca.impl.repeater.SocketUtilitiesTest'." );
-      System.out.println( "java -cp ca-1.2.3-all-with-tests.jar -class org.epics.ca.impl.repeater.SocketUtilitiesTest\n" );
+      System.out.println( "[3] Run all the tests in the class named 'org.epics.ca.impl.repeater.UdpSocketUtilitiesTest'." );
+      System.out.println( "java -cp ca-1.2.3-all-with-tests.jar -class org.epics.ca.impl.repeater.UdpSocketUtilitiesTest\n" );
       System.out.println( "\n" );
-      System.out.println( "[4] Run the test with the method named 'org.epics.ca.impl.repeater.SocketUtilitiesTest#integrationTestDataTransfer'." );
-      System.out.println( "java -cp ca-1.2.3-all-with-tests.jar org.epics.ca.TargetPlatformTestRunner -method org.epics.ca.impl.repeater.SocketUtilitiesTest#integrationTestDataTransfer\n" );
+      System.out.println( "[4] Run the test with the method named 'org.epics.ca.impl.repeater.UdpSocketUtilitiesTest#integrationTestDataTransfer'." );
+      System.out.println( "java -cp ca-1.2.3-all-with-tests.jar org.epics.ca.TargetPlatformTestRunner -method org.epics.ca.impl.repeater.UdpSocketUtilitiesTest#integrationTestDataTransfer\n" );
       System.out.println( "\n" );
       System.exit( 0 );
    }
