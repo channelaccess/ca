@@ -48,6 +48,12 @@ public class CARepeaterStarterTest
       // of the CARepeaterStarterTest class if the network stack is not appropriately
       // configured for channel access.
       assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
+
+      // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
+      if ( NetworkUtilities.isVpnActive() )
+      {
+         fail( "This test is not supported when a VPN connection is active on the local network interface." );
+      }
    }
 
    @BeforeEach
@@ -96,7 +102,7 @@ public class CARepeaterStarterTest
       assertThat( process.isAlive(), is( true ) );
       logger.info( "OK" );
       logger.info( "Waiting a moment to allow the spawned process time to reserve the listening port..." );
-      Thread.sleep( 500 );
+      Thread.sleep( 1500 );
       logger.info( "Waiting completed." );
       final boolean alreadyTerminated = process.waitFor(1, TimeUnit.SECONDS );
       assertThat( alreadyTerminated, is( false ) );
@@ -104,14 +110,14 @@ public class CARepeaterStarterTest
       assertThat( process.isAlive(), is( true ) );
       logger.info( "OK" );
       logger.info( "Letting the CA Repeater run for a few moments..." );
-      Thread.sleep( 500 );
+      Thread.sleep( 1500 );
       logger.info( "Verifying that the CA Repeater is detected as running..." );
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
       logger.info( "OK" );
       logger.info( "Killing the CA Repeater process..." );
       process.destroy();
       logger.info( "Killed !" );
-      Thread.sleep( 500 );
+      Thread.sleep( 1500 );
       logger.info( "Verifying that the CA Repeater process is no longer reported as being alive..." );
       assertThat( process.isAlive(), is( false ) );
       logger.info( "OK" );
@@ -125,10 +131,10 @@ public class CARepeaterStarterTest
    {
       final CARepeater repeater = new CARepeater( testPort );
       repeater.start();
-      Thread.sleep( 500 );
+      Thread.sleep( 1500 );
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
       repeater.shutdown();
-      Thread.sleep( 500 );
+      Thread.sleep( 1500 );
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( false ) );
    }
 
@@ -174,7 +180,7 @@ public class CARepeaterStarterTest
       final String classPath=  System.getProperty( "java.class.path", "<java.class.path not found>" );
       final String classWithMainMethod =  UdpSocketReserver.class.getName();
       final String portToReserve = "5065";
-      final String reserveTimeInMillis = "1000";
+      final String reserveTimeInMillis = "3000";
       final Process process = new ProcessBuilder().command( "java",
                                                             "-cp",
                                                             classPath,
@@ -188,7 +194,7 @@ public class CARepeaterStarterTest
       assertThat( "Test error: The test process did not start.", process.isAlive(), is( true ) );
 
       // Allow some time for the CA Repeater to reserve the socket
-      Thread.sleep( 500 );
+      Thread.sleep( 1500 );
 
       assertThat( "The isRepeaterRunning method failed to detect that the socket was reserved.",
                   CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
