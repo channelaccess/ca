@@ -165,7 +165,7 @@ public class BlockingQueueMonitorNotificationService<T> implements MonitorNotifi
    @Override
    public void close()
    {
-      logger.finest( "Closing monitor notification service." );
+      logger.finest( "Closing monitor notification service for consumer." );
    }
 
 /*- Private methods ----------------------------------------------------------*/
