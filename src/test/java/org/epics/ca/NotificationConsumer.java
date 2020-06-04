@@ -215,7 +215,6 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
       currentTotalNotificationCount.incrementAndGet();
 
       // If the expected notification value is seen open the gate
-
       if ( ( expectedNotificationValueDetectionLatch != null ) && ( newValue.equals( expectedNotificationValue.get() )  ) )
       {
          expectedNotificationValueDetectionLatch.countDown();
