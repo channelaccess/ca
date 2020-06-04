@@ -38,7 +38,7 @@ class UdpSocketReserver
       final int port = Integer.parseInt( args[ 1 ] );
       final long sleepTimeInMillis = Integer.parseInt( args[ 2 ] );
 
-      logger.info( "Reserving socket: '" + inetAddress + ":" + port + "'." );
+      logger.info( "Reserving socket: '" + inetAddress + ":" + port + "' for '" + sleepTimeInMillis + "' milliseconds." );
 
       try ( DatagramSocket listeningSocket = new DatagramSocket(null ) )
       {
