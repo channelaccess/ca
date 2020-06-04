@@ -48,43 +48,51 @@ class ChannelsTest
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
 
+      // Start up the test server.
       channelAccessTestServer = EpicsChannelAccessTestServer.start();
+      
+      // Start up the context which should start up a repeater instance which will receive beacons
+      // from the test server.
       context = new Context();
    }
 
    @AfterEach
    void afterEach()
    {
-      logger.info( "Closing context." );
-      context.close ();
+      // Shutdown the test server. Should stop it emitting beacons etc.
       logger.info( "Shutting down EPICSChannelAccessTestServer." );
       channelAccessTestServer.shutdown();
+      
+      // Shut down the context.
+      logger.info( "Closing context." );
+      context.close ();
    }
 
    @Test
-   void testWait()
+   void testWaitForValue()
    {
-      try ( Channel<Integer> channel1 = context.createChannel ("simple", Integer.class) )
+      try ( final Channel<Integer> channel = context.createChannel ("simple", Integer.class) )
       {
-         channel1.connect ();
-         channel1.put (0);
+         channel.connect();
+         channel.put( 0 );
 
          final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-         try ( Channel<Integer> channel = context.createChannel ("simple", Integer.class) )
+         try ( Channel<Integer> channelAlias = context.createChannel ("simple", Integer.class) )
          {
-            channel.connect ();
+            channelAlias.connect();
 
             executorService.schedule( () -> {
-               channel1.put (12);
+               channel.put( 12 );
                logger.info("Value set to 12");
             }, 2, TimeUnit.SECONDS);
-            long start = System.currentTimeMillis();
-            Channels.waitForValue (channel, 12);
-            long end = System.currentTimeMillis ();
+            
+            final long start = System.currentTimeMillis();
+            Channels.waitForValue( channelAlias, 12 );
+            final long end = System.currentTimeMillis ();
             logger.info("value reached within " + (end - start));
-            long time = end - start;
+            final long elapsedTime = end - start;
             // Check whether the time waited was approximately 2 seconds
-            assertTrue (time > 1900 && time < 2100);
+            assertTrue( elapsedTime > 1900 && elapsedTime < 2100 );
          }
          finally
          {
@@ -94,13 +102,13 @@ class ChannelsTest
    }
 
    @Test
-   void testCreateChannels()
+   void testCreateChannelsWithDescriptors()
    {
-      List<ChannelDescriptor<?>> descriptors = new ArrayList<> ();
-      descriptors.add (new ChannelDescriptor<> ("simple", String.class));
-      descriptors.add (new ChannelDescriptor<> ("adc01", Double.class));
-      List<Channel<?>> channels = Channels.create (context, descriptors);
-      assertEquals (2, channels.size () );
+      final List<ChannelDescriptor<?>> descriptors = new ArrayList<>();
+      descriptors.add( new ChannelDescriptor<>( "simple", String.class ) );
+      descriptors.add( new ChannelDescriptor<>( "adc01", Double.class ) );
+      final List<Channel<?>> channels = Channels.create( context, descriptors );
+      assertEquals( 2, channels.size () );
    }
 
    @Test
@@ -124,16 +132,16 @@ class ChannelsTest
    @Test
    void testAnnotationsMacro()
    {
-      Map<String, String> macros = new HashMap<> ();
-      macros.put ("MACRO1", "01");
-      AnnotatedClassMacros object = new AnnotatedClassMacros ();
+      final Map<String, String> macros = new HashMap<>();
+      macros.put( "MACRO1", "01");
+      final AnnotatedClassMacros object = new AnnotatedClassMacros ();
       Channels.create (context, object, macros);
 
       object.getDoubleChannel ().get ();
       assertEquals (ConnectionState.CONNECTED, object.getDoubleChannel ().getConnectionState ());
 
       // Close annotated channels
-      Channel<Double> channel = object.getDoubleChannel (); // we have to buffer the channel object as the close will null the objects attribute
+      final Channel<Double> channel = object.getDoubleChannel (); // we have to buffer the channel object as the close will null the objects attribute
       Channels.close (object);
 
       assertEquals (ConnectionState.CLOSED, channel.getConnectionState ());
