@@ -151,7 +151,7 @@ class CARepeaterTest
          // Send the request and wait a limited time for any reply
          // IOException -->
          testSocket.send( requestPacket );
-         assertTimeoutPreemptively( Duration.of(1, SECONDS ), () -> testSocket.receive( replyPacket) );
+         assertTimeoutPreemptively( Duration.of( 1, SECONDS ), () -> testSocket.receive( replyPacket ) );
 
          // Check that the reply was a REPEATER_CONFIRM message
          assertThat( replyPacket.getLength(), is(16 ) );
