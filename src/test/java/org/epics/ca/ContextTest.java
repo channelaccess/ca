@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -29,6 +30,8 @@ class ContextTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( ContextTest.class );
+   private ThreadWatcher threadWatcher;
+   
    private static final String TEST_CHANNEL_NAME = "test01";
 
 /*- Main ---------------------------------------------------------------------*/
@@ -39,13 +42,21 @@ class ContextTest
    @BeforeEach()
    void beforeEach()
    {
+      threadWatcher = ThreadWatcher.start();
+      
       // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
       if ( NetworkUtilities.isVpnActive() )
       {
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
    }
-
+   
+   @AfterEach()
+   void afterEach()
+   {
+      threadWatcher.verify();
+   }
+   
    @Test
    void testConstructor_withNoProperties_doesNotThrow()
    {
@@ -168,13 +179,13 @@ class ContextTest
    }
 
    @Test
-   void testClose()
+   void testOperationsOnClosedContext()
    {
-      final Context context = new Context ();
-      context.close ();
+      final Context context = new Context();
+      context.close();
 
       // duplicate close() is OK
-      context.close ();
+      context.close();
 
       try
       {
