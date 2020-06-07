@@ -3,6 +3,7 @@
 package org.epics.ca;
 
 import org.epics.ca.annotation.CaChannel;
+import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
@@ -30,9 +31,10 @@ class ChannelsTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( ChannelsTest.class );
-
+   private ThreadWatcher threadWatcher;
+   
    private Context context;
-   private EpicsChannelAccessTestServer channelAccessTestServer;
+   private JavaProcessManager processManager;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -42,6 +44,8 @@ class ChannelsTest
    @BeforeEach
    void beforeEach()
    {
+      threadWatcher = ThreadWatcher.start();
+      
       // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
       if ( NetworkUtilities.isVpnActive() )
       {
@@ -49,7 +53,7 @@ class ChannelsTest
       }
 
       // Start up the test server.
-      channelAccessTestServer = EpicsChannelAccessTestServer.start();
+      processManager = EpicsChannelAccessTestServer.start();
       
       // Start up the context which should start up a repeater instance which will receive beacons
       // from the test server.
@@ -61,11 +65,13 @@ class ChannelsTest
    {
       // Shutdown the test server. Should stop it emitting beacons etc.
       logger.info( "Shutting down EPICSChannelAccessTestServer." );
-      channelAccessTestServer.shutdown();
+      processManager.shutdown();
       
       // Shut down the context.
       logger.info( "Closing context." );
       context.close ();
+      
+      threadWatcher.verify();
    }
 
    @Test
