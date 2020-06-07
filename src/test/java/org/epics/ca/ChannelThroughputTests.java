@@ -4,6 +4,7 @@ package org.epics.ca;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
@@ -31,7 +32,9 @@ class ChannelThroughputTests
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( ChannelThroughputTests.class );
-   private EpicsChannelAccessTestServer channelAccessTestServer;
+   private ThreadWatcher threadWatcher;
+   
+   private JavaProcessManager processManager;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -40,19 +43,22 @@ class ChannelThroughputTests
    @BeforeEach
    void beforeEach()
    {
+      threadWatcher = ThreadWatcher.start();
+      
       // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
       if ( NetworkUtilities.isVpnActive() )
       {
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
 
-      channelAccessTestServer = EpicsChannelAccessTestServer.start();
+      processManager = EpicsChannelAccessTestServer.start();
    }
 
    @AfterEach
    void afterEach()
    {
-      channelAccessTestServer.shutdown();
+      processManager.shutdown();
+      threadWatcher.verify();
    }
 
    /**
