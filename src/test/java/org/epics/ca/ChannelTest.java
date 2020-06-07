@@ -4,6 +4,7 @@ package org.epics.ca;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.epics.ca.data.*;
+import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
@@ -41,10 +42,12 @@ class ChannelTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( ChannelTest.class );
-   private static EpicsChannelAccessTestServer channelAccessTestServer;
+   private ThreadWatcher threadWatcher;
+   
+   private static JavaProcessManager processManager;
 
    private static final double DELTA = 1e-10;
-   private static final int TIMEOUT_MILLISEC = 5000;
+   private static final int TIMEOUT_MILLISEC = 10000;
    private static final int TEST_SLEEP_INTERVAL_MILLISEC = 500;
 
 /*- Main ---------------------------------------------------------------------*/
@@ -55,6 +58,8 @@ class ChannelTest
    @BeforeEach
    void beforeEach()
    {
+      threadWatcher = ThreadWatcher.start();
+
       // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
       if ( NetworkUtilities.isVpnActive() )
       {
@@ -65,13 +70,14 @@ class ChannelTest
       // Server will get bound. Currently (2020-06-01) this is not necessary.
       // System.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
       // System.setProperty( "EPICS_CA_AUTO_ADDR_LIST", "NO" );
-      channelAccessTestServer = EpicsChannelAccessTestServer.start();
+      processManager = EpicsChannelAccessTestServer.start();
    }
 
    @AfterEach
    void afterEach()
    {
-      channelAccessTestServer.shutdown();
+      processManager.shutdown();
+      threadWatcher.verify();
    }
 
    @Test
@@ -245,7 +251,6 @@ class ChannelTest
    // Note: this definition exists only to workaround the Mockito uncast warning in the test below
    interface GenericIntegerConsumer extends Consumer<Integer> {}
 
-
    @MethodSource( "getArgumentsForMonitorNotificationServiceImplementations" )
    @ParameterizedTest
    void testMonitorDisconnectionBehaviour( String serviceImpl ) throws InterruptedException
@@ -279,7 +284,7 @@ class ChannelTest
 
             // Destroy the test server which will create a channel disconnection event.
             // Verify that the monitor did not receive a new update
-            channelAccessTestServer.shutdown();
+            processManager.shutdown();
             Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
             Mockito.verifyNoMoreInteractions( consumer );
          }
@@ -320,15 +325,15 @@ class ChannelTest
                assertNotNull(monitor);
             }
 
-            final AtomicInteger monitorCount = new AtomicInteger();
-            final Monitor<Integer> monitor = channel.addValueMonitor( (value) -> monitorCount.incrementAndGet(), Monitor.VALUE_MASK);
+            final AtomicInteger monitorNotificationCount = new AtomicInteger();
+            final Monitor<Integer> monitor = channel.addValueMonitor( (value) -> monitorNotificationCount.incrementAndGet(), Monitor.VALUE_MASK);
             assertNotNull( monitor );
-            Thread.sleep( 1000 );
+            Thread.sleep( 5000 );
             monitor.close();
-            final int monitors = monitorCount.get();
-            assertThat( monitorCount.get(), greaterThanOrEqualTo( 10 ) );
+            final int monitorNotifications = monitorNotificationCount.get();
+            assertThat( monitorNotificationCount.get(), greaterThanOrEqualTo( 48 ) );
             Thread.sleep( 1000 );
-            assertThat( monitorCount.get(), is( monitors ));
+            assertThat( monitorNotificationCount.get(), is( monitorNotifications ));
          }
       }
    }
@@ -336,49 +341,31 @@ class ChannelTest
    @Test
    void testLargeArray() throws Throwable
    {
-      final String propName = com.cosylab.epics.caj.cas.CAJServerContext.class.getName () + ".max_array_bytes";
-      final String oldValue = System.getProperty( propName );
-      System.setProperty (propName, String.valueOf( 4 * 1024 * 1024 + 1024 + 32 ) );
       try ( Context context = new Context() )
       {
-         try
+         try ( Channel<int[]> channel = context.createChannel("large", int[].class) )
          {
-            try ( Channel<int[]> channel = context.createChannel("large", int[].class) )
+            assertDoesNotThrow( () -> channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS ) );
+
+            int[] value = channel.getAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
+            assertThat( value, notNullValue()  );
+
+            final int LARGE_PRIME = 15485863;
+            for ( int i = 0; i < value.length; i++ )
             {
-               assertDoesNotThrow( () -> channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS ) );
-
-               int[] value = channel.getAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
-               assertThat( value, notNullValue()  );
-
-               final int LARGE_PRIME = 15485863;
-               for ( int i = 0; i < value.length; i++ )
-               {
-                  assertThat( value[ i ], is( i ) );
-                  value[ i ] += LARGE_PRIME;
-               }
-
-               final Status putStatus = channel.putAsync(value).get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS);
-               assertThat( putStatus, is( Status.NORMAL) );
-
-               value = channel.getAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS);
-               assertThat( channel, notNullValue() );
-
-               for ( int i = 0; i < value.length; i++ )
-               {
-                  assertThat(value[ i ], is(i + LARGE_PRIME));
-               }
+               assertThat( value[ i ], is( i ) );
+               value[ i ] += LARGE_PRIME;
             }
-         }
-         finally
-         {
-            // restore value
-            if ( oldValue == null )
+
+            final Status putStatus = channel.putAsync(value).get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS);
+            assertThat( putStatus, is( Status.NORMAL) );
+
+            value = channel.getAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS);
+            assertThat( channel, notNullValue() );
+
+            for ( int i = 0; i < value.length; i++ )
             {
-               System.clearProperty( propName );
-            }
-            else
-            {
-               System.setProperty( propName, oldValue );
+               assertThat(value[ i ], is(i + LARGE_PRIME));
             }
          }
       }
