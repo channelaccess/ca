@@ -159,8 +159,8 @@ class CARepeaterClientProxyTest
       }
 
       // Allow a small time window for the data to be received.
-      logger.info( "Sent. Waiting 100ms for data to be received..." );
-      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 100, TimeUnit.MILLISECONDS ) );
+      logger.info( "Sent. Waiting up to 500ms for data to be received..." );
+      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 500, TimeUnit.MILLISECONDS ) );
 
       // Check the received length is exactly the size of the header.
       assertThat( receivePacket.getLength(), is( CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ) );
@@ -188,8 +188,8 @@ class CARepeaterClientProxyTest
       }
 
       // Allow a small time window for the data to be received.
-      logger.info( "Sent. Waiting 100ms for data to be received..." );
-      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 100, TimeUnit.MILLISECONDS ) );
+      logger.info( "Sent. Waiting up tp 500ms for data to be received..." );
+      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 500, TimeUnit.MILLISECONDS ) );
 
       // Check the received length is exactly the size of the header.
       assertThat( receivePacket.getLength(), is( CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ) );
@@ -217,8 +217,8 @@ class CARepeaterClientProxyTest
       }
 
       // Allow a small time window for the data to be received.
-      logger.info( "Sent. Waiting 100ms for data to be received..." );
-      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 100, TimeUnit.MILLISECONDS ) );
+      logger.info( "Sent. Waiting up to 500ms for data to be received..." );
+      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 500, TimeUnit.MILLISECONDS ) );
 
       // Check the received length is exactly the size of the header.
       assertThat( receivePacket.getLength(), is( CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ) );
