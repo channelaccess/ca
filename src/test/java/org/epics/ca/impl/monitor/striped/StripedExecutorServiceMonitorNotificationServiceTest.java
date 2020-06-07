@@ -4,6 +4,7 @@ package org.epics.ca.impl.monitor.striped;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.ThreadWatcher;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceTest;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
@@ -12,14 +13,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.epics.ca.NotificationConsumer.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.Is.is;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -35,8 +32,7 @@ class StripedExecutorServiceMonitorNotificationServiceTest
    
    private static final Logger logger = LibraryLogManager.getLogger( StripedExecutorServiceMonitorNotificationServiceTest.class );
 
-   private Set<Thread> threadsAtStart;
-   private Set<Thread> threadsAtEnd;
+   private ThreadWatcher threadWatcher;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -46,19 +42,13 @@ class StripedExecutorServiceMonitorNotificationServiceTest
    @BeforeEach
    void beforeEach()
    {
-      assertThat( threadsAtStart, nullValue() );
-      threadsAtStart = Thread.getAllStackTraces().keySet();
-      logger.info( String.format( "THERE WERE " + threadsAtStart.size() + " threads running at TEST START: %s ", threadsAtStart ) );
+      threadWatcher = ThreadWatcher.start();
    }
 
    @AfterEach
    void afterEach()
    {
-      assertThat( threadsAtEnd, nullValue() );
-      threadsAtEnd = Thread.getAllStackTraces().keySet();
-      logger.info( String.format( "THERE WERE " + threadsAtEnd.size() + " threads running at TEST END: %s ", threadsAtEnd ) );
-      //assertThat( threadsAtEnd.size(), is( threadsAtStart.size() ) );
-      assertThat( threadsAtEnd, is( threadsAtStart) );
+      threadWatcher.verify();
    }
 
    /**
