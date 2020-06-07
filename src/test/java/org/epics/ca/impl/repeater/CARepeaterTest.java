@@ -6,6 +6,7 @@ package org.epics.ca.impl.repeater;
 
 import org.epics.ca.Constants;
 
+import org.epics.ca.ThreadWatcher;
 import org.epics.ca.util.logging.LibraryLogManager;
 
 import org.junit.jupiter.api.AfterEach;
@@ -44,6 +45,7 @@ class CARepeaterTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterTest.class );
+   private ThreadWatcher threadWatcher;
    private CARepeater caRepeater;
 
 /*- Main ---------------------------------------------------------------------*/
@@ -64,12 +66,13 @@ class CARepeaterTest
       {
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
-
    }
 
    @BeforeEach
    void beforeEach() throws CARepeater.CaRepeaterStartupException
    {
+      threadWatcher = ThreadWatcher.start();
+      
       logger.info( "Starting CA Repeater integration tests..." );
       logger.info( "Creating CA Repeater which will listen for broadcast messages on Port 43721." );
       caRepeater = new CARepeater( 43721 );
@@ -92,6 +95,8 @@ class CARepeaterTest
          logger.info( "Repeater has been shutdown." );
       }
       logger.info( "CARepeater test completed ok." );
+
+      threadWatcher.verify();
    }
 
 
