@@ -1,6 +1,6 @@
 /*- Package Declaration ------------------------------------------------------*/
 
-package org.epics.ca.impl.repeater;
+package org.epics.ca.impl;
 
 /*- Imported packages --------------------------------------------------------*/
 
@@ -22,20 +22,20 @@ import java.util.logging.Logger;
  * Provides support for consuming the ouput of a spawned process and sending
  * both the stout and stderr streams to the log.
  */
-public class ProcessStreamConsumer
+public class JavaProcessStreamConsumer
 {
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LibraryLogManager.getLogger( org.epics.ca.impl.repeater.ProcessStreamConsumer.class );
+   private static final Logger logger = LibraryLogManager.getLogger( JavaProcessStreamConsumer.class );
    private final InputStream stdout;
    private final InputStream stderr;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 
-   private ProcessStreamConsumer( Process process )
+   private JavaProcessStreamConsumer( Process process )
    {
       Validate.notNull( process );
       Validate.isTrue( process.isAlive() );
@@ -46,13 +46,13 @@ public class ProcessStreamConsumer
 
 /*- Public methods -----------------------------------------------------------*/
 
-   static ProcessStreamConsumer consumeFrom( Process process )
+   public static JavaProcessStreamConsumer consumeFrom( Process process )
    {
       Validate.notNull( process );
 
-      final ProcessStreamConsumer processStreamConsumer = new ProcessStreamConsumer( process );
-      processStreamConsumer.start();
-      return processStreamConsumer;
+      final JavaProcessStreamConsumer javaProcessStreamConsumer = new JavaProcessStreamConsumer(process );
+      javaProcessStreamConsumer.start();
+      return javaProcessStreamConsumer;
    }
 
    public void shutdown()
