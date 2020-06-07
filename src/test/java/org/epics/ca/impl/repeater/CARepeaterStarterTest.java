@@ -6,17 +6,24 @@ package org.epics.ca.impl.repeater;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.ThreadWatcher;
+import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.*;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -32,6 +39,8 @@ public class CARepeaterStarterTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterStarterTest.class );
+   private ThreadWatcher threadWatcher;
+   
    private static final int testPort = 5065;
    private static final Level caRepeaterDebugLevel = Level.ALL;
    private static final boolean caRepeaterOutputCaptureEnable = false;
@@ -54,11 +63,22 @@ public class CARepeaterStarterTest
       {
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
-   }
 
+      // Warm up the threadwatcher !
+      final Properties properties = new Properties();
+      final String portToReserve = "5065";
+      final String reserveTimeInMillis = "3000";
+      final String[] programArgs = new String[] { "127.0.0.1", portToReserve, reserveTimeInMillis };
+      final JavaProcessManager processStarter = new JavaProcessManager(UdpSocketReserver.class, properties, programArgs );
+      final boolean started = processStarter.start( true );
+      processStarter.shutdown();
+   }
+   
    @BeforeEach
    void beforeEach()
    {
+      threadWatcher = ThreadWatcher.start();
+      
       final InetSocketAddress wildcardAddress = new InetSocketAddress( 5065 );
       logger.info( "Checking Test Precondition: CA Repeater should NOT be running... on: " + wildcardAddress );
 
@@ -84,6 +104,8 @@ public class CARepeaterStarterTest
       System.out.flush();
       System.err.flush();
       logger.info( "Test finished." );
+
+      threadWatcher.verify();
    }
 
    @Test
@@ -96,30 +118,21 @@ public class CARepeaterStarterTest
    void testStartRepeaterInSeparateJvmProcess() throws Throwable
    {
       logger.info( "Starting CA Repeater in separate process." );
-      final Process process = CARepeaterStarter.startRepeaterInSeparateJvmProcess( testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable );
+      final JavaProcessManager processManager = CARepeaterStarter.startRepeaterInSeparateJvmProcess(testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable );
       logger.info( "The CA Repeater process was created." );
       logger.info( "Verifying that the CA Repeater process is reported as being alive..." );
-      assertThat( process.isAlive(), is( true ) );
+      assertThat( processManager.isAlive(), is( true ) );
       logger.info( "OK" );
       logger.info( "Waiting a moment to allow the spawned process time to reserve the listening port..." );
       Thread.sleep( 1500 );
       logger.info( "Waiting completed." );
-      final boolean alreadyTerminated = process.waitFor(1, TimeUnit.SECONDS );
-      assertThat( alreadyTerminated, is( false ) );
-      logger.info( "Verifying that the CA Repeater process is reported as being alive..." );
-      assertThat( process.isAlive(), is( true ) );
-      logger.info( "OK" );
-      logger.info( "Letting the CA Repeater run for a few moments..." );
-      Thread.sleep( 1500 );
       logger.info( "Verifying that the CA Repeater is detected as running..." );
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
       logger.info( "OK" );
-      logger.info( "Killing the CA Repeater process..." );
-      process.destroy();
-      logger.info( "Killed !" );
-      Thread.sleep( 1500 );
+      logger.info( "Shutting down the CA Repeater process..." );
+      processManager.shutdown();
       logger.info( "Verifying that the CA Repeater process is no longer reported as being alive..." );
-      assertThat( process.isAlive(), is( false ) );
+      assertThat( processManager.isAlive(), is( false ) );
       logger.info( "OK" );
       logger.info( "Verifying that the CA Repeater is no longer detected as running..." );
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( false ) );
@@ -158,40 +171,24 @@ public class CARepeaterStarterTest
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort), is(false ) );
    }
 
-   @Test
-   void testIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddresses() throws Throwable
-   {
-      final List<Inet4Address> localAddressList = NetworkUtilities.getLocalNetworkInterfaceAddresses();
-      for ( Inet4Address localAddress : localAddressList )
-      {
-         testIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddress( localAddress.getHostAddress() );
-      }
-   }
 
-/*- Private methods ----------------------------------------------------------*/
-
-   private void testIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddress( String localAddress ) throws Throwable
+   @MethodSource( "getArgumentsForTestIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddresses" )
+   @ParameterizedTest
+   void testIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddress( String localAddress ) throws Throwable
    {
       Validate.notNull( localAddress, "The localAddress was not provided." );
-
-      logger.finer( "Checking whether repeater instance detected on local address: '" + localAddress + "'" );
+      
+      logger.info( "Checking whether repeater instance detected on local address: '" + localAddress + "'" );
 
       // Spawn an external process to reserve a socket on port 5065 for 5000 milliseconds
-      final String classPath=  System.getProperty( "java.class.path", "<java.class.path not found>" );
-      final String classWithMainMethod =  UdpSocketReserver.class.getName();
+      final Properties properties = new Properties();
       final String portToReserve = "5065";
       final String reserveTimeInMillis = "3000";
-      final Process process = new ProcessBuilder().command( "java",
-                                                            "-cp",
-                                                            classPath,
-                                                            classWithMainMethod,
-                                                            localAddress,
-                                                            portToReserve,
-                                                            reserveTimeInMillis )
-            .inheritIO()
-            .start();
+      final String[] programArgs = new String[] { localAddress, portToReserve, reserveTimeInMillis };
+      final JavaProcessManager processStarter = new JavaProcessManager(UdpSocketReserver.class, properties, programArgs );
+      final boolean started = processStarter.start( true );
 
-      assertThat( "Test error: The test process did not start.", process.isAlive(), is( true ) );
+      assertThat( "Test error: The test process did not start.", started, is( true ) );
 
       // Allow some time for the CA Repeater to reserve the socket
       Thread.sleep( 1500 );
@@ -199,14 +196,23 @@ public class CARepeaterStarterTest
       assertThat( "The isRepeaterRunning method failed to detect that the socket was reserved.",
                   CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
 
-      logger.finer( "Waiting for process to complete..." );
-      process.waitFor();
-      logger.finer( "The test process completed." );
+      final boolean stopped = processStarter.shutdown();
+      assertThat( "Test error: The test process did not stop.", stopped, is( true ) );
 
       assertThat( "The isRepeaterRunning method failed to detect that the socket is now available.",
                   CARepeaterStarter.isRepeaterRunning( testPort ), is( false ) );
 
       logger.info( "The test PASSED." );
+   }
+
+/*- Private methods ----------------------------------------------------------*/
+   
+   private static Stream<Arguments> getArgumentsForTestIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddresses()
+   {
+      final List<Inet4Address> localAddressList = NetworkUtilities.getLocalNetworkInterfaceAddresses();
+      final List<String> localAddresses = localAddressList.stream().map( Inet4Address::getHostAddress).collect(Collectors.toList());
+      return localAddresses.stream().map( Arguments::of );
+
    }
 
 
