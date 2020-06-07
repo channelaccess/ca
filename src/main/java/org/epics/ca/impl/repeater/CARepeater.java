@@ -110,9 +110,10 @@ class CARepeater
          }
          catch ( Exception ex )
          {
-            logger.info( "An unrecoverable exception has occurred which means this CA repeater will terminate.");
+            logger.info( "An unrecoverable exception has occurred which means this CA repeater will terminate." );
          }
          logger.info( "The CA Repeater has terminated.");
+         executorService.shutdown();
       } );
    }
 
@@ -185,7 +186,6 @@ class CARepeater
             logger.log( Level.WARNING, "An exception was thrown whilst waiting for a datagram.", ex );
          }
       }
-      executorService.shutdown();
    }
 
    /**
