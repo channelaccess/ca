@@ -4,10 +4,10 @@ package org.epics.ca.impl.repeater;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.ThreadWatcher;
+import org.epics.ca.impl.JavaProcessStreamConsumer;
 import org.epics.ca.util.logging.LibraryLogManager;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.condition.OS.*;
  * The tests here are mainly used to clarify behaviours associated with the
  * sending and receiving of UDP (= User Datagram Protocol) packets.
  *
- * An excellent summary of the Java implementation of this protocol is
+ * A good summary of the Java implementation of this protocol is
  * currently provided at the following URL:
  * https://www.techrepublic.com/article/using-datagrams-in-java/
  */
@@ -46,6 +46,7 @@ class UdpSocketUtilitiesTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( UdpSocketUtilitiesTest.class );
+   private ThreadWatcher threadWatcher;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -59,6 +60,18 @@ class UdpSocketUtilitiesTest
       // of the SocketUtilities class if the network stack is not appropriately
       // configured for channel access.
       assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
+   }
+
+   @BeforeEach
+   void beforeEach()
+   {
+      threadWatcher = ThreadWatcher.start();
+   }
+
+   @AfterEach
+   void afterEach()
+   {
+      threadWatcher.verify();
    }
 
    // -------------------------------------------------------------------------
@@ -360,7 +373,7 @@ class UdpSocketUtilitiesTest
       final Process process = new ProcessBuilder().command( commandLine ).start();
 
       // After only one second check that the socket is no longer available.
-      ProcessStreamConsumer.consumeFrom( process );
+      JavaProcessStreamConsumer.consumeFrom(process );
       assertThat( process.isAlive(), is( true ) );
       process.waitFor( 2000, TimeUnit.MILLISECONDS );
       assertThat( process.isAlive(), is( true ) );
