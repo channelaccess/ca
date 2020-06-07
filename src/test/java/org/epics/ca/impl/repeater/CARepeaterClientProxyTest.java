@@ -5,10 +5,12 @@ package org.epics.ca.impl.repeater;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.ThreadWatcher;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.epics.ca.util.net.InetAddressUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.*;
@@ -31,7 +33,8 @@ class CARepeaterClientProxyTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterClientProxyTest.class );
-
+   private ThreadWatcher threadWatcher;
+   
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
@@ -56,11 +59,19 @@ class CARepeaterClientProxyTest
       }
    }
 
+   @BeforeEach
+   void beforeEach()
+   {
+      threadWatcher = ThreadWatcher.start();
+   }
+   
    @AfterEach
    void afterEach()
    {
       // After each test clean up the resources associated with any UdpSocketReceiver instances.
-      UdpSocketReceiver.cancel();   
+      UdpSocketReceiver.cancel();
+
+      threadWatcher.verify();
    }  
    
    @Test
