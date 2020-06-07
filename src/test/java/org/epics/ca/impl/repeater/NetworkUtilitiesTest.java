@@ -4,8 +4,11 @@ package org.epics.ca.impl.repeater;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.ThreadWatcher;
 import org.epics.ca.util.logging.LibraryLogManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.Inet4Address;
@@ -29,7 +32,8 @@ class NetworkUtilitiesTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( NetworkUtilitiesTest.class );
-
+   private ThreadWatcher threadWatcher;
+   
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
@@ -42,6 +46,18 @@ class NetworkUtilitiesTest
       // of the NetworkUtilities class if the network stack is not appropriately
       // configured for channel access.
       assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
+   }
+
+   @BeforeEach
+   void beforeEach()
+   {
+      threadWatcher = ThreadWatcher.start();
+   }
+
+   @AfterEach
+   void afterEach()
+   {
+      threadWatcher.verify();
    }
 
    @Test
@@ -105,7 +121,7 @@ class NetworkUtilitiesTest
       NetworkUtilities.isVpnActive();
    }
 
-   /*- Private methods ----------------------------------------------------------*/
+/*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/
 
 }
