@@ -7,6 +7,7 @@ package org.epics.ca.impl.repeater;
 
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.Constants;
+import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.io.*;
@@ -30,7 +31,7 @@ public class CARepeaterStarter
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterStarter.class );
    private static final File NULL_FILE = new File( ( System.getProperty("os.name").startsWith( "Windows") ? "NUL" : "/dev/null" ) );
 
-   private static final AtomicReference<Process> lastStartedProcess =  new AtomicReference<>();
+   private static final AtomicReference<JavaProcessManager> javaProcessManager =  new AtomicReference<>();
 
 
 /*- Main ---------------------------------------------------------------------*/
@@ -129,8 +130,8 @@ public class CARepeaterStarter
       {
          if ( ! isRepeaterRunning( repeaterPort ) )
          {
-            final Process process = startRepeaterInSeparateJvmProcess( repeaterPort, debugLevel, outputCaptureEnable );
-            lastStartedProcess.set( process );
+            final JavaProcessManager processManager = startRepeaterInSeparateJvmProcess(repeaterPort, debugLevel, outputCaptureEnable );
+            javaProcessManager.set(processManager );
          }
       }
    }
@@ -141,11 +142,10 @@ public class CARepeaterStarter
    public static void shutdownLastStartedRepeater()
    {
       logger.fine( "Shutting down any CA Repeaters that were started by this process..." );
-
-      if ( lastStartedProcess.get() != null )
+      if ( javaProcessManager.get() != null )
       {
          logger.fine( "A CA Repeater was found." );
-         lastStartedProcess.get().destroyForcibly();
+         javaProcessManager.get().shutdown();
          logger.fine( "The CA Repeater was sent a termination signal." );
       }
       else
@@ -175,7 +175,7 @@ public class CARepeaterStarter
     * @throws RuntimeException if some other unexpected condition prevents
     *    repeater from being started.
     */
-   static Process startRepeaterInSeparateJvmProcess( int repeaterPort, Level debugLevel, boolean outputCaptureEnable )
+   static JavaProcessManager startRepeaterInSeparateJvmProcess( int repeaterPort, Level debugLevel, boolean outputCaptureEnable )
    {
       Validate.inclusiveBetween( 1, 65535, repeaterPort, "The port must be in the inclusive range 1-65535.");
       Validate.validState( ! isRepeaterRunning( repeaterPort ), "The repeater is already running on port." + repeaterPort );
@@ -186,51 +186,16 @@ public class CARepeaterStarter
       logger.info( "The following local interfaces have been discovered..." ) ;
       final List<Inet4Address> addrList = NetworkUtilities.getLocalNetworkInterfaceAddresses();
       addrList.forEach( (ip) -> logger.info( ip.toString() ) );
-
-      final String classPath = System.getProperty("java.class.path", "<java.class.path not found>");
-      final String classWithMainMethod = CARepeaterStarter.class.getName();
+      
+      final Properties properties = new Properties();
+      properties.put( "java.net.preferIPv4Stack", "true" );
+      properties.put( "java.net.preferIPv6Stack", "false" );
+      properties.put( "CA_LIBRARY_LOG_LEVEL", debugLevel.toString() );
       final String repeaterPortAsString = Integer.toString( repeaterPort );
-
-      final List<String> commandLine = Arrays.asList( "java",
-                                                      "-cp", classPath,
-                                                      "-DCA_LIBRARY_LOG_LEVEL=" + debugLevel,
-                                                      "-Djava.net.preferIPv4Stack=true",
-                                                      "-Djava.net.preferIPv6Stack=false",
-                                                      classWithMainMethod,
-                                                      "-p", repeaterPortAsString );
-
-      try
-      {
-         // Spawn a new CA Repeater as a child of the existing process.
-         logger.finest( "Attempting to run CA Repeater in separate process using command line: '" + commandLine + "'." );
-
-         final Process process;
-         if ( outputCaptureEnable  )
-         {
-            logger.finest( "The output from the CA Repeater will be captured in the log." );
-            process = new ProcessBuilder().command( commandLine )
-                                          .start();
-            ProcessStreamConsumer.consumeFrom( process );
-         }
-         else
-         {
-            logger.finest( "The output from the CA Repeater will NOT be captured in the log." );
-            process = new ProcessBuilder().command( commandLine )
-                                          .redirectError( ProcessBuilder.Redirect.to( NULL_FILE ) )
-                                          .redirectOutput( ProcessBuilder.Redirect.to( NULL_FILE ) )
-                                          .redirectInput( ProcessBuilder.Redirect.from( NULL_FILE ) )
-                                          .start();
-         }
-
-         logger.finest( "The process was started OK." );
-         return process;
-      }
-      catch ( IOException ex )
-      {
-         final String message = "Failed to run '" + commandLine + "' in separate process.";
-         logger.log( Level.WARNING, message, ex );
-         throw new RuntimeException( message, ex );
-      }
+      final String[] programArgs = new String[] { "-p", repeaterPortAsString };
+      final JavaProcessManager processManager = new JavaProcessManager( CARepeaterStarter.class, properties, programArgs );
+      final boolean started = processManager.start( outputCaptureEnable );
+      return processManager;
    }
 
    /**
