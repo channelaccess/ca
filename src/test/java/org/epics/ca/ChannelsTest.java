@@ -53,7 +53,7 @@ class ChannelsTest
       }
 
       // Start up the test server.
-      processManager = EpicsChannelAccessTestServer.start();
+      EpicsChannelAccessTestServer.start();
       
       // Start up the context which should start up a repeater instance which will receive beacons
       // from the test server.

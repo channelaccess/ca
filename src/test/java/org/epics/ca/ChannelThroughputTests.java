@@ -51,13 +51,13 @@ class ChannelThroughputTests
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
 
-      processManager = EpicsChannelAccessTestServer.start();
+      EpicsChannelAccessTestServer.start();
    }
 
    @AfterEach
    void afterEach()
    {
-      processManager.shutdown();
+      EpicsChannelAccessTestServer.shutdown();
       threadWatcher.verify();
    }
 
