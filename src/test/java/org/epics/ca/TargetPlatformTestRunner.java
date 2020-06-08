@@ -4,6 +4,7 @@ package org.epics.ca;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.platform.launcher.*;
@@ -158,9 +159,11 @@ public class TargetPlatformTestRunner
 
       try
       {
+         final StopWatch stopWatch = StopWatch.createStarted();
          logger.info( "RUNNING TEST(S)...");
          launcher.execute( testPlan );
-         logger.info( "TEST(S) COMPLETED." );
+         stopWatch.stop();
+         logger.info( "TEST(S) COMPLETED. Elapsed time was: '" + stopWatch.toString() + "'." );
       }
       catch ( RuntimeException ex )
       {
