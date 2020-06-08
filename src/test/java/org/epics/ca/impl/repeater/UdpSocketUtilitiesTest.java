@@ -5,7 +5,7 @@ package org.epics.ca.impl.repeater;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.epics.ca.ThreadWatcher;
-import org.epics.ca.impl.JavaProcessStreamConsumer;
+import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -358,31 +358,20 @@ class UdpSocketUtilitiesTest
       // Check that after the socket has autoclosed the socket is once again available
       assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(true ) );
 
-      // Spawn a test that will occupy the test socket for 5 seconds.
-      final String classPath =  System.getProperty( "java.class.path", "<java.class.path not found>" );
-      final String classWithMainMethod =  UdpSocketReserver.class.getName();
+      // Spawn a process that will occupy the test socket for 3 seconds.
       final String wildcardAddress ="0.0.0.0";
       final int socketReserveTimeInMilliseconds = 3000;
-      final List<String> commandLine = Arrays.asList( "java", "-cp", classPath,
-                                                      "-Djava.net.preferIPv4Stack=true",
-                                                      "-Djava.net.preferIPv6Stack=false",
-                                                      classWithMainMethod,
-                                                      wildcardAddress,
-                                                      String.valueOf( testPort ),
-                                                      String.valueOf( socketReserveTimeInMilliseconds ) );
-      final Process process = new ProcessBuilder().command( commandLine ).start();
+      final JavaProcessManager processManager = UdpSocketReserver.start( wildcardAddress, testPort, socketReserveTimeInMilliseconds );
 
-      // After only one second check that the socket is no longer available.
-      JavaProcessStreamConsumer.consumeFrom(process );
-      assertThat( process.isAlive(), is( true ) );
-      process.waitFor( 2000, TimeUnit.MILLISECONDS );
-      assertThat( process.isAlive(), is( true ) );
+       // Allow time for the process to reserve the socket and check that it is no longer available.
+      Thread.sleep( 1500 );
+      assertThat( processManager.isAlive(), is( true ) );
       assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(false ) );
 
-      // Wait for the process to die and check that the socket has become available again
-      process.waitFor();
-      assertThat( process.exitValue(), is( 0 ) );
-      assertThat( UdpSocketUtilities.isSocketAvailable(wildcardSocketAddress ), is(true ) );
+      // Allow time for the process to finish and check that the socket has become available again.
+      Thread.sleep( 2500 );
+      assertThat( processManager.isAlive(), is( false ) );
+      assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(true ) );
    }
 
    @ValueSource( booleans = { false, true } )
