@@ -201,7 +201,7 @@ public class JavaProcessManager
 
    /**
     * Returns an indicator of whether the process associated with this
-    * manager instance is currently running.
+    * manager instance is still alive.
     *
     * @return the result.
     */
