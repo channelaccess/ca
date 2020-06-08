@@ -70,13 +70,13 @@ class ChannelTest
       // Server will get bound. Currently (2020-06-01) this is not necessary.
       // System.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
       // System.setProperty( "EPICS_CA_AUTO_ADDR_LIST", "NO" );
-      processManager = EpicsChannelAccessTestServer.start();
+      EpicsChannelAccessTestServer.start();
    }
 
    @AfterEach
    void afterEach()
    {
-      processManager.shutdown();
+      EpicsChannelAccessTestServer.shutdown();
       threadWatcher.verify();
    }
 
