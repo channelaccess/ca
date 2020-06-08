@@ -176,7 +176,6 @@ public class CARepeaterStarterTest
       final int reservationTimeInMillis = 3000;
       final JavaProcessManager processManager = UdpSocketReserver.start( localAddress, portToReserve, reservationTimeInMillis );
 
-
       // Allow time for the process to reserve the socket and check that the isRepeaterRunning
       // method detects that the port is no longer available.
       Thread.sleep( 1500 );
@@ -186,7 +185,7 @@ public class CARepeaterStarterTest
 
       // Allow time for the process to finish and check that the isRepeaterRunning method
       // detects that the port is now available.
-      Thread.sleep( 2500 );
+      Thread.sleep( 4000 );
       assertThat( processManager.isAlive(), is( false ) );
       assertThat( "The isRepeaterRunning method failed to detect that the socket is now available.",
                   CARepeaterStarter.isRepeaterRunning( testPort ), is( false ) );
