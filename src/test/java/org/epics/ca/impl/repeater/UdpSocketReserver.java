@@ -105,7 +105,7 @@ class UdpSocketReserver
       properties.setProperty( "java.net.preferIPv6Stack", "false" );
       final String[] programArgs = new String[] { address, String.valueOf( port ), String.valueOf( socketReservationTime ) };
       final JavaProcessManager processManager = new JavaProcessManager( UdpSocketReserver.class, properties, programArgs );
-      final boolean started = processManager.start( true );
+      processManager.start( true );
       return processManager;
    }
 
