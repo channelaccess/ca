@@ -34,7 +34,6 @@ class ChannelsTest
    private ThreadWatcher threadWatcher;
    
    private Context context;
-   private JavaProcessManager processManager;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -65,7 +64,7 @@ class ChannelsTest
    {
       // Shutdown the test server. Should stop it emitting beacons etc.
       logger.info( "Shutting down EPICSChannelAccessTestServer." );
-      processManager.shutdown();
+      EpicsChannelAccessTestServer.shutdown();
       
       // Shut down the context.
       logger.info( "Closing context." );
