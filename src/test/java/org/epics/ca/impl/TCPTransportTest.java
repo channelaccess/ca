@@ -618,7 +618,7 @@ class TCPTransportTest
       // Verify the timing was no greater than expected
       assertTrue(elapsedTimeInMicroseconds < maximumExecutionTimeInMicroseconds,
                  "Actual Execution Time was: "  + elapsedTimeInMicroseconds + " us. " +
-                 "Maximum Execution Time was: " + maximumExecutionTimeInMicroseconds + " us" );
+                 "Maximum Execution Time was: " + maximumExecutionTimeInMicroseconds + " us." );
    }
 
 
