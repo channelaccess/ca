@@ -628,12 +628,12 @@ class TCPTransportTest
    private static Stream<Arguments> getArgumentsForCaLatencyTest()
    {
       return Stream.of ( Arguments.of( 100_000 ),
-                         Arguments.of( 20_000 ),
-                         Arguments.of( 20_000 ),
-                         Arguments.of( 20_000 ),
-                         Arguments.of( 20_000 ),
-                         Arguments.of( 20_000 ),
-                         Arguments.of( 20_000 ) );
+                         Arguments.of( 25_000 ),
+                         Arguments.of( 25_000 ),
+                         Arguments.of( 25_000 ),
+                         Arguments.of( 25_000 ),
+                         Arguments.of( 25_000 ),
+                         Arguments.of( 25_000 ) );
    }
 
 /*- Nested Classes -----------------------------------------------------------*/
