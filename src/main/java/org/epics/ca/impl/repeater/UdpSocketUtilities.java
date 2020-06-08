@@ -152,7 +152,7 @@ class UdpSocketUtilities
 
       // Validate the post-condition that the configured socket reuse mode is
       // as specified by the shareable port argument. This may not be available
-      // on some platforms. See the excellent Stack Exchange discussion here:
+      // on some platforms. See the Stack Exchange discussion here:
       // https://stackoverflow.com/questions/14388706/how-do-so-reuseaddr-and-so-reuseport-differ
       Validate.isTrue( socket.getReuseAddress() == shareable, "The Socket REUSE mode was not as expected. Perhaps it is not supported on this platform." );
 
