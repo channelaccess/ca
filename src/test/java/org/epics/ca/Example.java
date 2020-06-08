@@ -7,25 +7,18 @@ import java.util.concurrent.CompletableFuture;
 
 import org.epics.ca.data.*;
 
-
 public class Example
 {
    public static void main( String[] args )
    {
-      // Note on Java network stack configuration
-      // The Java network documentation states that the network configuration settings are
-      // read by the JVM only once on JVM startup. To avoid strange startup dependencies
-      // the properties should be set either outside the JVM (ideally) or at the very
-      // beginning of the program entry point.
-      System.setProperty( "java.net.preferIPv4Stack", "true" );
-      System.setProperty( "java.net.preferIPv6Stack", "false" );
-
       // Start the Channel Access Test Server that is used to demonstrate capabilities
       // of the EPICS CA client library.
-      final EpicsChannelAccessTestServer epicsChannelAccessTestServer = EpicsChannelAccessTestServer.start();
+      EpicsChannelAccessTestServer.start();
 
       // Configure the CA library context and start it.
       final Properties properties = new Properties();
+      properties.setProperty( "java.net.preferIPv4Stack", "true" );
+      properties.setProperty( "java.net.preferIPv6Stack", "false" );
       properties.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
       properties.setProperty( Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString(), "NO" );
       try ( Context context = new Context( properties ) )
@@ -228,7 +221,7 @@ public class Example
       finally
       {
          System.out.println();
-         epicsChannelAccessTestServer.shutdown();
+         EpicsChannelAccessTestServer.shutdown();
       }
       System.out.println( "\nThe example program SUCCEEDED, and ran to completion." );
    }
