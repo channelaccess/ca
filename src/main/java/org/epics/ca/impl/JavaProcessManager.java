@@ -17,6 +17,10 @@ import java.util.logging.Logger;
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
 
+/**
+ * Provides the ability to spawn JVM instances which execute a user-specified
+ * Java class with user-specified system properties and arguments.
+ */
 public class JavaProcessManager
 {
 
@@ -30,37 +34,63 @@ public class JavaProcessManager
    private final Class<?> classWithMainMethod;
    private final String[] programArgs;
    private final Properties systemProperties;
+   private final String classPath;
 
    private Process process;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 
+   /**
+    * Constructs a new instance.
+    *
+    * @param classWithMainMethod the Java class which contains the main method
+    *   to be executed.
+    * @param systemProperties the system properties to be set for the spawned
+    *   process. As a minimum this must contain a definition for the class
+    *   path ("java.class.path").
+    * @param programArgs the program arguments.
+    *
+    * @throws NullPointerException if any of the supplied arguments were null.
+    */
    public JavaProcessManager( Class<?> classWithMainMethod, Properties systemProperties, String[] programArgs )
    {
-      logger.finer("Created JavaProcessManager for class named '" + classWithMainMethod.getName() + "'." );
-      logger.finer("The system properties are: '" + systemProperties.toString() + "'." );
-      logger.finer("The program arguments are: '" + Arrays.toString( programArgs) + "'." );
       this.classWithMainMethod = Validate.notNull( classWithMainMethod );
       this.systemProperties = Validate.notNull( systemProperties );
       this.programArgs = Validate.notNull( programArgs );
-   }
+
+      final String cp = System.getProperty( "java.class.path" );
+      Validate.validState( cp != null );
+      Validate.notBlank( cp );
+      this.classPath = cp;
+
+      logger.finer("Created JavaProcessManager for class named '" + classWithMainMethod.getName() + "'." );
+      logger.finer("The class path is '" + classPath + "'." );
+      logger.finer("The system properties are: '" + systemProperties.toString() + "'." );
+      logger.finer("The program arguments are: '" + Arrays.toString( programArgs) + "'." );
+    }
 
 /*- Public methods -----------------------------------------------------------*/
 
+   /**
+    * Attempts to start a new JVM process based on the information supplied in
+    * the class constructor; returns success indicator.
+    *
+    * This method does not block.
+    *
+    * @param outputCaptureEnable whether the output from the spawned process
+    *    should be logged.
+    *
+    * @return indicator, set true if the startup process was successful.
+    */
    public boolean start( boolean outputCaptureEnable )
    {
-      logger.info( "Starting the process with output capture set to: '" + outputCaptureEnable + "'..." );
-      if ( System.getProperty( "java.class.path" ) == null )
-      {
-         throw new RuntimeException( "The Java class path was not found." );
-      }
+      logger.info( "Starting a new JVM to run Java class: '" + classWithMainMethod.getSimpleName() + "' [output capture = '" + outputCaptureEnable + "']..." );
       
-      // Create initial command line
-      final String classPath = System.getProperty( "java.class.path" );
-      final List<String> commandLine = new ArrayList<>( Arrays.asList("java", "-cp", classPath ) );
+      // Create initial command line.
+      final List<String> commandLine = new ArrayList<>( Arrays.asList( "java", "-cp", classPath ) );
 
-      // Add any supplied system properties
+      // Add any supplied system properties.
       final Set<String> keys = systemProperties.stringPropertyNames();
       logger.finer( "There are '" + keys.size() + "' additional system properties." );
       keys.forEach( propName -> {
@@ -69,12 +99,13 @@ public class JavaProcessManager
          commandLine.add( newProperty );
       } );
 
-      // Add name of class containing the main method
+      // Add the name of the class containing the main method to be executed.
       commandLine.add( classWithMainMethod.getName() );
 
       // Add any program arguments.
       commandLine.addAll( Arrays.asList( programArgs ) );
-      
+
+      // Attempt to start the process.
       try
       {
          // Spawn a new process as a child of the existing process.
@@ -84,7 +115,7 @@ public class JavaProcessManager
          {
             logger.finest( "The output from the process will be captured in the log." );
             this.process = new ProcessBuilder().command( commandLine ).start();
-            JavaProcessStreamConsumer.consumeFrom(process );
+            JavaProcessStreamConsumer.consumeFrom( process );
          }
          else
          {
@@ -93,43 +124,62 @@ public class JavaProcessManager
                   .redirectError( ProcessBuilder.Redirect.to( NULL_FILE ) )
                   .redirectOutput( ProcessBuilder.Redirect.to( NULL_FILE ) )
                   .redirectInput( ProcessBuilder.Redirect.from( NULL_FILE ) )
-                  .start();
+                  .start(); // IOException -->
          }
 
          logger.finest( "The process was started OK." );
       }
-      catch ( IOException ex )
+      catch ( RuntimeException | IOException ex )
       {
          final String message = "Failed to run '" + commandLine + "' in separate process.";
          logger.log( Level.WARNING, message, ex );
-         throw new RuntimeException( message, ex );
+         return false;
       }
 
+      // Return success indicator based on the measured state of "aliveness".
       return process.isAlive();
    }
-   
+
+   /**
+    * Attempts to send an OS signal to kill the process associated with this
+    * class instance; WAITS for up to one second for the process to terminate;
+    * returns success indicator.
+    *
+    * The process associated with this manager need not necessarily be alive
+    * when this method is invoked.
+    *
+    * @return indicator, set true if the shutdown process was successful.
+    */
    public boolean shutdown()
    {
-      logger.finer( "Attempting to terminate the process cooperatively..." );
+      logger.finer( "Attempting to kill the process cooperatively..." );
       try
       {
+         // According to the API this method will not throw an exception.
+         // Nevertheless implementations may vary so if something IS thrown
+         // ensure that at least it gets to the log.
          process.destroy();
       }
       catch ( RuntimeException ex )
       {
-         logger.warning( "Exception when terminating the process cooperatively." );
+         logger.log( Level.WARNING, "Exception when terminating the process cooperatively.", ex );
+         return false;
       }
       
       if ( process.isAlive() )
       {
-         logger.finer( "Attempting to terminate the process forcibly..." );
+         logger.finer( "Attempting to kill the process forcibly..." );
          try
          {
-            process.destroy();
+            // According to the API this method will not throw an exception.
+            // Nevertheless implementations may vary so if something IS thrown
+            // ensure that at least it gets to the log.
+            process.destroyForcibly();
          }
          catch ( RuntimeException ex )
          {
-            logger.warning( "Exception when terminating the process forcibly." );
+            logger.log( Level.WARNING, "Exception when terminating the process forcibly.", ex );
+            return false;
          }
       }
       
@@ -145,10 +195,16 @@ public class JavaProcessManager
          return false;
       }
 
-      logger.info( "The process termination sequence finished. Result " + (terminatedOk ? "OK." : "FAIL." ) );
+      logger.info( "The process shutdown sequence finished. Result " + (terminatedOk ? "OK." : "FAIL." ) );
       return terminatedOk;
    }
-   
+
+   /**
+    * Returns an indicator of whether the process associated with this
+    * manager instance is currently running.
+    *
+    * @return the result.
+    */
    public boolean isAlive()
    {
       return process.isAlive();
