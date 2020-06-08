@@ -4,6 +4,7 @@ package org.epics.ca;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import com.cosylab.epics.caj.cas.util.examples.CounterProcessVariable;
 import gov.aps.jca.CAException;
 import gov.aps.jca.JCALibrary;
 import gov.aps.jca.cas.ServerContext;
@@ -13,14 +14,13 @@ import gov.aps.jca.dbr.DBR_Int;
 
 import com.cosylab.epics.caj.cas.util.DefaultServerImpl;
 import com.cosylab.epics.caj.cas.util.MemoryProcessVariable;
+import org.apache.commons.lang3.Validate;
+import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,10 +39,8 @@ public class EpicsChannelAccessTestServer
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( EpicsChannelAccessTestServer.class );
-
-   private final ExecutorService executor;
+   private static final AtomicReference<JavaProcessManager> processManagerRef = new AtomicReference<>();
    private final ServerContext context;
-   private final List<ControllableCounterProcessVariable> counterList = new ArrayList<>();
 
 
 /*- Main ---------------------------------------------------------------------*/
@@ -53,48 +51,6 @@ public class EpicsChannelAccessTestServer
     * @param args command-line arguments (not used).
     */
    public static void main( String[] args )
-   {
-      EpicsChannelAccessTestServer.start();
-   }
-
-
-/*- Constructor --------------------------------------------------------------*/
-
-   /**
-    * Creates a new instance.
-    *
-    * @throws CAException if some unexpected condition occurs.
-    */
-   private EpicsChannelAccessTestServer() throws CAException
-   {
-      // Create the library default server implementation
-      // System.setProperty( "EPICS_CA_ADDR_LIST", "localhost" );
-
-      // Get the JCALibrary instance.
-      final JCALibrary jca = JCALibrary.getInstance();
-
-      // Create a context based on the library default server implementation
-      // CAException -->
-      final DefaultServerImpl server = new DefaultServerImpl();
-      context = jca.createServerContext( JCALibrary.CHANNEL_ACCESS_SERVER_JAVA, server );
-
-      // Register the process variables required for any subsequent tests.
-      registerProcessVariables( server );
-
-      executor = Executors.newSingleThreadExecutor();
-   }
-
-/*- Public methods -----------------------------------------------------------*/
-
-   static Thread recordedThread;
-   /**
-    * Starts the EPICS CA Test Server and returns a reference which will
-    * allow it to be shut down in the future.
-    *
-    * @return the server reference.
-    * @throws RuntimeException if anything prevents the server from starting.
-    */
-   public static EpicsChannelAccessTestServer start()
    {
       logger.info( "The EPICS Channel Access Test Server is starting..." );
 
@@ -114,49 +70,89 @@ public class EpicsChannelAccessTestServer
       epicsChannelAccessTestServer.printContextInfo();
 
       // Start the server in a separate daemon thread that will continue until shut down.
-      epicsChannelAccessTestServer.startInSeparateThread();
+      epicsChannelAccessTestServer.run();
 
       // Return the reference to the server (which will allow it to be shutdown when required).
       logger.info( "The EPICS Channel Access Test Server was initialised and is running.\n" );
+   }
 
-      recordedThread = Thread.currentThread();
-      return epicsChannelAccessTestServer;
+
+/*- Constructor --------------------------------------------------------------*/
+
+   /**
+    * Creates a new instance.
+    *
+    * @throws CAException if some unexpected condition occurs.
+    */
+   private EpicsChannelAccessTestServer() throws CAException
+   {
+      // Create the library default server implementation
+      System.setProperty( "EPICS_CA_ADDR_LIST", "localhost" );
+
+      // Get the JCALibrary instance.
+      final JCALibrary jca = JCALibrary.getInstance();
+
+      // Create a context based on the library default server implementation
+      // CAException -->
+      final DefaultServerImpl server = new DefaultServerImpl();
+      context = jca.createServerContext( JCALibrary.CHANNEL_ACCESS_SERVER_JAVA, server );
+
+      // Register the process variables required for any subsequent tests.
+      registerProcessVariables( server );
+   }
+
+/*- Public methods -----------------------------------------------------------*/
+
+   /**
+    * Starts the EpicsChannelAccessTestServer in a separate process.
+    *
+    * The test server should not already have been started.
+    *
+    * @throws IllegalStateException if the test server had already been started.
+    */
+   public static void start()
+   {
+      Validate.validState( ! isStarted(),"The EpicsChanneAccessTestServer was not shutdown." );
+
+      final Properties properties = new Properties();
+      properties.setProperty( "com.cosylab.epics.caj.cas.CAJServerContext.max_array_bytes", String.valueOf( 4 * 1024 * 1024 + 1024 + 32 ) );
+      properties.setProperty( "com.cosylab.epics.caj.cas.CAJServerContext.beacon_addr_list", "127.0.0.1" );
+      properties.setProperty( "com.cosylab.epics.caj.cas.CAJServerContext.auto_beacon_addr_list", "false" );
+      final String[] noProgramArgs = new String[] {};
+      final JavaProcessManager processManager = new JavaProcessManager( EpicsChannelAccessTestServer.class, properties, noProgramArgs );
+      processManager.start(true );
+      processManagerRef.set( processManager );
    }
 
    /**
-    * Shuts down the test server, releasing all resources.
+    * Shuts down an EpicsChannelAccessTestServer instance that was previously started.
+    *
+    * The test server should have been started via a previous call to the <code>start</code>
+    * method.
+    *
+    * @throws IllegalStateException if the test server had NOT already been started.
     */
-   public void shutdown()
+   public static void shutdown()
    {
-      logger.info( "The EPICS Channel Access Test Server is shutting down..." );
+      Validate.validState( isStarted(),"The EpicsChanneAccessTestServer was not started." );
 
-      // The counters need special attention since they have their own threads
-      // which must be terminated on exit.
-      counterList.forEach( ControllableCounterProcessVariable::shutdown );
-      destroyContextWithoutPropagatingExceptions();
-
-      try
-      {
-         logger.finer( "Waiting for executor termination." );
-         if( executor.awaitTermination(10000, TimeUnit.MILLISECONDS ) )
-         {
-            logger.finer( "Executor terminated OK." );
-         }
-         else
-         {
-            logger.warning("Executor termination timeout." );
-         }
-      }
-      catch ( InterruptedException ex )
-      {
-         logger.warning("Received interrupt request whilst waiting for executor termination." );
-      }
-      logger.info( "The EPICS Channel Access Test Server shutdown process completed." );
+      processManagerRef.get().shutdown();
+      processManagerRef.set( null );
    }
-
 
 /*- Package-level methods ----------------------------------------------------*/
 /*- Private methods ----------------------------------------------------------*/
+
+   /**
+    * Returns indication of whether the <code>start</code> method was previously
+    * called.
+    *
+    * @return the result
+    */
+   private static boolean isStarted()
+   {
+      return processManagerRef.get() != null;
+   }
 
    /**
     * Runs the EPICS CA Test Server from a separate thread in the calling
@@ -166,30 +162,21 @@ public class EpicsChannelAccessTestServer
     * method is called or until unless some unexpected exception condition
     * terminates processing prematurely.
     */
-   private void startInSeparateThread()
+   void run()
    {
-      executor.execute( () -> {
-
-         // Run the server indefinitely or until some exception occurs.
-         try
-         {
-            // Zero means run and block forever.
-            context.run( 0 );
-         }
-         catch( CAException ex )
-         {
-            final String msg = "The following unexpected exception occurred:" ;
-            logger.log( Level.WARNING, msg, ex );
-            throw new RuntimeException( msg, ex );
-         }
-//         finally
-//         {
-//            destroyContextWithoutPropagatingExceptions();
-//         }
-        logger.info( "Making executor shutdown request." );
-         executor.shutdownNow();
-         logger.info( "Done" );
-      } );
+      // Run the server indefinitely or until some exception occurs.
+      try
+      {
+         // Zero means run and block forever.
+         context.run( 0 );
+      }
+      catch( CAException ex )
+      {
+         final String msg = "The following unexpected exception occurred:" ;
+         logger.log( Level.WARNING, msg, ex );
+         throw new RuntimeException( msg, ex );
+      }
+      logger.info( "Done" );
    }
 
    private void printContextInfo()
@@ -249,9 +236,11 @@ public class EpicsChannelAccessTestServer
       // they can be tested on the client side by connecting using either as scalars or as arrays.
 
       // Simple in-memory PV
+      // "simple"
       server.createMemoryProcessVariable ("simple", DBR_Int.TYPE, new int[] { 1, 2, 3 });
 
       // PV supporting all GR/CTRL info
+      // "adc01"
       final MemoryProcessVariable mpv = new MemoryProcessVariable ("adc01", null, DBR_Double.TYPE, new double[] { 12.08, 3.11 });
 
       mpv.setUpperDispLimit( 10d );
@@ -271,14 +260,20 @@ public class EpicsChannelAccessTestServer
       server.registerProcessVaribale (mpv);
 
       // Create some other PV's needed for the PSI CA Client Library Example program
+      // "adc02"
       final MemoryProcessVariable mpv2 = new MemoryProcessVariable ("adc02", null, DBR_Double.TYPE, new double[] { 1.04, 33.31 });
       server.registerProcessVaribale( mpv2 );
+
+      // "adc03"
       final MemoryProcessVariable mpv3 = new MemoryProcessVariable ("adc03", null, DBR_Double.TYPE, new double[] { 19.78, 53.11 });
       server.registerProcessVaribale( mpv3 );
+
+      // "adc04"
       final MemoryProcessVariable mpv4 = new MemoryProcessVariable ("adc04", null, DBR_Double.TYPE, new double[] { 19.78, 53.11 });
       server.registerProcessVaribale( mpv4 );
 
       // enum in-memory PV
+      // "enum"
       final MemoryProcessVariable enumPV = new MemoryProcessVariable ("enum", null, DBR_Enum.TYPE, new short[] { 3, 1 } ) {
          private final String[] labels = { "zero", "one", "two", "three", "four", "five", "six", "seven" };
 
@@ -293,17 +288,17 @@ public class EpicsChannelAccessTestServer
       server.registerProcessVaribale( enumPV );
 
       // counter PV
-      final ControllableCounterProcessVariable counter = ControllableCounterProcessVariable.start("100msCounter", null, -10, 10, 1, 100, -7, 7, -9, 9);
+      // "100msCounter"
+      final CounterProcessVariable counter = new CounterProcessVariable("100msCounter", null, -10, 10, 1, 100, -7, 7, -9, 9);
       server.registerProcessVaribale( counter );
 
       // fast counter PV
-      final ControllableCounterProcessVariable fastCounter = ControllableCounterProcessVariable.start( "1msCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
-      server.registerProcessVaribale(fastCounter);
-
-      counterList.add( counter );
-      counterList.add( fastCounter );
+      // "1msCounter"
+      final CounterProcessVariable fastCounter = new CounterProcessVariable("1msCounter", null, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 1, -7, 7, -9, 9);
+      server.registerProcessVaribale( fastCounter );
 
       // simple in-memory 1MB array
+      // "large"
       final int[] arrayValue = new int[ 1024 * 1024 ];
       for ( int i = 0; i < arrayValue.length; i++ )
       {
