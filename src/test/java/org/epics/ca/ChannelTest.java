@@ -284,9 +284,13 @@ class ChannelTest
 
             // Destroy the test server which will create a channel disconnection event.
             // Verify that the monitor did not receive a new update
-            processManager.shutdown();
+            EpicsChannelAccessTestServer.shutdown();
             Thread.sleep( TEST_SLEEP_INTERVAL_MILLISEC );
             Mockito.verifyNoMoreInteractions( consumer );
+
+            // Now restart the test server so that the state is symmetrical with
+            // all other tests in this class.
+            EpicsChannelAccessTestServer.start();
          }
       }
    }
