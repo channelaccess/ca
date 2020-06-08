@@ -194,7 +194,7 @@ public class CARepeaterStarter
       final String repeaterPortAsString = Integer.toString( repeaterPort );
       final String[] programArgs = new String[] { "-p", repeaterPortAsString };
       final JavaProcessManager processManager = new JavaProcessManager( CARepeaterStarter.class, properties, programArgs );
-      final boolean started = processManager.start( outputCaptureEnable );
+      processManager.start( outputCaptureEnable );
       return processManager;
    }
 
