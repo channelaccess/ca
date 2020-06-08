@@ -108,13 +108,17 @@ class UdpSocketReceiver
          
          try ( final DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket( port, true ) )
          {
+            // Record a reference to the socket that has been created. This will support the
+            // possibility of closing the socket via another thread and terminating any blocked
+            // receive operations.
             socketReference.set( listeningSocket );
-            
-            // Once the socket has been created it is safe to allow the calling thread to proceed.
-            countDownLatch.countDown();
             try
             {
                logger.info( "Listening on socket: " + listeningSocket.getLocalSocketAddress() );
+
+               // Note: there is a potential race condition here: the countdown latch should only be
+               // set AFTER the socket receive operation has begun.
+               countDownLatch.countDown();
                listeningSocket.receive( receivePacket );
                logger.info( "Received new packet from: " + receivePacket.getSocketAddress() );
             }
@@ -136,7 +140,7 @@ class UdpSocketReceiver
             logger.log(Level.WARNING, "Exception thrown when creating listening socket. Details: ", ex.getMessage() );
          }
 
-         // Always shutdown the excutor.
+         // Always shutdown the executor.
          logger.finest( "Shutting down executor..." );
          executor.shutdown();
          logger.finest( "Executor shutdown requested." );
