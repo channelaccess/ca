@@ -63,15 +63,6 @@ public class CARepeaterStarterTest
       {
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
-
-      // Warm up the threadwatcher !
-      final Properties properties = new Properties();
-      final String portToReserve = "5065";
-      final String reserveTimeInMillis = "3000";
-      final String[] programArgs = new String[] { "127.0.0.1", portToReserve, reserveTimeInMillis };
-      final JavaProcessManager processStarter = new JavaProcessManager(UdpSocketReserver.class, properties, programArgs );
-      final boolean started = processStarter.start( true );
-      processStarter.shutdown();
    }
    
    @BeforeEach
@@ -118,7 +109,7 @@ public class CARepeaterStarterTest
    void testStartRepeaterInSeparateJvmProcess() throws Throwable
    {
       logger.info( "Starting CA Repeater in separate process." );
-      final JavaProcessManager processManager = CARepeaterStarter.startRepeaterInSeparateJvmProcess(testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable );
+      final JavaProcessManager processManager = CARepeaterStarter.startRepeaterInSeparateJvmProcess( testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable );
       logger.info( "The CA Repeater process was created." );
       logger.info( "Verifying that the CA Repeater process is reported as being alive..." );
       assertThat( processManager.isAlive(), is( true ) );
@@ -171,7 +162,6 @@ public class CARepeaterStarterTest
       assertThat( CARepeaterStarter.isRepeaterRunning( testPort), is(false ) );
    }
 
-
    @MethodSource( "getArgumentsForTestIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddresses" )
    @ParameterizedTest
    void testIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddress( String localAddress ) throws Throwable
@@ -180,29 +170,28 @@ public class CARepeaterStarterTest
       
       logger.info( "Checking whether repeater instance detected on local address: '" + localAddress + "'" );
 
-      // Spawn an external process to reserve a socket on port 5065 for 5000 milliseconds
+      // Spawn an external process to reserve a socket on port 5065 for 3000 milliseconds
       final Properties properties = new Properties();
-      final String portToReserve = "5065";
-      final String reserveTimeInMillis = "3000";
-      final String[] programArgs = new String[] { localAddress, portToReserve, reserveTimeInMillis };
-      final JavaProcessManager processStarter = new JavaProcessManager(UdpSocketReserver.class, properties, programArgs );
-      final boolean started = processStarter.start( true );
+      final int portToReserve = 5065;
+      final int reservationTimeInMillis = 3000;
+      final JavaProcessManager processManager = UdpSocketReserver.start( localAddress, portToReserve, reservationTimeInMillis );
 
-      assertThat( "Test error: The test process did not start.", started, is( true ) );
 
-      // Allow some time for the CA Repeater to reserve the socket
+      // Allow time for the process to reserve the socket and check that the isRepeaterRunning
+      // method detects that the port is no longer available.
       Thread.sleep( 1500 );
-
+      assertThat( processManager.isAlive(), is( true ) );
       assertThat( "The isRepeaterRunning method failed to detect that the socket was reserved.",
                   CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
 
-      final boolean stopped = processStarter.shutdown();
-      assertThat( "Test error: The test process did not stop.", stopped, is( true ) );
-
+      // Allow time for the process to finish and check that the isRepeaterRunning method
+      // detects that the port is now available.
+      Thread.sleep( 2500 );
+      assertThat( processManager.isAlive(), is( false ) );
       assertThat( "The isRepeaterRunning method failed to detect that the socket is now available.",
                   CARepeaterStarter.isRepeaterRunning( testPort ), is( false ) );
 
-      logger.info( "The test PASSED." );
+     logger.info( "The test PASSED." );
    }
 
 /*- Private methods ----------------------------------------------------------*/
