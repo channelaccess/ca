@@ -20,6 +20,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.net.*;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -183,9 +184,8 @@ public class CARepeaterStarterTest
       assertThat( "The isRepeaterRunning method failed to detect that the socket was reserved.",
                   CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
 
-      // Allow time for the process to finish and check that the isRepeaterRunning method
-      // detects that the port is now available.
-      Thread.sleep( 4000 );
+      // Wait for the process to finish and check that the socket has become available again.
+      processManager.waitFor( 5000, TimeUnit.MILLISECONDS );
       assertThat( processManager.isAlive(), is( false ) );
       assertThat( "The isRepeaterRunning method failed to detect that the socket is now available.",
                   CARepeaterStarter.isRepeaterRunning( testPort ), is( false ) );
