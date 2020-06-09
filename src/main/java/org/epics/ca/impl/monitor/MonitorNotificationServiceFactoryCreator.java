@@ -93,10 +93,6 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
    /**
     * The number of service threads that will be used by default for service implementations which require
     * more than one thread.
-    *
-    * @implNote
-    * This definition currently applies to the BlockingQueueMultipleWorkerMonitorNotificationServiceImpl and
-    * StripedExecutorServiceMonitorNotificationService service implementations.
     */
    public static final int NUMBER_OF_SERVICE_THREADS_DEFAULT = 10;
 
@@ -132,7 +128,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
     * </ul>
     *
     * @param serviceConfiguration specifies the properties of the service instances that
-    *                    this factory will generate.
+    *    this factory will generate.
     *
     * @return the factory.
     *
@@ -141,7 +137,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
     */
    public static MonitorNotificationServiceFactory create( String serviceConfiguration )
    {
-      logger.finest( String.format("MonitorNotificationServiceFactoryCreator has been called with serviceImpl specifier: %s", serviceConfiguration ) );
+      logger.finest( String.format( "MonitorNotificationServiceFactoryCreator create method has been called with serviceImpl specifier: %s", serviceConfiguration ) );
 
       Validate.notEmpty( serviceConfiguration );
 
@@ -206,8 +202,11 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
    @Override
    public void close()
    {
+      logger.finer(  "MonitorNotificationServiceFactoryCreator close method has been called." );
       serviceFactoryList.forEach( MonitorNotificationServiceFactory::close );
       serviceFactoryList.clear();
+      logger.finer( "MonitorNotificationServiceFactoryCreator close method completed." );
+
    }
 
    /**
@@ -217,7 +216,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
     */
    public static List<String> getAllServiceImplementations()
    {
-      return Arrays.stream(ServiceImpl.values() ).map( ServiceImpl::toString ).collect( Collectors.toList() );
+      return Arrays.stream( ServiceImpl.values() ).map( ServiceImpl::toString ).collect( Collectors.toList() );
    }
 
    static public long getServiceCount()
@@ -232,30 +231,31 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
     */
    public static void shutdownExecutor( ExecutorService executorService )
    {
-      logger.finest( "Starting executor shutdown sequence..." );
+      logger.info( "Starting executor shutdown sequence for executor " + executorService );
 
       executorService.shutdown();
       try
       {
-         logger.finest( "Waiting up to 2 seconds for tasks to finish..." );
+         logger.finer( "Waiting up to 2 seconds for tasks to finish..." );
          if ( executorService.awaitTermination(2, TimeUnit.SECONDS ) )
          {
-            logger.finest( "Executor terminated ok." );
+            logger.finer( "Executor terminated ok." );
          }
          else
          {
-            logger.finest( "Executor did not yet terminate. Forcing termination..." );
-            executorService.shutdownNow();
-            logger.finest( "Termination forced. Waiting up to 2 seconds for tasks to finish..." );
+            logger.finer( "Executor did not yet terminate. Forcing termination..." );
+            final List<Runnable> droppedTasks = executorService.shutdownNow();
+            logger.finer( "Executor was abruptly shutdown. " + droppedTasks.size() + " tasks will not be executed." );
+            logger.finer( "Termination forced. Waiting up to 2 seconds for tasks to finish..." );
             executorService.awaitTermination(2, TimeUnit.SECONDS );
          }
       }
       catch ( InterruptedException ex )
       {
-         logger.log ( Level.WARNING, "Interrupted whilst waiting for tasks to finish. Propagating interrupt." );
+         logger.warning( "Interrupted whilst waiting for tasks to finish. Propagating interrupt." );
          Thread.currentThread().interrupt();
       }
-      logger.finest( "Executor shutdown sequence completed." );
+      logger.info( "Executor shutdown sequence completed." );
    }
 
 /*- Private methods ----------------------------------------------------------*/
