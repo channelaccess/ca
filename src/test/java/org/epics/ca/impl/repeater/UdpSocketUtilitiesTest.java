@@ -368,8 +368,8 @@ class UdpSocketUtilitiesTest
       assertThat( processManager.isAlive(), is( true ) );
       assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(false ) );
 
-      // Allow time for the process to finish and check that the socket has become available again.
-      Thread.sleep( 2500 );
+      // Wait for the process to finish and check that the socket has become available again.
+      processManager.waitFor( 5000, TimeUnit.MILLISECONDS );
       assertThat( processManager.isAlive(), is( false ) );
       assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(true ) );
    }
@@ -851,7 +851,7 @@ class UdpSocketUtilitiesTest
    // is reserved
    @ValueSource( booleans = { true, false } )
    @ParameterizedTest
-   void integrationTestDataTransfer( boolean bindSendSocket ) throws Exception
+   void integrationTestSynchronousDataTransfer( boolean bindSendSocket ) throws Exception
    {
       final DatagramPacket receivePacket = new DatagramPacket (new byte[ 10 ], 10);
       final DatagramPacket sendPacket = new DatagramPacket( new byte[] { (byte) 0xAA, (byte) 0xBB }, 2 );
@@ -873,11 +873,66 @@ class UdpSocketUtilitiesTest
          sendSocket.connect( InetAddress.getLoopbackAddress(), 12345 );
          assertThat( sendSocket.isConnected(), is(true));
 
+         // Note: because the listening socket has already been created it is already buffering
+         // datagrams. This means we can send the message datagram first, then later use the
+         // listening socket receive method to pull the data from the socket buffer.
+         logger.info( "About to send...");
+         sendSocket.send( sendPacket );
+         logger.info( "Sent." );
+
+         logger.info( "Waiting for receive to complete");
+         try
+         {
+            logger.info( "Calling receive()...");
+            listenSocket.receive( receivePacket );
+            logger.info( "Received new packet from: " + receivePacket.getSocketAddress() );
+         }
+         catch ( Exception ex )
+         {
+            logger.info( "Exception thrown !" + ex.getMessage() );
+         }
+         logger.info( "Receive thread completed");
+      }
+      assertThat ( receivePacket.getLength(), is( 2 ) );
+      assertThat ( receivePacket.getSocketAddress() instanceof InetSocketAddress , is( true  ) );
+      assertThat ( ((InetSocketAddress) receivePacket.getSocketAddress()).getAddress(), not( is( InetAddress.getByName( "0.0.0.0" ) ) ) );
+      assertThat ( ((InetSocketAddress) receivePacket.getSocketAddress()).getPort(), not( is( 0 ) ) );
+      assertThat ( receivePacket.getData()[0], is( sendPacket.getData()[0] ) );
+      assertThat ( receivePacket.getData()[1], is( sendPacket.getData()[1] ) );
+   }
+
+   //  Note: data transfer should always work regardless of whether the socket
+   // is reserved
+   @ValueSource( booleans = { true, false } )
+   @ParameterizedTest
+   void integrationTestAsynchronousDataTransfer( boolean bindSendSocket ) throws Exception
+   {
+      final DatagramPacket receivePacket = new DatagramPacket (new byte[ 10 ], 10);
+      final DatagramPacket sendPacket = new DatagramPacket( new byte[] { (byte) 0xAA, (byte) 0xBB }, 2 );
+
+      try ( final DatagramSocket listenSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(12345, false );
+            final DatagramSocket sendSocket = bindSendSocket ? UdpSocketUtilities.createEphemeralSendSocket(false ) : UdpSocketUtilities.createUnboundSendSocket() )
+      {
+         // Verify that the send socket is bound or unbound as requested.
+         assertThat( sendSocket.isBound(), is( bindSendSocket ) );
+
+         // Configure the destination address to send to by "connecting" to the destination socket.
+         // Notes:
+         // 1. connect has different semantics for UDP compared with TCP. It does not imply
+         //    an active connection to the remote socket. In the current context it means the
+         //    default destination to send to when the send packet does not explicitly provide
+         //    this information.
+         // 2. an alternative approach would be to skip the connect operation and to configure
+         //    the destination directly in the send packet.
+         sendSocket.connect( InetAddress.getLoopbackAddress(), 12345 );
+         assertThat( sendSocket.isConnected(), is(true));
+
          final ExecutorService executor = Executors.newSingleThreadExecutor();
          final Future<?> f = executor.submit(() -> {
             logger.info( "Receive thread started");
             try
             {
+               logger.info( "Calling receive()...");
                listenSocket.receive( receivePacket );
                logger.info( "Received new packet from: " + receivePacket.getSocketAddress() );
             }
@@ -888,9 +943,14 @@ class UdpSocketUtilitiesTest
             logger.info( "Receive thread completed");
          });
 
+         // Note: the send operation may or may not occur before the executor thread
+         // has invoked the receive method above. Because the receive socket is
+         // already created it will buffer any messages that may arrive before
+         // receive has been called. Thus, data transfer should be reliable despite
+         // the race condition.
          logger.info( "About to send...");
          sendSocket.send( sendPacket );
-         logger.info( "Waiting for receive to complete");
+         logger.info( "Sent. Waiting for receive to complete");
          f.get();
          logger.info( "Receive completed");
          executor.shutdown();
