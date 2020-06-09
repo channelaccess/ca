@@ -200,15 +200,30 @@ public class JavaProcessManager
    }
 
    /**
-    * Returns an indicator of whether the process associated with this
-    * manager instance is still alive.
+    * Returns true when the process associated with this manager instance is still
+    * alive.
     *
     * @return the result.
     */
    public boolean isAlive()
    {
       return process.isAlive();
-   }   
+   }
+
+   /**
+    * Waits for the process associated witht his manager to terminate or for a
+    * timeout to occur, whichever comes soonest.
+    *
+    * @param timeout the maximum time to wait.
+    * @param timeUnit the time units.
+    * @return true indicates the process has terminated; false indicates a
+    * timeout occurred.
+    * @throws InterruptedException if the current thread was interrupted while waiting.
+    */
+   public boolean waitFor( long timeout, TimeUnit timeUnit ) throws InterruptedException
+   {
+      return process.waitFor( timeout, timeUnit );
+   }
 
 /*- Package-level methods ----------------------------------------------------*/
 /*- Private methods ----------------------------------------------------------*/
