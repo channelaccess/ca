@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -68,9 +67,6 @@ class CARepeaterClientProxyTest
    @AfterEach
    void afterEach()
    {
-      // After each test clean up the resources associated with any UdpSocketReceiver instances.
-      UdpSocketReceiver.cancel();
-
       threadWatcher.verify();
    }  
    
@@ -150,90 +146,96 @@ class CARepeaterClientProxyTest
    @Test
    void integrationTestSendCaVersionMessage() throws SocketException
    {
-      final Future<DatagramPacket> future = UdpSocketReceiver.create( 31245 );
-
-      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 31245 ) ) )
+      // Use try with resources to ensure UDP Receiver listening socket gets closed
+      // regardless of test outcome.
+      try ( final UdpSocketReceiver receiver = UdpSocketReceiver.startListening( 31245 ) )
       {
-           logger.info( "About to send..." );
-           proxy.sendCaVersionMessage();
+         try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy(new InetSocketAddress(InetAddress.getLoopbackAddress(), 31245)) )
+         {
+            logger.info( "About to send..." );
+            proxy.sendCaVersionMessage();
+            logger.info( "Sent." );
+         }
+
+         final DatagramPacket receivePacket = receiver.getDatagram();
+
+         // Check the received length is exactly the size of the header.
+         assertThat(receivePacket.getLength(), is(CARepeaterMessage.CA_MESSAGE_HEADER_SIZE));
+
+         // Now verify that the contents of the message is as expected for a CA_REPEATER_CONFIRM
+         final ByteBuffer byteBuffer = ByteBuffer.wrap(receivePacket.getData());
+         byteBuffer.limit(receivePacket.getLength());
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value), is(CARepeaterMessage.CaCommandCodes.CA_PROTO_VERSION.value));
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaVersionMessageOffsets.CA_HDR_SHORT_VERSION_MSG_UNUSED1_OFFSET.value), is((short) 0));
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaVersionMessageOffsets.CA_HDR_SHORT_VERSION_MSG_PRIORITY_OFFSET.value), is((short) 0));
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaVersionMessageOffsets.CA_HDR_SHORT_VERSION_MSG_UNUSED_TCP_MINOR_VERSION_OFFSET.value), is((short) 0));
+         assertThat(byteBuffer.getInt(CARepeaterMessage.CaVersionMessageOffsets.CA_HDR_INT_VERSION_MSG_UNUSED2_OFFSET.value), is(0));
+         assertThat(byteBuffer.getInt(CARepeaterMessage.CaVersionMessageOffsets.CA_HDR_INT_VERSION_MSG_UNUSED3_OFFSET.value), is(0));
       }
-
-      // Allow a small time window for the data to be received.
-      logger.info( "Sent. Waiting up to 500ms for data to be received..." );
-      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 500, TimeUnit.MILLISECONDS ) );
-
-      // Check the received length is exactly the size of the header.
-      assertThat( receivePacket.getLength(), is( CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ) );
-
-      // Now verify that the contents of the message is as expected for a CA_REPEATER_CONFIRM
-      final ByteBuffer byteBuffer = ByteBuffer.wrap( receivePacket.getData() );
-      byteBuffer.limit( receivePacket.getLength() );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value ), is ( CARepeaterMessage.CaCommandCodes.CA_PROTO_VERSION.value ) );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaVersionMessageOffsets.CA_HDR_SHORT_VERSION_MSG_UNUSED1_OFFSET.value ), is ( (short) 0 ) );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaVersionMessageOffsets.CA_HDR_SHORT_VERSION_MSG_PRIORITY_OFFSET.value ), is ( (short) 0 ) );
-      assertThat(byteBuffer.getShort( CARepeaterMessage.CaVersionMessageOffsets.CA_HDR_SHORT_VERSION_MSG_UNUSED_TCP_MINOR_VERSION_OFFSET.value ), is ((short) 0 ) );
-      assertThat( byteBuffer.getInt( CARepeaterMessage.CaVersionMessageOffsets.CA_HDR_INT_VERSION_MSG_UNUSED2_OFFSET.value ), is ( 0 ) );
-      assertThat( byteBuffer.getInt( CARepeaterMessage.CaVersionMessageOffsets.CA_HDR_INT_VERSION_MSG_UNUSED3_OFFSET.value ), is ( 0 ) );
    }
 
    @Test
    void integrationTestSendCaBeaconMessage() throws SocketException, UnknownHostException
    {
-      final Future<DatagramPacket> future = UdpSocketReceiver.create( 31246 );
-
-      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 31246 ) ) )
+      // Use try with resources to ensure UDP Receiver listening socket gets closed
+      // regardless of test outcome.
+      try ( final UdpSocketReceiver receiver = UdpSocketReceiver.startListening(31246) )
       {
-         logger.info( "About to send..." );
-         proxy.sendCaServerBeaconMessage( (short) 99, (short) 4444, 0x12345678, InetAddress.getByAddress( new byte[] {(byte) 0Xaa, (byte) 0Xbb, (byte) 0Xcc, (byte) 0Xdd } ) );
+         try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy(new InetSocketAddress(InetAddress.getLoopbackAddress(), 31246)) )
+         {
+            logger.info( "About to send...") ;
+            proxy.sendCaServerBeaconMessage((short) 99, (short) 4444, 0x12345678, InetAddress.getByAddress(new byte[] { (byte) 0Xaa, (byte) 0Xbb, (byte) 0Xcc, (byte) 0Xdd }));
+            logger.info( "Sent !" );
+         }
+
+         final DatagramPacket receivePacket = receiver.getDatagram();
+
+         // Check the received length is exactly the size of the header.
+         assertThat(receivePacket.getLength(), is(CARepeaterMessage.CA_MESSAGE_HEADER_SIZE));
+
+         // Now verify that the contents of the message is as expected for a CA_REPEATER_CONFIRM
+         final ByteBuffer byteBuffer = ByteBuffer.wrap(receivePacket.getData());
+         byteBuffer.limit(receivePacket.getLength());
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value), is(CARepeaterMessage.CaCommandCodes.CA_PROTO_RSRV_IS_UP.value));
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_SHORT_BEACON_MSG_UNUSED_OFFSET.value), is((short) 0));
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_SHORT_BEACON_MSG_SERVER_PROTOCOL_MINOR_VERSION_OFFSET.value), is((short) 99));
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_SHORT_BEACON_MSG_SERVER_TCP_LISTENING_PORT_OFFSET.value), is((short) 4444));
+         assertThat(byteBuffer.getInt(CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_INT_BEACON_MSG_SERVER_BEACON_ID_OFFSET.value), is(0x12345678));
+         assertThat(byteBuffer.getInt(CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_INT_BEACON_MSG_SERVER_ADDR_OFFSET.value), is(0xAABBCCDD));
       }
-
-      // Allow a small time window for the data to be received.
-      logger.info( "Sent. Waiting up tp 500ms for data to be received..." );
-      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 500, TimeUnit.MILLISECONDS ) );
-
-      // Check the received length is exactly the size of the header.
-      assertThat( receivePacket.getLength(), is( CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ) );
-
-      // Now verify that the contents of the message is as expected for a CA_REPEATER_CONFIRM
-      final ByteBuffer byteBuffer = ByteBuffer.wrap( receivePacket.getData() );
-      byteBuffer.limit( receivePacket.getLength() );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value ), is (CARepeaterMessage.CaCommandCodes.CA_PROTO_RSRV_IS_UP.value ) );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_SHORT_BEACON_MSG_UNUSED_OFFSET.value ), is ((short) 0 ) );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_SHORT_BEACON_MSG_SERVER_PROTOCOL_MINOR_VERSION_OFFSET.value ), is ( (short) 99 ) );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_SHORT_BEACON_MSG_SERVER_TCP_LISTENING_PORT_OFFSET.value ), is ( (short) 4444 ) );
-      assertThat( byteBuffer.getInt( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_INT_BEACON_MSG_SERVER_BEACON_ID_OFFSET.value ), is ( 0x12345678 ) );
-      assertThat( byteBuffer.getInt( CARepeaterMessage.CaBeaconMessageOffsets.CA_HDR_INT_BEACON_MSG_SERVER_ADDR_OFFSET.value ), is ( 0xAABBCCDD ) );
    }
 
    @Test
    void integrationTestSendRepeaterConfirmMessage() throws SocketException
    {
-      final Future<DatagramPacket> future = UdpSocketReceiver.create( 31247 );
-
-      try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy( new InetSocketAddress( InetAddress.getLoopbackAddress(), 31247 ) ) )
+      // Use try with resources to ensure UDP Receiver listening socket gets closed
+      // regardless of test outcome.
+      try ( final UdpSocketReceiver receiver = UdpSocketReceiver.startListening(31247) )
       {
-         logger.info( "About to send..." );
-         proxy.sendCaRepeaterConfirmMessage( InetAddress.getLoopbackAddress() );
+         try ( CARepeaterClientProxy proxy = new CARepeaterClientProxy(new InetSocketAddress( InetAddress.getLoopbackAddress(), 31247)) )
+         {
+            logger.info( "About to send..." );
+            proxy.sendCaRepeaterConfirmMessage(InetAddress.getLoopbackAddress());
+            logger.info( "Sent." );
+         }
+
+         final DatagramPacket receivePacket = receiver.getDatagram();
+
+         // Check the received length is exactly the size of the header.
+         assertThat(receivePacket.getLength(), is(CARepeaterMessage.CA_MESSAGE_HEADER_SIZE));
+
+         // Now verify that the contents of the message is as expected for a CA_REPEATER_CONFIRM
+         final ByteBuffer byteBuffer = ByteBuffer.wrap(receivePacket.getData());
+         byteBuffer.limit(receivePacket.getLength());
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_SHORT_REPEATER_CONFIRM_MSG_COMMAND_OFFSET.value), is(CARepeaterMessage.CaCommandCodes.CA_REPEATER_CONFIRM.value));
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_SHORT_REPEATER_CONFIRM_MSG_UNUSED1_OFFSET.value), is((short) 0));
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_SHORT_REPEATER_CONFIRM_MSG_UNUSED2_OFFSET.value), is((short) 0));
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_SHORT_REPEATER_CONFIRM_MSG_UNUSED3_OFFSET.value), is((short) 0));
+         assertThat(byteBuffer.getInt(CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_INT_REPEATER_CONFIRM_MSG_UNUSED4_OFFSET.value), is(0));
+
+         final InetAddress caRepeaterInetAddressAsInteger = InetAddressUtil.intToIPv4Address(byteBuffer.getInt(CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_INT_REPEATER_CONFIRM_MSG_REPEATER_ADDR_OFFSET.value));
+         assertThat(NetworkUtilities.isThisMyIpAddress(caRepeaterInetAddressAsInteger), is(true));
       }
-
-      // Allow a small time window for the data to be received.
-      logger.info( "Sent. Waiting up to 500ms for data to be received..." );
-      final DatagramPacket receivePacket = assertDoesNotThrow( () -> future.get( 500, TimeUnit.MILLISECONDS ) );
-
-      // Check the received length is exactly the size of the header.
-      assertThat( receivePacket.getLength(), is( CARepeaterMessage.CA_MESSAGE_HEADER_SIZE ) );
-
-      // Now verify that the contents of the message is as expected for a CA_REPEATER_CONFIRM
-      final ByteBuffer byteBuffer = ByteBuffer.wrap( receivePacket.getData() );
-      byteBuffer.limit( receivePacket.getLength() );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_SHORT_REPEATER_CONFIRM_MSG_COMMAND_OFFSET.value ), is ( CARepeaterMessage.CaCommandCodes.CA_REPEATER_CONFIRM.value ) );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_SHORT_REPEATER_CONFIRM_MSG_UNUSED1_OFFSET.value ), is ( (short) 0 ) );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_SHORT_REPEATER_CONFIRM_MSG_UNUSED2_OFFSET.value ), is ( (short) 0 ) );
-      assertThat( byteBuffer.getShort( CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_SHORT_REPEATER_CONFIRM_MSG_UNUSED3_OFFSET.value ), is ( (short) 0 ) );
-      assertThat( byteBuffer.getInt( CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_INT_REPEATER_CONFIRM_MSG_UNUSED4_OFFSET.value ), is ( 0 ) );
-
-      final InetAddress caRepeaterInetAddressAsInteger = InetAddressUtil.intToIPv4Address( byteBuffer.getInt( CARepeaterMessage.CaRepeaterConfirmMessageOffsets.CA_HDR_INT_REPEATER_CONFIRM_MSG_REPEATER_ADDR_OFFSET.value ) );
-      assertThat( NetworkUtilities.isThisMyIpAddress( caRepeaterInetAddressAsInteger ), is (true ) );
    }
 
    @Test
