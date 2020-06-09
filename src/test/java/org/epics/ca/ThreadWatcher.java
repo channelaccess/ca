@@ -25,7 +25,7 @@ public class ThreadWatcher
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( ThreadWatcher.class );
-   private static final Set<String> jvmManagedThreads = new HashSet<>( Arrays.asList( "process reaper", "Finalizer", "Reference Handler", "Signal Dispatcher" ) );
+   private static final Set<String> jvmManagedThreads = new HashSet<>( Arrays.asList( "process reaper", "Finalizer", "Reference Handler", "Signal Dispatcher", "Attach Listener" ) );
    private final Set<Thread> threadsAtStart;
 
 /*- Main ---------------------------------------------------------------------*/
