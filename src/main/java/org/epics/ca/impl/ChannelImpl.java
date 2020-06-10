@@ -4,7 +4,6 @@ package org.epics.ca.impl;
 
 /*- Imported packages --------------------------------------------------------*/
 
-import com.lmax.disruptor.EventFactory;
 import org.epics.ca.*;
 import org.epics.ca.data.Metadata;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
@@ -13,7 +12,6 @@ import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.epics.ca.impl.requests.MonitorRequest;
 import org.epics.ca.impl.requests.ReadNotifyRequest;
 import org.epics.ca.impl.requests.WriteNotifyRequest;
-import org.epics.ca.util.Holder;
 import org.epics.ca.util.IntHashMap;
 import org.epics.ca.util.logging.LibraryLogManager;
 
@@ -132,7 +130,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       {
          int count = responseRequests.size ();
          if ( count == 0 )
+         {
             return;
+         }
          requests = new ResponseRequest[ count ];
          requests = responseRequests.toArray (requests);
       }
@@ -788,21 +788,6 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
                logger.log( Level.WARNING, "Unexpected exception caught when dispatching access rights listener event.", th);
             }
          }
-      }
-   }
-
-   static class HolderEventFactory<TT> implements EventFactory<Holder<TT>>
-   {
-      private final TypeSupport<TT> typeSupport;
-      public HolderEventFactory( TypeSupport<TT> typeSupport )
-      {
-         this.typeSupport = typeSupport;
-      }
-
-      @Override
-      public Holder<TT> newInstance()
-      {
-         return new Holder<>(typeSupport.newInstance());
       }
    }
 
