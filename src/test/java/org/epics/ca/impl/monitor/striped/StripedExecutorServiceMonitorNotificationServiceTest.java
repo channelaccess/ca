@@ -64,7 +64,7 @@ class StripedExecutorServiceMonitorNotificationServiceTest
       final int consumerProcessingTimeInMicroseconds = ( consumerType == ConsumerType.NORMAL ) ? 1 : 100;
 
       // Call test in main package
-      new MonitorNotificationServiceTest().testThroughputUntilExpectedNotificationsReceived( serviceImpl, notifications, notifyValue, consumerType, consumerProcessingTimeInMicroseconds );
+      new MonitorNotificationServiceTest().testThroughputUntilExpectedNotificationCountReceived( serviceImpl, notifications, notifyValue, consumerType, consumerProcessingTimeInMicroseconds );
    }
 
    /**
