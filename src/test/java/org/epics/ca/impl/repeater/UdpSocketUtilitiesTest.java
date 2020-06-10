@@ -605,21 +605,21 @@ class UdpSocketUtilitiesTest
 
       Exception exception = null;
       int maxDatagramLength = bufferSize;
-      try ( DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket(true ) )
+      try ( DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket(true ) ) // SocketException -->
       {
          for ( int i = 0; i < bufferSize; i = i + 1000 )
          {
             packet.setLength( i );
-            sendSocket.send( packet );
+            sendSocket.send( packet ); // IOException -->
             maxDatagramLength = i;
          }
       }
-      catch ( Exception ex )
+      catch ( IOException ex )
       {
          exception = ex;
       }
       assertNotNull( exception );
-      assertThat( exception.getClass(), is( IOException.class ) );
+      assertThat( exception.getClass(), anyOf( is( IOException.class ), is( IOException.class ) ) );
       assertThat( exception.getMessage(), anyOf( containsString( "Message too long" ),
                                                  containsString( "sendto failed" ) ) );
       logger.info( "The exception message details were: '" +  exception.getMessage() + "'." );
@@ -629,7 +629,7 @@ class UdpSocketUtilitiesTest
    @Test
    void testSocketSend_investigateAttemptToBroadcastWhenSocketNotBroadcastEnabled() throws UnknownHostException, SocketException
    {
-      // Create a datagram whose detsination is the universal broadcast address.
+      // Create a datagram whose destination is the universal broadcast address.
       final DatagramPacket packet = new DatagramPacket( new byte[] { (byte) 0xAA } , 1, InetAddress.getByName( "255.255.255.255" ), 6904 );
 
       // Create a socket which is not broadcast enabled.
@@ -638,7 +638,7 @@ class UdpSocketUtilitiesTest
       {
          exception = assertThrows( IOException.class, () -> sendSocket.send( packet ) );
       }
-      assertThat( exception.getClass(), is( IOException.class ) );
+      assertThat( exception.getClass(), anyOf( is( IOException.class ), is( IOException.class ) ) );
       assertThat( exception.getMessage(), anyOf( containsString( "Permission denied" ),
                                                  containsString( "Can't assign requested address (sendto failed)" ),
                                                  containsString( "No buffer space available (sendto failed)" ) ) );
@@ -657,7 +657,8 @@ class UdpSocketUtilitiesTest
       {
          exception = assertThrows( IOException.class, () -> sendSocket.send( packet ) );
       }
-      assertThat( exception.getMessage(), anyOf( containsString( "Network is unreachable"),
+      assertThat( exception.getMessage(), anyOf( containsString( "Protocol not allowed" ),
+                                                 containsString( "Network is unreachable" ),
                                                  containsString( "No route to host (sendto failed)" ),
                                                  containsString( "No buffer space available (sendto failed)" ),
                                                  containsString( "Protocol family unavailable" ) ) );
