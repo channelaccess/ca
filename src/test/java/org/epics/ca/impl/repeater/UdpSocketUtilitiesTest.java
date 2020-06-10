@@ -619,7 +619,7 @@ class UdpSocketUtilitiesTest
          exception = ex;
       }
       assertNotNull( exception );
-      assertThat( exception.getClass(), anyOf( is( IOException.class ), is( IOException.class ) ) );
+      assertThat( exception.getClass(), isA( IOException.class ) );
       assertThat( exception.getMessage(), anyOf( containsString( "Message too long" ),
                                                  containsString( "sendto failed" ) ) );
       logger.info( "The exception message details were: '" +  exception.getMessage() + "'." );
@@ -638,7 +638,7 @@ class UdpSocketUtilitiesTest
       {
          exception = assertThrows( IOException.class, () -> sendSocket.send( packet ) );
       }
-      assertThat( exception.getClass(), anyOf( is( IOException.class ), is( IOException.class ) ) );
+      assertThat( exception.getClass(), isA( IOException.class ) );
       assertThat( exception.getMessage(), anyOf( containsString( "Permission denied" ),
                                                  containsString( "Can't assign requested address (sendto failed)" ),
                                                  containsString( "No buffer space available (sendto failed)" ) ) );
