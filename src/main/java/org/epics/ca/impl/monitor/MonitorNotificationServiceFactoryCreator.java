@@ -7,7 +7,6 @@ package org.epics.ca.impl.monitor;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.epics.ca.impl.monitor.blockingqueue.BlockingQueueMonitorNotificationServiceFactory;
-import org.epics.ca.impl.monitor.disruptor.DisruptorMonitorNotificationServiceFactory;
 import org.epics.ca.impl.monitor.striped.StripedExecutorServiceMonitorNotificationServiceFactory;
 import org.epics.ca.util.logging.LibraryLogManager;
 
@@ -31,8 +30,6 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
    {
       BlockingQueueSingleWorkerMonitorNotificationServiceImpl,
       BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,
-      DisruptorOldMonitorNotificationServiceImpl,
-      DisruptorNewMonitorNotificationServiceImpl,
       StripedExecutorServiceMonitorNotificationServiceImpl;
 
       private static final ServiceImpl[] copyOfValues = values();
@@ -121,8 +118,6 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
     * <ul>
     * <li> BlockingQueueSingleWorkerMonitorNotificationServiceImpl,XXXX[,BufferSize]</li>
     * <li> BlockingQueueMultipleWorkerMonitorNotificationServiceImpl[,NumberOfThreads][,BufferSize]</li>
-    * <li> DisruptorOldMonitorNotificationServiceImpl</li>
-    * <li> DisruptorNewMonitorNotificationServiceImpl</li>
     * <li> StripedExecutorServiceMonitorNotificationServiceImpl[,NumberOfThreads]</li>
     * </ul>
     *
@@ -153,18 +148,6 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
          {
             final int totalNumberOfServiceThreads = (args.length == 2) ? NumberUtils.toInt( args[ 1 ], NUMBER_OF_SERVICE_THREADS_DEFAULT) : NUMBER_OF_SERVICE_THREADS_DEFAULT;
             serviceFactory = new StripedExecutorServiceMonitorNotificationServiceFactory( totalNumberOfServiceThreads );
-         }
-         break;
-
-         case DisruptorOldMonitorNotificationServiceImpl:
-         {
-            serviceFactory = new DisruptorMonitorNotificationServiceFactory(true);
-         }
-         break;
-
-         case DisruptorNewMonitorNotificationServiceImpl:
-         {
-            serviceFactory = new DisruptorMonitorNotificationServiceFactory(false);
          }
          break;
 
