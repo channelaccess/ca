@@ -3,7 +3,10 @@ package org.epics.ca.impl.monitor;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.ThreadWatcher;
 import org.epics.ca.util.logging.LibraryLogManager;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -27,56 +30,45 @@ class MonitorNotificationServiceFactoryCreatorTest
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( MonitorNotificationServiceFactoryCreatorTest.class );
+   private ThreadWatcher threadWatcher;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
-/*- Public attributes --------------------------------------------------------*/
+/*- Public methods -----------------------------------------------------------*/
+/*- Package-level methods ----------------------------------------------------*/
+   
+   @BeforeEach
+   void beforeEach()
+   {
+      threadWatcher = ThreadWatcher.start();
+   }
+   
+   @AfterEach
+   void afterEach()
+   {
+      threadWatcher.verify();
+   }
 
    @Test
    void testCreateMonitorNotificationServiceFactory_ThrowsNullPointerExceptionWhenServiceImplConfigurationNull()
    {
-      assertThrows( NullPointerException.class, () -> MonitorNotificationServiceFactoryCreator.create(null ));
+      assertThrows( NullPointerException.class, () -> MonitorNotificationServiceFactoryCreator.create( null ));
    }
 
    @Test
    void testCreateMonitorNotificationServiceFactory_ThrowsIllegalArgumentExceptionWhenServiceImplConfigurationNotRecognised()
    {
-      assertThrows(IllegalArgumentException.class, () -> MonitorNotificationServiceFactoryCreator.create("ThisConfigIsBananas" ));
+      assertThrows(IllegalArgumentException.class, () -> MonitorNotificationServiceFactoryCreator.create( "ThisConfigIsBananas" ));
    }
 
    @MethodSource( "getMonitorNotificationServiceImplementations" )
    @ParameterizedTest
    void testCreateMonitorNotificationServiceFactory_expected_configurations_are_recognised( String serviceImpl )
    {
-      try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create(serviceImpl ) )
+      try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create( serviceImpl ) )
       {
          assertNotNull( factory );
       }
-   }
-
-   /**
-    * Data for the test below.
-    * @return the data.
-    */
-   private static Stream<Arguments> getArgumentsForTestMonitorNotificationServiceImpl_NumberOfServiceThreadsArgumentProcessing()
-   {
-      return Stream.of( Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,66", 66 ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,XXX", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,XXX,YYY", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
-                        Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl", 1 ),
-                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
-                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,10", 10 ),
-                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,10,YYY", 10 ),
-                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,XXX", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
-                        Arguments.of( "DisruptorOldMonitorNotificationServiceImpl", 1 ),
-                        Arguments.of( "DisruptorOldMonitorNotificationServiceImpl,XXX", 1 ),
-                        Arguments.of( "DisruptorOldMonitorNotificationServiceImpl,XXX,YYY", 1 ),
-                        Arguments.of( "DisruptorOldMonitorNotificationServiceImpl,27", 1 ) ,
-                        Arguments.of( "DisruptorNewMonitorNotificationServiceImpl", 1 ),
-                        Arguments.of( "DisruptorNewMonitorNotificationServiceImpl,XXX", 1 ),
-                        Arguments.of( "DisruptorNewMonitorNotificationServiceImpl,XXX,YYY", 1 ),
-                        Arguments.of( "DisruptorNewMonitorNotificationServiceImpl,52", 1 ));
    }
 
    /**
@@ -90,34 +82,10 @@ class MonitorNotificationServiceFactoryCreatorTest
    @ParameterizedTest
    void testMonitorNotificationServiceImpl_NumberOfServiceThreadsArgumentProcessing( String serviceImpl, int expectedThreads )
    {
-      try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create(serviceImpl ) )
+      try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create( serviceImpl ) )
       {
          assertEquals( expectedThreads, factory.getQosMetricNumberOfNotificationThreadsPerConsumer() );
       }
-   }
-
-   /**
-    * Data for the test below.
-    * @return the data.
-    */
-   private static Stream<Arguments> getArgumentsForTestMonitorNotificationServiceImpl_BufferSizeArgumentProcessing()
-   {
-      return Stream.of( Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl", true, Integer.MAX_VALUE ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,,100", true, Integer.MAX_VALUE ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,5,100", true, Integer.MAX_VALUE ),
-                        Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl",  true, Integer.MAX_VALUE ),
-                        Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl,,1",  false, 1 ),
-                        Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl,,22",  true, 22 ),
-                        Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl,15,79",  true, 79 ),
-                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,,1",  false, 1 ),
-                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,,42",  true, 42 ),
-                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,15,19",  true, 19 ),
-                        Arguments.of( "DisruptorOldMonitorNotificationServiceImpl", false, 2 ),
-                        Arguments.of( "DisruptorOldMonitorNotificationServiceImpl,XXX", false, 2  ),
-                        Arguments.of( "DisruptorOldMonitorNotificationServiceImpl,XXX,YYY", false, 2  ),
-                        Arguments.of( "DisruptorNewMonitorNotificationServiceImpl", false, 2 ),
-                        Arguments.of( "DisruptorNewMonitorNotificationServiceImpl,XXX", false, 2  ),
-                        Arguments.of( "DisruptorNewMonitorNotificationServiceImpl,XXX,YYY", false, 2  ) );
    }
 
    /**
@@ -139,17 +107,7 @@ class MonitorNotificationServiceFactoryCreatorTest
       }
    }
 
-   /**
-    * Data for the test below.
-    * @return the data.
-    */
-   private static Stream<Arguments> getArgumentsForTestServiceImplBufferingBehaviour()
-   {
-      return Stream.of( Arguments.of(MonitorNotificationServiceFactoryCreator.HUMAN_CONSUMER_IMPL, false ),
-                        Arguments.of(MonitorNotificationServiceFactoryCreator.MACHINE_CONSUMER_IMPL, true ) ) ;
-   }
-
-   /**
+    /**
     * Verify that the HUMAN_IMPL service specifier returns a service that is not buffering.
     * Verify that the MACHINE_IMPL service specifier returns a service that is buffering.
     */
@@ -165,48 +123,78 @@ class MonitorNotificationServiceFactoryCreatorTest
 
    @MethodSource( "getMonitorNotificationServiceImplementations" )
    @ParameterizedTest
-   void testServiceImplResourceDisposeBehaviour( String serviceImpl )
+   void testServiceImplResourceDisposeBehaviour_checkFactoryAutoClose( String serviceImpl )
    {
-      logger.info( String.format( "Testing resource dispose behaviour of service implementation: '%s'", serviceImpl + ",50" ) );
-      final int numberOfThreadsBaseline = Thread.getAllStackTraces().keySet().size();
-      logger.info( String.format( "The number of baseline threads in the system was: %d", numberOfThreadsBaseline ) );
+      logger.info( String.format( "Testing resource autoclose behaviour of service implementation: '%s'", serviceImpl + ",50" ) );
 
-      try ( final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create(serviceImpl + ",50" ) )
+      final ThreadWatcher threadWatcher = ThreadWatcher.start();
+      try( MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create( serviceImpl + ",50" ) )
       {
-         final int numberOfThreadsAfterFactoryCreate = Thread.getAllStackTraces().keySet().size();
-         logger.info( String.format( "The number of threads in the system after factory create was: %d", numberOfThreadsAfterFactoryCreate));
-
-         for ( int i = 0; i < 3; i++ )
-         {
-            logger.info( "Creating a service...");
-
-            final MonitorNotificationService<Long> service = factory.getServiceForConsumer( v -> {} );
-            final int numberOfThreadsAfterServiceCreate = Thread.getAllStackTraces().keySet().size();
-            logger.info( String.format( "The number of threads in the system after service create was: %d", numberOfThreadsAfterServiceCreate ) );
-
-            service.publish( 123L );
-            final int numberOfThreadsAfterServiceFirstPublish = Thread.getAllStackTraces().keySet().size();
-            logger.info( String.format( "The number of threads in the system after service first publish was: %d", numberOfThreadsAfterServiceFirstPublish ) );
-
-            service.close();
-            final int numberOfThreadsAfterServiceClose = Thread.getAllStackTraces().keySet().size();
-            logger.info( String.format( "The number of threads in the system after service close was: %d", numberOfThreadsAfterServiceClose ) );
-         }
+         final MonitorNotificationService<Long> service = factory.getServiceForConsumer( v -> {} );
+         service.publish(123L );
       }
-      final int numberOfThreadsAfterFactoryClose = Thread.getAllStackTraces().keySet().size();
 
-      logger.info( String.format( "The number of threads in the system after factory close was: %d\n", numberOfThreadsAfterFactoryClose ) );
-      logger.info( String.format( "Still running: %s ", Thread.getAllStackTraces().keySet() ) );
-      assertEquals( numberOfThreadsBaseline, numberOfThreadsAfterFactoryClose );
+      // Check threads after factory autoclose are the same as at start of test.
+      threadWatcher.verify();
    }
 
-/*- Private attributes -------------------------------------------------------*/
+   @MethodSource( "getMonitorNotificationServiceImplementations" )
+   @ParameterizedTest
+   void testServiceImplResourceDisposeBehaviour_checkFactoryManualClose( String serviceImpl )
+   {
+      logger.info( String.format( "Testing resource autoclose behaviour of service implementation: '%s'", serviceImpl + ",50" ) );
+
+      final ThreadWatcher threadWatcher = ThreadWatcher.start();
+      final MonitorNotificationServiceFactory factory = MonitorNotificationServiceFactoryCreator.create( serviceImpl + ",50" );
+      final MonitorNotificationService<Long> service = factory.getServiceForConsumer( v -> {} );
+      service.publish(123L );
+      factory.close();
+
+      // Check threads after factory manual close are the same as at start of test.
+      threadWatcher.verify();
+   }
+
+
+/*- Private methods ----------------------------------------------------------*/
 
    // Provides a possible test method source to iterate test over all service implementations
    private static Stream<Arguments> getMonitorNotificationServiceImplementations()
    {
       final List<String> allConfigurations = MonitorNotificationServiceFactoryCreator.getAllServiceImplementations();
       return allConfigurations.stream().map(Arguments::of);
+   }
+   
+   private static Stream<Arguments> getArgumentsForTestMonitorNotificationServiceImpl_BufferSizeArgumentProcessing()
+   {
+      return Stream.of( Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl", true, Integer.MAX_VALUE ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,,100", true, Integer.MAX_VALUE ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,5,100", true, Integer.MAX_VALUE ),
+                        Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl",  true, Integer.MAX_VALUE ),
+                        Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl,,1",  false, 1 ),
+                        Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl,,22",  true, 22 ),
+                        Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl,15,79",  true, 79 ),
+                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,,1",  false, 1 ),
+                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,,42",  true, 42 ),
+                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,15,19",  true, 19 ) );
+   }
+   
+   private static Stream<Arguments> getArgumentsForTestMonitorNotificationServiceImpl_NumberOfServiceThreadsArgumentProcessing()
+   {
+      return Stream.of( Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,66", 66 ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,XXX", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl,XXX,YYY", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
+                        Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl", 1 ),
+                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ),
+                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,10", 10 ),
+                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,10,YYY", 10 ),
+                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,XXX", MonitorNotificationServiceFactoryCreator.NUMBER_OF_SERVICE_THREADS_DEFAULT ) );
+   }
+   
+   private static Stream<Arguments> getArgumentsForTestServiceImplBufferingBehaviour()
+   {
+      return Stream.of( Arguments.of( MonitorNotificationServiceFactoryCreator.HUMAN_CONSUMER_IMPL, false ),
+                        Arguments.of( MonitorNotificationServiceFactoryCreator.MACHINE_CONSUMER_IMPL, true ) ) ;
    }
 
 /*- Nested Classes -----------------------------------------------------------*/
