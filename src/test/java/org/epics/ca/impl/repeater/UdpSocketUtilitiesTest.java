@@ -85,11 +85,11 @@ class UdpSocketUtilitiesTest
    @Test
    void testInetAddress_getAllByName() throws UnknownHostException
    {
-      assertThat(Arrays.toString(InetAddress.getAllByName("0.0.0.0")), is("[/0.0.0.0]"));
-      assertThat(Arrays.toString(InetAddress.getAllByName(null)), is("[localhost/127.0.0.1]"));
+      assertThat( Arrays.toString( InetAddress.getAllByName("0.0.0.0")), is("[/0.0.0.0]"));
+      assertThat( Arrays.toString( InetAddress.getAllByName(null)), is("[localhost/127.0.0.1]"));
       // On a Mac platform this test returns also the IPV6 addreses which may not be available on other target platforms.
       final InetAddress[] localInetAddresses = InetAddress.getAllByName("localhost");
-      Arrays.stream(localInetAddresses).map(InetAddress::toString).forEach(( i ) -> assertThat(i, anyOf(is("localhost/127.0.0.1"), is("localhost/0:0:0:0:0:0:0:1"))));
+      Arrays.stream(localInetAddresses).map(InetAddress::toString).forEach(( i ) -> assertThat(i, anyOf( is("localhost/127.0.0.1"), is("localhost/127.0.1.1"), is("localhost/0:0:0:0:0:0:0:1"))));
    }
 
    @Test
@@ -101,7 +101,7 @@ class UdpSocketUtilitiesTest
    @Test
    void testInetAddress_getLoopbackAddress_is_as_expected()
    {
-      assertThat(InetAddress.getLoopbackAddress().toString(), is("localhost/127.0.0.1"));
+      assertThat( InetAddress.getLoopbackAddress().toString(), is("localhost/127.0.0.1" ) );
    }
 
    @Test
