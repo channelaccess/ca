@@ -16,9 +16,6 @@ import org.epics.ca.data.GraphicEnum;
 import org.epics.ca.data.GraphicEnumArray;
 import org.epics.ca.data.Timestamped;
 
-import com.lmax.disruptor.EventFactory;
-
-
 public class TypeSupports
 {
    /**
@@ -183,9 +180,11 @@ public class TypeSupports
       data.setLowerControl (valueReader.deserialize (buffer, data.getLowerControl (), 1));
    }
 
-   public interface TypeSupport<T> extends EventFactory<T>
+   public interface TypeSupport<T>
    {
       int getDataType();
+
+      T newInstance();
 
       default int getForcedElementCount()
       {
