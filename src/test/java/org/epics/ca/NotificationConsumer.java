@@ -92,17 +92,17 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
    public static <T> NotificationConsumer<T> getNormalConsumer()
    {
       final long notUsedValue = 0L;
-      return new NotificationConsumer<>(ConsumerType.NORMAL, notUsedValue, TimeUnit.SECONDS );
+      return new NotificationConsumer<>( ConsumerType.NORMAL, notUsedValue, TimeUnit.SECONDS );
    }
 
    public static <T> NotificationConsumer<T> getThreadSleepingSlowConsumer( long delayTime, TimeUnit timeUnit )
    {
-      return new NotificationConsumer<>(ConsumerType.SLOW_WITH_THREAD_SLEEP, delayTime, timeUnit );
+      return new NotificationConsumer<>( ConsumerType.SLOW_WITH_THREAD_SLEEP, delayTime, timeUnit );
    }
 
    public static <T> NotificationConsumer<T> getBusyWaitingSlowConsumer( long delayTime, TimeUnit timeUnit )
    {
-      return new NotificationConsumer<>(ConsumerType.SLOW_WITH_BUSY_WAIT, delayTime, timeUnit );
+      return new NotificationConsumer<>( ConsumerType.SLOW_WITH_BUSY_WAIT, delayTime, timeUnit );
    }
 
    public static long getCurrentTotalNotificationCount()
@@ -214,19 +214,19 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
       currentNotificationCount.incrementAndGet();
       currentTotalNotificationCount.incrementAndGet();
 
-      // If the expected notification value is seen open the gate
+      // If the expected NOTIFICATION VALUE is seen open the gate
       if ( ( expectedNotificationValueDetectionLatch != null ) && ( newValue.equals( expectedNotificationValue.get() )  ) )
       {
          expectedNotificationValueDetectionLatch.countDown();
       }
 
-      // If the expected notification count is reached open the gate
+      // If the expected NOTIFICATION COUNT is reached open the gate
       if ( ( expectedNotificationCountDetectionLatch != null ) && ( currentNotificationCount.get() == expectedNotificationCount.get() ) )
       {
          expectedNotificationCountDetectionLatch.countDown();
       }
 
-      // If the expected total notification count is reached open the gate
+      // If the expected TOTAL NOTIFICATION count is reached open the gate
       if ( ( expectedTotalNotificationCountDetectionLatch != null ) && ( currentTotalNotificationCount.get() == expectedTotalNotificationCount.get() ) )
       {
          expectedTotalNotificationCountDetectionLatch.countDown();
@@ -234,7 +234,7 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
 
       // Perform the tests on the new value to determine whether it is consecutive and/or monotonic.
       // Do not trigger the test on the first notification because the lastNotification value is not yet valid.
-      // Only tritgger the tests when the Type is either Integer or Long
+      // Only trigger the tests when the Type is either Integer or Long.
       if ( ( lastNotificationValue.get() != null ) && ( lastNotificationValue.get() instanceof Integer ) && ( newValue instanceof Integer ) )
       {
          //noinspection RedundantCast
