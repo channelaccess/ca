@@ -86,10 +86,6 @@ dependencies {
     // included to assist code development when viewing the project inside
     // IDEs such as IntelliJ.
 
-    // Supports Disruptor-based monitor notification implementation
-    implementation 'com.lmax:disruptor:3.4.2'
-    implementation 'com.lmax:disruptor:3.4.2:javadoc'
-
     // Needed for parameter validation (also the stopwatch timing class
     // that is used in testing).
     implementation 'org.apache.commons:commons-lang3:3.9'
