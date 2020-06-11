@@ -44,7 +44,7 @@ before_script:
 
 script:
   - echo -n "*** LIFECYCLE STARTED - 'script' *************************************************************************"
-  - ./gradlew test
+  - ./gradlew build
   - echo -n "*** LIFECYCLE COMPLETED - 'script' ***********************************************************************"
 
 # The Travis Lifecycle 'deploy' phase is optional and runs after the Travis Lifecycle 'script' phase has completed.
@@ -70,7 +70,7 @@ deploy:
                                              # currently (2020-01-05) has a bug which prevents it from working.
     skip_cleanup: true                       # Set to false to allow cacheing, in accordance with Travis GitHub
     # Releases Provider docs.
-    local_dir: build/javadoc
+    local_dir: build/docs/javadoc
     token: "$GITHUB_TOKEN"                   # Set in the settings page of your repository, as a secure variable
     keep_history: true                       # Retain previous versions of the documentation.
     on:
