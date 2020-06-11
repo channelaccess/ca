@@ -30,14 +30,14 @@ Maven:
 <dependency>
   <groupId>org.epics</groupId>
   <artifactId>ca</artifactId>
-  <version>1.2.3</version>
+  <version>1.3.0</version>
 </dependency>
 ```
 
 Gradle:
 
 ```gradle
-compile 'org.epics:ca:1.2.3'
+compile 'org.epics:ca:1.3.0'
 ```
 
 __Note:__ To be able to retrieve the current snapshot version you have to configure the following repository:
@@ -252,16 +252,14 @@ The configuration string is used as follows:
 |Configuration String                                                           | Type            | Default Buffer Size  | Default Number of Consumer Notification Threads| Additional Comment |
 |-------------------------------------------------------------------------------|-----------------|----------------------|------------------------------------------------|----------------------------------------------------|
 |"BlockingQueueMultipleWorkerMonitorNotificationServiceImpl {,threads}{,bufsiz}"| Non-lossy       | Integer.MAX_VALUE    | 16                                             | Threads and buffer size are configurable.          |
-|"BlockingQueueSingleWorkerMonitorNotificationServiceImpl {,threads}{,bufsiz}"  | Non-lossy       | Integer.MAX_VALUE    |  1                                             | Threads parameter is ignored and fixed to 1.       |
-|"DisruptorOldMonitorNotificationServiceImpl"                                   | Lossy           | 2                    |  1                                             | Limited to < 1000 monitors per client application. |
-|"DisruptorNewMonitorNotificationServiceImpl"                                   | Lossy           | 2                    |  1                                             | Experimental. Attempts to improve on the old one.  |
+|"BlockingQueueSingleWorkerMonitorNotificationServiceImpl {,threads}{,bufsiz}"  | Non-lossy       | Integer.MAX_VALUE    |  1                                             | Threads parameter is ignored and fixed to 1.       |                                           | Experimental. Attempts to improve on the old one.  |
 |"StripedExecutorServiceMonitorNotificationServiceImpl {,threads}"              | Non-lossy       | Integer.MAX_VALUE    | 10                                             | Uses Heinz Kabbutz StripedExecutorService.         |
 
 Note: 
 
-1. The configuration of the monitor notification engine is an experimental feature. In the future it is possible 
-and/or likely that the library will offer only a single engine, fully configurable to meet the needs of all 
-client applications.   
+1. The configuration of the monitor notification engine was an experimental feature. The LMAX Disruptor based 
+notification engines have been retired in CA Release 1.3.0. In the future it is possible and/or likely that 
+the library will offer only a single engine, fully configurable to meet the needs of all client applications.   
 1. The ```BlockingQueueMultipleWorkerMonitorNotificationServiceImpl``` and ```StripedExecutorServiceMonitorNotificationServiceImpl```
 notification engines provide optional configuration parameters allowing the size of the notification buffer and number 
 of consumer notification threads to be configured. 
@@ -270,7 +268,6 @@ of consumer notification threads to be configured.
 
 ### Listeners
 A channel can have Access Right and Connection listeners. These two types of listeners are attached as follows.
-
 
 
 ```java
