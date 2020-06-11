@@ -5,14 +5,13 @@ package org.epics.ca;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.epics.ca.impl.repeater.NetworkUtilities;
-import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import java.util.Properties;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -29,7 +28,6 @@ public class EpicsChannelAccessTestServerTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LibraryLogManager.getLogger( EpicsChannelAccessTestServerTest.class );
    private ThreadWatcher threadWatcher;
 
 /*- Main ---------------------------------------------------------------------*/
@@ -87,16 +85,17 @@ public class EpicsChannelAccessTestServerTest
       // be messages in the log saying that one client was registered. Then there
       // should be multiple messages as the test server comes up and sends beacon
       // messages which the repeater forwards to the CA client library.
-      System.setProperty( "CA_LIBRARY_LOG_LEVEL", Level.ALL.toString() );
-      System.setProperty( "CA_REPEATER_LOG_LEVEL", Level.ALL.toString() );
-      System.setProperty( "CA_REPEATER_OUTPUT_CAPTURE", "true" );
-      System.setProperty( "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE", "true");
+      final Properties properties = new Properties();
+      properties.setProperty( "CA_LIBRARY_LOG_LEVEL", Level.ALL.toString() );
+      properties.setProperty( "CA_REPEATER_LOG_LEVEL", Level.ALL.toString() );
+      properties.setProperty( "CA_REPEATER_OUTPUT_CAPTURE", "true" );
+      properties.setProperty( "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE", "true");
 
       // Create a new Context. This will cause a CA Repeater instance to be spawned.
       // If the system property "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE" is asserted
       // then the spawned CA Repeater will be automatically killed when the context
       // goes out of scope.
-      try ( Context context = new Context() )
+      try ( Context ignored = new Context( properties ) )
       {
          // Allow a couple of seconds for the CA library to start a repeater and
          // to register with it.

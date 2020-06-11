@@ -146,7 +146,6 @@ class UdpSocketUtilities
 
       // Attempt to bind the newly created socket to the specified port.
       // SocketException, SecurityException -->
-
       logger.finest( "Binding to: " + wildcardBindAddress );
       socket.bind( wildcardBindAddress );
 

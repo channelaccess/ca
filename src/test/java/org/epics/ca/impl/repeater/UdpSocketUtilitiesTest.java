@@ -675,7 +675,7 @@ class UdpSocketUtilitiesTest
    @ValueSource( booleans = { true, false } )
    void testCreateBroadcastAwareListeningSocket_DefaultProperties( boolean shareable ) throws SocketException
    {
-      try( DatagramSocket socket = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, shareable ) )
+      try ( final DatagramSocket socket = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, shareable ) )
       {
          // Verify that the socket is not closed.
          assertThat( socket.isClosed(), is(false ) );
@@ -724,7 +724,7 @@ class UdpSocketUtilitiesTest
    @Test
    void testCreateBroadcastAwareListeningSocket_verifyShareablePortsAreShareable() throws SocketException
    {
-      try( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, true ) )
+      try ( final DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, true ) )
       {
          assertDoesNotThrow(() -> UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, true));
       }
@@ -733,10 +733,7 @@ class UdpSocketUtilitiesTest
    @Test
    void testCreateBroadcastAwareListeningSocket_verifyUnshareablePortsAreUnshareable() throws SocketException
    {
-      // Note:
-      // This test and the one below it are identical except the different OS throw different
-      // exceptions, albeit both of the same subclass of SocketException.
-      try( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false ) )
+      try ( final DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false ) )
       {
          assertThrows( SocketException.class, () -> UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false ) );
       }
@@ -746,7 +743,7 @@ class UdpSocketUtilitiesTest
    void testCreateBroadcastAwareListeningSocket_autoclose() throws SocketException
    {
       final DatagramSocket socketReferenceCopy;
-      try ( DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false ) )
+      try ( final DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false ) )
       {
          socketReferenceCopy = listeningSocket;
          assertThat( listeningSocket.isClosed(), is( false ) );
