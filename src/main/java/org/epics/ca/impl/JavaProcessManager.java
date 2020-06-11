@@ -29,7 +29,7 @@ public class JavaProcessManager
 
    private static final Logger logger = LibraryLogManager.getLogger( JavaProcessManager.class );
 
-   private static final File NULL_FILE = new File(( System.getProperty("os.name").startsWith("Windows") ? "NUL" : "/dev/null" ) );
+   private static final File NULL_FILE = new File (( System.getProperty ("os.name").startsWith( "Windows" ) ? "NUL" : "/dev/null" ) );
 
    private final Class<?> classWithMainMethod;
    private final String[] programArgs;

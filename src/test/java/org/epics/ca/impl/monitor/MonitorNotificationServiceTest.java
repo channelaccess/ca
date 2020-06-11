@@ -249,17 +249,22 @@ public class MonitorNotificationServiceTest
     *
     * @param serviceImpl the service implementation.
     * @param slowConsumerDelayTimeInMillis the required processing time for the slow consumer.
-    * @param normalConsumerMinNotifyTimeInMillis the minimum time in which the other consumer should be notified.
-    * @param normalConsumerMaxNotifyTimeInMillis the maximum time in which the other consumer should be notified.
+    * @param slowConsumerMinNotifyTimeInMillis the minimum time in which the slow consumer should be notified.
+    * @param slowConsumerMaxNotifyTimeInMillis the maximum time in which the slow consumer should be notified.
+    * @param normalConsumerMinNotifyTimeInMillis the minimum time in which the normal consumer should be notified.
+    * @param normalConsumerMaxNotifyTimeInMillis the maximum time in which the normal consumer should be notified.
     */
    @ParameterizedTest
    @MethodSource( "getArgumentsForTestSlowConsumerBlockingBehaviour" )
-   void testSlowConsumerBlockingBehaviour( String serviceImpl, long slowConsumerDelayTimeInMillis, long normalConsumerMinNotifyTimeInMillis, long normalConsumerMaxNotifyTimeInMillis )
+   void testSlowConsumerBlockingBehaviour( String serviceImpl, long slowConsumerDelayTimeInMillis,
+                                           long slowConsumerMinNotifyTimeInMillis, long slowConsumerMaxNotifyTimeInMillis,
+                                           long normalConsumerMinNotifyTimeInMillis, long normalConsumerMaxNotifyTimeInMillis )
    {
       Validate.notNull( serviceImpl );
 
-      logger.info( String.format( "Starting test with service implementation '%s'", serviceImpl ) );
-      assertTimeout( Duration.ofSeconds( 30 ), () ->
+      logger.info( String.format( "Starting test with service implementation '%s', delay='%d', minNotify='%d', maxNotify='%d'",
+              serviceImpl, slowConsumerDelayTimeInMillis,  normalConsumerMinNotifyTimeInMillis, normalConsumerMaxNotifyTimeInMillis ) );
+      assertTimeout( Duration.ofSeconds( 10 ), () ->
       {
          // Create in advance the parameters for the test
          final Long slowConsumerValue = 123L;
@@ -307,18 +312,21 @@ public class MonitorNotificationServiceTest
             slowConsumerNotifyTimeInMilliseconds = stopWatch.getTime( TimeUnit.MILLISECONDS );
          }
 
+         logger.info( String.format( "Slow consumer was notified in %,d ms.", slowConsumerNotifyTimeInMilliseconds ) );
+         logger.info( String.format( "Normal consumer was notified in %,d ms.", normalConsumerNotifyTimeInMilliseconds ) );
+
          // Check that the notification arrived in the expected time frame.
          assertTrue(normalConsumerNotifyTimeInMilliseconds >= normalConsumerMinNotifyTimeInMillis,
-                    String.format( "%s greater than %s ", normalConsumerNotifyTimeInMilliseconds, normalConsumerMinNotifyTimeInMillis));
+                    String.format( "Normal Consumer: notify time: '%s' greater than '%s'", normalConsumerNotifyTimeInMilliseconds, normalConsumerMinNotifyTimeInMillis ) );
 
          assertTrue(normalConsumerNotifyTimeInMilliseconds < normalConsumerMaxNotifyTimeInMillis,
-                    String.format( "%s less than %s ", normalConsumerNotifyTimeInMilliseconds, normalConsumerMaxNotifyTimeInMillis));
+                    String.format( "Normal Consumer:notify time: '%s' less than '%s'", normalConsumerNotifyTimeInMilliseconds, normalConsumerMaxNotifyTimeInMillis ) );
 
-         assertTrue(slowConsumerNotifyTimeInMilliseconds >= slowConsumerDelayTimeInMillis,
-                    String.format( "%s greater than %s ", slowConsumerNotifyTimeInMilliseconds, slowConsumerDelayTimeInMillis));
+         assertTrue(slowConsumerNotifyTimeInMilliseconds >= slowConsumerMinNotifyTimeInMillis,
+                 String.format( "Slow Consumer: notify time: '%s' greater than '%s'", slowConsumerNotifyTimeInMilliseconds, slowConsumerMinNotifyTimeInMillis ) );
 
-         logger.info( String.format( "Slow consumer was notified in %,d ms.", slowConsumerNotifyTimeInMilliseconds ) );
-         logger.info( String.format( "Other consumer was notified in %,d ms.", normalConsumerNotifyTimeInMilliseconds ) );
+         assertTrue(slowConsumerNotifyTimeInMilliseconds < slowConsumerMaxNotifyTimeInMillis,
+                 String.format( "Slow Consumer:notify time: '%s' less than '%s'", slowConsumerNotifyTimeInMilliseconds, slowConsumerMaxNotifyTimeInMillis ) );
 
          final boolean serviceIsBlocking = normalConsumerNotifyTimeInMilliseconds >= slowConsumerDelayTimeInMillis;
          logger.info( String.format("The service implementation '%s' had the following notification properties: [blocking=%b].\n", serviceImpl, serviceIsBlocking));
@@ -437,11 +445,6 @@ public class MonitorNotificationServiceTest
       final String aStr = "This is really quite a long string that goes on and on for several tens of characters";
       Integer[] arry = new Integer[ 10 ];
 
-      // Currently (2018-07-24) the build fails with the tests on the Disruptor. To prevent breaking
-      // the build they have been removed for the moment.
-//      final List<String> disabledServiceImpls = Arrays.asList( //"DisruptorOldMonitorNotificationServiceImpl",
-//                                                               "DisruptorNewMonitorNotificationServiceImpl" );
-
       final List<String> allServiceImpls = Arrays.asList( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl",
                                                           "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl",
                                                           "StripedExecutorServiceMonitorNotificationServiceImpl" );
@@ -517,13 +520,14 @@ public class MonitorNotificationServiceTest
       // Summary:
       // Perform tests on all service implementations
       // The slow consumer will take 500ms to process incoming notifications.
-      // The BlockingQueueSingleWorkerMonitorNotificationServiceImpl is expected to block other consumers.
-      // All other service implementations should notify the other consumers almost immediately.
-      // However, since the timing on ANY test may be perturbed by the JVM GC activities the notification
+      // On Windows systems time resolution may only be as good as 20ms.
+      // The BlockingQueueSingleWorkerMonitorNotificationServiceImpl is expected to block subsequent notifications
+      // to the other consumers. All other service implementations should notify the other consumers almost
+      // immediately. However, since the timing on ANY test may be perturbed by the JVM GC activities the notification
       // expectation windows are set very generously.
-      return Stream.of( Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl",   500, 500, 750 ),
-                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl", 500,   0, 250 ),
-                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl",      500,   0, 250 ) );
+      return Stream.of( Arguments.of( "BlockingQueueSingleWorkerMonitorNotificationServiceImpl",   500, 400, 800, 400, 800 ),
+                        Arguments.of( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl", 500, 400, 800,  0,  200 ),
+                        Arguments.of( "StripedExecutorServiceMonitorNotificationServiceImpl",      500, 400, 800,  0,  200 ) );
    }
 
 /*- Nested Classes -----------------------------------------------------------*/

@@ -4,7 +4,6 @@ package org.epics.ca;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.epics.ca.data.*;
-import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
@@ -43,8 +42,6 @@ class ChannelTest
 
    private static final Logger logger = LibraryLogManager.getLogger( ChannelTest.class );
    private ThreadWatcher threadWatcher;
-   
-   private static JavaProcessManager processManager;
 
    private static final double DELTA = 1e-10;
    private static final int TIMEOUT_MILLISEC = 10000;
@@ -271,8 +268,6 @@ class ChannelTest
                logger.info( "connected." );
             } );
 
-            final int defautAdcValue = channel.get();
-
             // Change the PV value to something else, allow the change to propagate
             // then verify that the expected value was received.
             final int testValue = 99;
@@ -487,8 +482,6 @@ class ChannelTest
          {
             assertDoesNotThrow( () -> channel.connectAsync().get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS ) );
 
-            final T t = channel.get();
-
             if ( async )
             {
                Status status = channel.putAsync( expectedValue ).get( TIMEOUT_MILLISEC, TimeUnit.MILLISECONDS );
@@ -697,7 +690,6 @@ class ChannelTest
       @SuppressWarnings( "rawtypes" )
       final List<Class<? extends Metadata>> metaTypeOptions = Arrays.asList( Alarm.class, Timestamped.class, Control.class, Graphic.class );
 
-      final List<Boolean> asyncOptions = Arrays.asList( false, true );
       return metaTypeOptions.stream()
             .flatMap( (metaType) ->
                 Stream.of( Arguments.of( "adc01", String.class, String.class, "12.346", metaType, alarm, meta, false ),

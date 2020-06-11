@@ -19,7 +19,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.*;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -87,16 +86,8 @@ public class CARepeaterStarterTest
    }
 
    @AfterEach
-   void afterEach() throws InterruptedException
+   void afterEach()
    {
-      logger.info( "Cleaning up after test..." );
-      logger.finest( "Collecting final output..." );
-      Thread.sleep( 500 );
-      logger.finest( "Flushing Streams..." );
-      System.out.flush();
-      System.err.flush();
-      logger.info( "Test finished." );
-
       threadWatcher.verify();
    }
 
@@ -109,26 +100,34 @@ public class CARepeaterStarterTest
    @Test
    void testStartRepeaterInSeparateJvmProcess() throws Throwable
    {
-      logger.info( "Starting CA Repeater in separate process." );
-      final JavaProcessManager processManager = CARepeaterStarter.startRepeaterInSeparateJvmProcess( testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable );
-      logger.info( "The CA Repeater process was created." );
-      logger.info( "Verifying that the CA Repeater process is reported as being alive..." );
-      assertThat( processManager.isAlive(), is( true ) );
-      logger.info( "OK" );
-      logger.info( "Waiting a moment to allow the spawned process time to reserve the listening port..." );
-      Thread.sleep( 1500 );
-      logger.info( "Waiting completed." );
-      logger.info( "Verifying that the CA Repeater is detected as running..." );
-      assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( true ) );
-      logger.info( "OK" );
-      logger.info( "Shutting down the CA Repeater process..." );
-      processManager.shutdown();
-      logger.info( "Verifying that the CA Repeater process is no longer reported as being alive..." );
-      assertThat( processManager.isAlive(), is( false ) );
-      logger.info( "OK" );
-      logger.info( "Verifying that the CA Repeater is no longer detected as running..." );
-      assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is( false ) );
-      logger.info( "OK" );
+      logger.info("Starting CA Repeater in separate process.");
+      final JavaProcessManager processManager = CARepeaterStarter.startRepeaterInSeparateJvmProcess(testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable);
+      logger.info("The CA Repeater process was created.");
+      logger.info("Verifying that the CA Repeater process is reported as being alive...");
+      try {
+         assertThat(processManager.isAlive(), is(true));
+         logger.info("OK");
+         logger.info("Waiting a moment to allow the spawned process time to reserve the listening port...");
+         Thread.sleep(1500);
+         logger.info("Waiting completed.");
+         logger.info("Verifying that the CA Repeater is detected as running...");
+         assertThat(CARepeaterStarter.isRepeaterRunning(testPort), is(true));
+         logger.info("OK");
+         logger.info("Shutting down the CA Repeater process...");
+         processManager.shutdown();
+         logger.info("Verifying that the CA Repeater process is no longer reported as being alive...");
+         assertThat(processManager.isAlive(), is(false));
+         logger.info("OK");
+         logger.info("Waiting a moment to allow the OS to release the listening port...");
+         Thread.sleep(1500);
+         logger.info("Verifying that the CA Repeater is no longer detected as running...");
+         assertThat(CARepeaterStarter.isRepeaterRunning(testPort), is(false));
+         logger.info("OK");
+      }
+      finally {
+         processManager.shutdown();
+
+      }
    }
 
    @Test
@@ -146,7 +145,7 @@ public class CARepeaterStarterTest
    @Test
    void testIsRepeaterRunning_detectsShareableSocketWhenReservedInSameJvm() throws Throwable
    {
-      try ( DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
+      try ( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
       {
          assertThat( CARepeaterStarter.isRepeaterRunning( testPort), is(true  ) );
       }
@@ -156,7 +155,7 @@ public class CARepeaterStarterTest
    @Test
    void testIsRepeaterRunning_detectsNonShareableSocketWhenReservedInSameJvm() throws Throwable
    {
-      try ( DatagramSocket listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(testPort, false ) )
+      try ( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket(testPort, false ) )
       {
          assertThat( CARepeaterStarter.isRepeaterRunning( testPort), is(true  ) );
       }
@@ -172,7 +171,6 @@ public class CARepeaterStarterTest
       logger.info( "Checking whether repeater instance detected on local address: '" + localAddress + "'" );
 
       // Spawn an external process to reserve a socket on port 5065 for 3000 milliseconds
-      final Properties properties = new Properties();
       final int portToReserve = 5065;
       final int reservationTimeInMillis = 3000;
       final JavaProcessManager processManager = UdpSocketReserver.start( localAddress, portToReserve, reservationTimeInMillis );
@@ -200,7 +198,6 @@ public class CARepeaterStarterTest
       final List<Inet4Address> localAddressList = NetworkUtilities.getLocalNetworkInterfaceAddresses();
       final List<String> localAddresses = localAddressList.stream().map( Inet4Address::getHostAddress).collect(Collectors.toList());
       return localAddresses.stream().map( Arguments::of );
-
    }
 
 

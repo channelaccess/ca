@@ -8,7 +8,6 @@ import org.epics.ca.ThreadWatcher;
 import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -26,7 +25,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.condition.OS.*;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -307,7 +305,7 @@ class UdpSocketUtilitiesTest
    {
       final InetSocketAddress wildcardAddress = new InetSocketAddress( 11111 );
       assertThat(UdpSocketUtilities.isSocketAvailable(wildcardAddress), is(true ) );
-      try ( DatagramSocket dummy = UdpSocketUtilities.createBroadcastAwareListeningSocket( 11111, true ) )
+      try ( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( 11111, true ) )
       {
          assertThat( UdpSocketUtilities.isSocketAvailable(wildcardAddress), is(false ) );
       }
@@ -327,7 +325,7 @@ class UdpSocketUtilitiesTest
             assertThat(UdpSocketUtilities.isSocketAvailable(wildcardAddress), is(true));
             try
             {
-               try ( DatagramSocket dummy = UdpSocketUtilities.createBroadcastAwareListeningSocket(testPort, true) )
+               try ( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket(testPort, true) )
                {
                   assertThat(UdpSocketUtilities.isSocketAvailable(wildcardAddress), is(false));
                }
@@ -350,7 +348,7 @@ class UdpSocketUtilitiesTest
 
       // Create a broadcast-aware socket in the current JVM and check that it is correctly detected as unavailable.
       final InetSocketAddress wildcardSocketAddress = new InetSocketAddress( testPort );
-      try( DatagramSocket socketInUse = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
+      try( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
       {
          assertThat( UdpSocketUtilities.isSocketAvailable(wildcardSocketAddress ), is(false ) );
       }
@@ -620,7 +618,10 @@ class UdpSocketUtilitiesTest
       }
       assertNotNull( exception );
       assertThat( exception, isA( IOException.class ) );
-      assertThat( exception.getMessage(), anyOf( containsString( "Message too long" ),
+
+      assertThat( exception.getMessage(), anyOf( containsString("The message is larger than the maximum supported by the underlying transport: Datagram send failed" ),
+                                                 containsString("Network is unreachable: Datagram send failed"),
+                                                 containsString( "Message too long" ),
                                                  containsString( "sendto failed" ) ) );
       logger.info( "The exception message details were: '" +  exception.getMessage() + "'." );
       logger.info( "The maximum datagram length for InetAddress: '" + inetAddress + "' is " + maxDatagramLength + " bytes." );
@@ -723,35 +724,21 @@ class UdpSocketUtilitiesTest
    @Test
    void testCreateBroadcastAwareListeningSocket_verifyShareablePortsAreShareable() throws SocketException
    {
-      try( DatagramSocket socket = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, true ) )
+      try( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, true ) )
       {
          assertDoesNotThrow(() -> UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, true));
       }
    }
 
-   @EnabledOnOs( {LINUX, MAC} )
    @Test
-   void testCreateBroadcastAwareListeningSocket_verifyUnshareablePortsAreUnshareableOnLinuxOrMac() throws SocketException
+   void testCreateBroadcastAwareListeningSocket_verifyUnshareablePortsAreUnshareable() throws SocketException
    {
       // Note:
       // This test and the one below it are identical except the different OS throw different
       // exceptions, albeit both of the same subclass of SocketException.
-      try( DatagramSocket socket = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false ) )
+      try( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false ) )
       {
-         assertThrows( BindException.class, () -> UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false));
-      }
-   }
-
-   @EnabledOnOs( WINDOWS )
-   @Test
-   void testCreateBroadcastAwareListeningSocket_verifyUnshareablePortsAreUnshareableOnWindows() throws SocketException
-   {
-      // Note:
-      // This test and the one below it are identical except the different OS throw different
-      // exceptions, albeit both of the same subclass of SocketException.
-      try( DatagramSocket socket = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false ) )
-      {
-         assertThrows(ConnectException.class, () -> UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false));
+         assertThrows( SocketException.class, () -> UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, false ) );
       }
    }
 

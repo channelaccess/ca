@@ -171,7 +171,7 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
       }
       catch( InterruptedException ex )
       {
-         logger.finest( "Unexpectedly interrupted from await" );
+         logger.warning( "Unexpectedly interrupted from await" );
          Thread.currentThread().interrupt();
       }
    }
@@ -184,7 +184,7 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
       }
       catch( InterruptedException ex )
       {
-         logger.finest( "Unexpectedly interrupted from await" );
+         logger.warning( "Unexpectedly interrupted from await" );
          Thread.currentThread().interrupt();
       }
    }
@@ -197,7 +197,7 @@ public NotificationConsumer( ConsumerType type, long delayTime, TimeUnit timeUni
       }
       catch( InterruptedException ex )
       {
-         logger.finest( "Unexpectedly interrupted from await" );
+         logger.warning( "Unexpectedly interrupted from await" );
          Thread.currentThread().interrupt();
       }
    }

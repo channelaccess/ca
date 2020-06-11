@@ -61,7 +61,7 @@ class ContextTest
    void testConstructor_withNoProperties_doesNotThrow()
    {
       assertDoesNotThrow( () -> {
-         try ( Context context = new Context() )
+         try ( Context ignored = new Context() )
          {
             logger.info("The new context was successfully created." );
          }
@@ -72,7 +72,7 @@ class ContextTest
    void testConstructor_withEmptyProperties_doesNotThrow()
    {
       assertDoesNotThrow( () -> {
-         try ( Context context = new Context( new Properties()) )
+         try ( Context ignored = new Context( new Properties()) )
          {
             logger.info("The new context was successfully created." );
          }
@@ -83,7 +83,7 @@ class ContextTest
    void testConstructor_withNullProperties_doesThrow()
    {
       final Exception ex = assertThrows( IllegalArgumentException.class, () -> {
-         try ( Context context = new Context( null ) )
+         try ( Context ignored = new Context( null ) )
          {
             logger.warning("The new context was created but shouldn't have been." );
          }
@@ -96,7 +96,7 @@ class ContextTest
    {
       try ( Context context = new Context () )
       {
-         try ( Channel<?> c = context.createChannel(null, null) )
+         try ( Channel<?> ignored = context.createChannel(null, null) )
          {
             fail ("null name/type accepted");
          }
@@ -105,7 +105,7 @@ class ContextTest
             // expected
          }
 
-         try ( Channel<?> c = context.createChannel(null, Double.class) )
+         try ( Channel<?> ignored = context.createChannel(null, Double.class) )
          {
             fail ("null name accepted");
          }
@@ -114,7 +114,7 @@ class ContextTest
             // expected
          }
 
-         try ( Channel<?> c = context.createChannel( TEST_CHANNEL_NAME, null) )
+         try ( Channel<?> ignored = context.createChannel( TEST_CHANNEL_NAME, null) )
          {
             fail ("null type accepted");
          }
@@ -124,7 +124,7 @@ class ContextTest
          }
 
          final String tooLongName = Stream.generate (() -> "a").limit (10000).collect (joining ());
-         try ( Channel<?> c = context.createChannel( tooLongName, Double.class) )
+         try ( Channel<?> ignored = context.createChannel( tooLongName, Double.class) )
          {
             fail ("too long name accepted");
          }
@@ -133,7 +133,7 @@ class ContextTest
             // expected
          }
 
-         try ( Channel<?> c = context.createChannel( TEST_CHANNEL_NAME, Context.class) )
+         try ( Channel<?> ignored = context.createChannel( TEST_CHANNEL_NAME, Context.class) )
          {
             fail ("invalid type accepted");
          }
@@ -142,7 +142,7 @@ class ContextTest
             // expected
          }
 
-         try ( Channel<?> c = context.createChannel( TEST_CHANNEL_NAME, Double.class, Constants.CHANNEL_PRIORITY_MIN - 1) )
+         try ( Channel<?> ignored = context.createChannel( TEST_CHANNEL_NAME, Double.class, Constants.CHANNEL_PRIORITY_MIN - 1) )
          {
             fail ("priority out of range accepted");
          }
@@ -151,7 +151,7 @@ class ContextTest
             // expected
          }
 
-         try ( Channel<?> c = context.createChannel( TEST_CHANNEL_NAME, Double.class, Constants.CHANNEL_PRIORITY_MAX + 1) )
+         try ( Channel<?> ignored = context.createChannel( TEST_CHANNEL_NAME, Double.class, Constants.CHANNEL_PRIORITY_MAX + 1) )
          {
             fail ("priority out of range accepted");
          }
@@ -164,16 +164,16 @@ class ContextTest
                Channel<?> c2 = context.createChannel( TEST_CHANNEL_NAME, Double.class )
          )
          {
-            assertNotNull (c1);
-            assertNotNull (c2);
-            assertNotSame (c1, c2);
+            assertNotNull( c1 );
+            assertNotNull( c2 );
+            assertNotSame( c1, c2 );
 
             assertEquals( TEST_CHANNEL_NAME, c1.getName () );
          }
 
          try ( Channel<?> c = context.createChannel( TEST_CHANNEL_NAME, Double.class, Constants.CHANNEL_PRIORITY_DEFAULT ) )
          {
-            assertNotNull (c);
+            assertNotNull( c );
          }
       }
    }
@@ -211,15 +211,15 @@ class ContextTest
    @Test
    void testRepeaterRegistration() throws InterruptedException
    {
-      // The logging is set to verbose so that the log messages can be examined
+      // The logging for this context is set to verbose so that the log messages can be examined
       // by eye to see whether the repeater successfully registered. There should
       // be messages in the log saying that one client was registered.
-      System.setProperty( "CA_LIBRARY_LOG_LEVEL", Level.ALL.toString() );
-      System.setProperty( "CA_REPEATER_LOG_LEVEL", Level.ALL.toString() );
-      System.setProperty( "CA_REPEATER_OUTPUT_CAPTURE", "true");
-      System.setProperty( "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE", "true");
-
-      try ( Context context = new Context() )
+      final Properties properties = new Properties();
+      properties.setProperty( "CA_LIBRARY_LOG_LEVEL", Level.FINER.toString() );
+      properties.setProperty( "CA_REPEATER_LOG_LEVEL", Level.ALL.toString() );
+      properties.setProperty( "CA_REPEATER_OUTPUT_CAPTURE", "true");
+      properties.setProperty( "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE", "true");
+      try ( Context ignored = new Context( properties ) )
       {
          // This needs to be longer than the CA_REPEATER_INITIAL_DELAY value of currently 500ms.
          Thread.sleep( 600 );
