@@ -450,7 +450,7 @@ class UdpSocketUtilitiesTest
    void testCreateEphemeralSendSocketProperties( boolean broadcastEnable) throws SocketException
    {
       final DatagramSocket socketReferenceCopy;
-      try ( DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket( broadcastEnable ) )
+      try ( final DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket( broadcastEnable ) )
       {
          socketReferenceCopy = sendSocket;
 
@@ -635,7 +635,7 @@ class UdpSocketUtilitiesTest
 
       // Create a socket which is not broadcast enabled.
       final Exception exception;
-      try ( DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket(false ) )
+      try ( final DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket(false ) )
       {
          exception = assertThrows( IOException.class, () -> sendSocket.send( packet ) );
       }
@@ -654,7 +654,7 @@ class UdpSocketUtilitiesTest
 
       // Create a socket which is not broadcast enabled.
       final Exception exception;
-      try ( DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket(false ) )
+      try ( final DatagramSocket sendSocket = UdpSocketUtilities.createEphemeralSendSocket(false ) )
       {
          exception = assertThrows( IOException.class, () -> sendSocket.send( packet ) );
       }
@@ -717,7 +717,7 @@ class UdpSocketUtilitiesTest
          assertThat( socket.isClosed(), is(true));
 
          // Verify that sockets remain bound even after they have been closed.
-         assertThat(socket.isBound(), is(true));
+         assertThat( socket.isBound(), is(true));
       }
    }
 
@@ -726,7 +726,7 @@ class UdpSocketUtilitiesTest
    {
       try ( final DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, true ) )
       {
-         assertDoesNotThrow(() -> UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, true));
+         assertDoesNotThrow(() -> UdpSocketUtilities.createBroadcastAwareListeningSocket(1234, true ).close() );
       }
    }
 
