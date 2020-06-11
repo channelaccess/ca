@@ -53,13 +53,25 @@ public class ThreadWatcher
       {
          return;
       }
-      
-      final int longStabilisationDelayInMillis = 500;
-      safeSleep( longStabilisationDelayInMillis );
+
+      logger.info( "Waiting for thread stabilisation..." );
+      final int mediumStabilisationDelayInMillis = 500;
+      safeSleep( mediumStabilisationDelayInMillis );
       
       final Set<Thread> threadsAtEndTry2 = getStableThreadSnapshot();
-      logger.finest( "Threads at end: try 1: '" + threadsAtEndTry2 + "'" );
+      logger.finest( "Threads at end: try 2: '" + threadsAtEndTry2 + "'" );
       if ( userThreadsEqual( threadsAtStart, threadsAtEndTry2, jvmManagedThreads ) )
+      {
+         return;
+      }
+
+      logger.info( "Waiting for thread stabilisation..." );
+      final int longStabilisationDelayInMillis = 1000;
+      safeSleep( longStabilisationDelayInMillis );
+
+      final Set<Thread> threadsAtEndTry3 = getStableThreadSnapshot();
+      logger.finest( "Threads at end: try 3: '" + threadsAtEndTry2 + "'" );
+      if ( userThreadsEqual( threadsAtStart, threadsAtEndTry3, jvmManagedThreads ) )
       {
          return;
       }
@@ -68,7 +80,7 @@ public class ThreadWatcher
       logger.info( "-- BEFORE -----------------------------------------" );
       showThreads( threadsAtStart );
       logger.info( "-- NOW --------------------------------------------" );
-      showThreads( threadsAtEndTry2 );
+      showThreads( threadsAtEndTry3 );
       throw new RuntimeException( "Threads have changed !" );
    }
 
