@@ -1,0 +1,17 @@
+eu.javaspecialists.tjsn.concurrency.stripedexecutor
+org.epics.ca
+org.epics.ca.annotation
+org.epics.ca.data
+org.epics.ca.impl
+org.epics.ca.impl.monitor
+org.epics.ca.impl.monitor.blockingqueue
+org.epics.ca.impl.monitor.striped
+org.epics.ca.impl.reactor
+org.epics.ca.impl.reactor.lf
+org.epics.ca.impl.repeater
+org.epics.ca.impl.requests
+org.epics.ca.impl.search
+org.epics.ca.util
+org.epics.ca.util.logging
+org.epics.ca.util.net
+org.epics.ca.util.sync
