@@ -167,6 +167,7 @@ public class SearchTimer extends Thread
       if ( thread == null )
       {
          thread = new Thread (runLoop, this.getClass ().getName ());
+         thread.setDaemon( true );
          thread.start ();
       }
       else
