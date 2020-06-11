@@ -85,12 +85,32 @@ This log describes the functionality of tagged versions within the repository.
    
 * [1.3.0](https://github.com/channelaccess/ca/releases/tag/1.3.0) Released 2020-06-11.
   ###### Overview:
-  Release was originally triggered mainly by need to address problems when interoperating with EPICS 7 Channel Access (see Issue #58). 
-  But other changes to modernise build chain to use later tools.
-  Also refactored lots of code following IntelliJ code inspection recommendations.
-  Also CA Repeater was refactored for improved clarity resulting in the creation of many new unit tests to verify the behaviour.
-  Also: thanks to JL Muir for his contributions. :-)
-
+  This release was triggered mainly by the need to address problems when interoperating with EPICS 7 Channel Access (see Issue #58). 
+  But several other changes have been implemented to bring the library to the state where we hope it will be easier to actively 
+  maintain it in the future. These chnages include:
+  * The build tool has been upgraded to a later version of Gradle.
+  * The library dependencies have been upgraded to later versions.
+  * Lots of code has been refactored following IntelliJ code inspection recommendations. The intention here was to remove warning 
+  messages and NOT to introduce functional changes.
+  * The CA Repeater was completely refactored, hopefully now along more understandable lines. It's now possible to capture the output
+  from the CA Repeater in the logs and to verify that the CA library registers with it correctly and that it correctly
+  forwards the beacon messages sent from the IOC's. This change resulted in the need to create many new unit tests to verify the 
+  behaviour of the Java network stack (UDP flavour) and the CA protocol itself.
+  * The JCA/CAJ-based Test Server class (which provides the basis for verifying the behaviour of the CA library) has been renamed 
+  to more explicitly state its purpose: 'EpicsChannelAccessTestServer'. It is now based on what is currently the most recent version 
+  available in the EPICS community (org.epics:jca:2.4.4-j8). When performing integration tests the test server is now spawned as a 
+  separate process rather than running from within the same JVM as the library itself. (Aside: note this decision was partly driven 
+  by the fact that it doesn't seem possible to cleanly shutdown the CAJ counter class without leaking threads).
+  * The LMAX-Disruptor-based monitor notification engine has now been removed. Since CA Release 1.2.0 the default monitor notification
+  engine was changed to an implementation based on a standard Java blocking queue. The decision to remove the Disruptor is based on
+  the fact that we have no measurements to demonstrate that the Disruptor technology offers performance benefits, given the context in 
+  which we are actually using it. Also, there were issues with leaking threads when attempting to shutdown the Disruptor which reduced 
+  the stability of the integration tests.
+  * The Example program was improved (but this still needs further work).
+  * Also: thanks to JL Muir for his contributions which have been integrated. :-)
+  
+  The complete change list is shown below:
+  
   ###### Change List:   
   * [Issue #52](https://github.com/channelaccess/ca/issues/52) Fix readme Gradle fragment version. Credit JL Muir. :-)
   * [Issue #53](https://github.com/channelaccess/ca/issues/53) README unclear about supported listeners. Credit JL Muir. :-)
@@ -129,9 +149,22 @@ This log describes the functionality of tagged versions within the repository.
   * [Issue #86](https://github.com/channelaccess/ca/issues/86) Create markdown file for developer notes.
   * [Issue #87](https://github.com/channelaccess/ca/issues/87) Add various run targets to gradle build script.
   * [Issue #88](https://github.com/channelaccess/ca/issues/88) Refactor general-purpose network related functions into separate class.
-  * [Issue #89](https://github.com/channelaccess/ca/issues/89) Start repeater registration process immediately after CA Repeater
-
+  * [Issue #89](https://github.com/channelaccess/ca/issues/89) Start repeater registration process immediately after CA Repeater.
+  * [Issue #90](https://github.com/channelaccess/ca/issues/90) Refactor log messages to simpler form.
+  * [Issue #91](https://github.com/channelaccess/ca/issues/91) Fix channel connect bug: completable futures sometimes do not complete even when channels have responded that they are available online.
+  * [Issue #92](https://github.com/channelaccess/ca/issues/92) ControllableCounterProcessVariable has no clean way of shutting down without leaving dangling threads.
+  * [Issue #93](https://github.com/channelaccess/ca/issues/93) Retire LMAX Disruptor.
+   
+  ###### Java Release Compatibility
+  
+  This CA library source code uses Java 8 constructs, but nothing later. The library is packaged to run on JVM
+  platforms that support Java 8 and later.
+  
+  Deprecation Note: this may be the last release that supports Java 8. From the next release we may switch the source
+  code to use Java 11 constructs.
+  
   ###### Test Results:   
-  * MacOsX: 505 tests successful / 0 tests failed / 0 tests skipped.
-  * Linux RHEL7: 505 tests successful / 0 tests failed / 0 tests skipped..
-  * Windows 10: 505 tests successful / 0 tests failed / 0 tests skipped..
+  * Mac OSX: 505 tests successful / 0 tests failed / 0 tests skipped.
+  * Linux RHEL7: 505 tests successful / 0 tests failed / 0 tests skipped.
+  * Windows 10: 505 tests successful / 0 tests failed / 0 tests skipped.
+
