@@ -403,7 +403,7 @@ try (Context context = new Context())
 }
 ```
 
-An extended usage example can be found at [src/test/java/org/epics/ca/Example.java](src/test/java/org/epics/ca/test/Example.java).
+An extended usage example can be found at [src/test/java/org/epics/ca/Example.java](src/test/java/org/epics/ca/Example.java).
 
 
 # Development
