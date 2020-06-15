@@ -1,12 +1,23 @@
+/*- Package Declaration ------------------------------------------------------*/
+
 package org.epics.ca.impl;
 
+/*- Imported packages --------------------------------------------------------*/
+
 import java.net.InetSocketAddress;
+
+
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
 
 /**
  * Beacon handler.
  */
 public class BeaconHandler
 {
+
+/*- Public attributes --------------------------------------------------------*/
+/*- Private attributes -------------------------------------------------------*/
 
    /**
     * Context instance.
@@ -40,6 +51,10 @@ public class BeaconHandler
     */
    private long lastBeaconTimeStamp = Long.MIN_VALUE;
 
+
+/*- Main ---------------------------------------------------------------------*/
+/*- Constructor --------------------------------------------------------------*/
+
    /**
     * Constructor.
     *
@@ -52,6 +67,9 @@ public class BeaconHandler
       //this.responseFrom = responseFrom;
    }
 
+
+/*- Public methods -----------------------------------------------------------*/
+
    /**
     * Update beacon period and do analytical checks (server re-started, routing problems, etc.)
     *
@@ -61,7 +79,7 @@ public class BeaconHandler
     */
    public void beaconNotify( short remoteTransportRevision, long timestamp, long sequentialID )
    {
-      boolean networkChanged = updateBeaconPeriod (remoteTransportRevision, timestamp, sequentialID);
+      final boolean networkChanged = updateBeaconPeriod( remoteTransportRevision, timestamp, sequentialID );
 
       //if ( networkChanged )
       //{
@@ -69,6 +87,9 @@ public class BeaconHandler
          // report changedTransport
       //}
    }
+
+
+/*- Private methods ----------------------------------------------------------*/
 
    /**
     * Update beacon period.
@@ -80,12 +101,11 @@ public class BeaconHandler
     */
    private synchronized boolean updateBeaconPeriod( short remoteTransportRevision, long timestamp, long sequentialID )
    {
-
       // first beacon notification check
       if ( lastBeaconTimeStamp == Long.MIN_VALUE )
       {
          // new server up...
-         context.beaconAnomalyNotify ();
+         context.beaconAnomalyNotify();
 
          if ( remoteTransportRevision >= 10 )
          {
@@ -101,24 +121,32 @@ public class BeaconHandler
       // - detect lost beacons due to input queue overrun or damage
       if ( remoteTransportRevision >= 10 )
       {
-         long beaconSeqAdvance;
+         final long beaconSeqAdvance;
          if ( sequentialID >= lastBeaconSequenceID )
+         {
             beaconSeqAdvance = sequentialID - lastBeaconSequenceID;
+         }
          else
+         {
             beaconSeqAdvance = (0x00000000FFFFFFFFL - lastBeaconSequenceID) + sequentialID;
+         }
 
          lastBeaconSequenceID = sequentialID;
 
          // throw out sequence numbers just prior to, or the same as, the last one received
          // (this situation is probably caused by a temporary duplicate route )
          if ( beaconSeqAdvance == 0 || beaconSeqAdvance > 0x00000000FFFFFFFFL - 256 )
+         {
             return false;
+         }
 
          // throw out sequence numbers that jump forward by only a few numbers
          // (this situation is probably caused by a duplicate route
          //  or a beacon due to input queue overrun)
          if ( beaconSeqAdvance > 1 && beaconSeqAdvance < 4 )
+         {
             return false;
+         }
       }
 
       boolean networkChange = false;
@@ -149,7 +177,7 @@ public class BeaconHandler
             else
             {
                // something might be wrong...
-               context.beaconAnomalyNotify ();
+               context.beaconAnomalyNotify();
             }
          }
          // is this a server seen because of reboot
@@ -157,7 +185,7 @@ public class BeaconHandler
          else if ( currentPeriod <= (averagePeriod * 0.8) )
          {
             // server restarted...
-            context.beaconAnomalyNotify ();
+            context.beaconAnomalyNotify();
 
             networkChange = true;
          }
@@ -181,7 +209,10 @@ public class BeaconHandler
       }
 
       lastBeaconTimeStamp = timestamp;
-
       return networkChange;
    }
+
+
+/*- Nested classes -----------------------------------------------------------*/
+
 }
