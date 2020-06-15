@@ -30,7 +30,7 @@ public class LibraryLogManager
       System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %3$s %4$s %5$s %6$s %n");
 
       // Create a stream handler that is like the normal output stream handler except
-      // it will ensure that each message gets flushed to the log. Note: this may
+      // it will ensure that each message gets flushed to the console. Note: this may
       // impose some performance penalty during testing if copious messages are
       // being logged. During normal CA usage the library does not emit many
       // messages so in the normal situation this limitation should not be important.
@@ -59,41 +59,41 @@ public class LibraryLogManager
     * standard output stream providing their log level exceeds the level defined 
     * by the CA_LIBRARY_LOG_LEVEL system property.
     *
-    * When CA_LIBRARY_LOG_LEVEL is not defined all messages of Level.INFO and above
-    * will be logged.
+    * When CA_LIBRARY_LOG_LEVEL is not defined all messages of Level.INFO and
+    * above will be logged.
     *
     * @param clazz the class that the log messages will be associated with.
     * @return the configured logger.
     * 
     * throws NullPointerException if clazz was null.
     * throws IllegalArgumentException if the string token associated with
-    * CA_DEBUG could not be interpreted as a valid log level.
+    * CA_LIBRARY_LOG_LEVEL could not be interpreted as a valid log level.
     */
-   public static Logger getLogger( Class<?> clazz)
+   public static Logger getLogger( Class<?> clazz )
    {
       Validate.notNull( clazz );
       
-      final String debugProperty = System.getProperty( CA_LIBRARY_LOG_LEVEL, Level.INFO.toString());
-      final Level logLevel = Level.parse( debugProperty );
+      final String loglevelAsString = System.getProperty( CA_LIBRARY_LOG_LEVEL, Level.INFO.toString() );
+      final Level logLevel = Level.parse( loglevelAsString );
       return getLogger( clazz, logLevel );
    }
 
    /**
     * Returns a logger for the specified class that will send messages to the
     * standard output stream providing their log level exceeds the specified
-    * debug level.
+    * log level.
     *
     * @param clazz the class that the logger will be associated with
     *     when logging messages.
     *
-    * @param debugLevel Set the log level specifying which message levels
-    *    will be logged by this logger. Message levels lower than this
-    *    value will be discarded. The level value Level.OFF can be used
-    *    to turn off logging.
+    * @param logLevel Set the log level specifying which message levels
+    *    will be sent to the standard output stream by this logger. Message levels
+    *    lower than this value will be discarded. The value Level.OFF can be
+    *    used to completely turn off logging.
     *
     * @return the configured logger.
     */
-   public static Logger getLogger( Class<?> clazz, Level debugLevel )
+   public static Logger getLogger( Class<?> clazz, Level logLevel )
    {
       // Currently (2020-05-14) the simple name is used in the log. This
       // is considerably shorter than the fully qualified class name. Other
@@ -112,7 +112,7 @@ public class LibraryLogManager
       {
          System.out.println( "\nWARNING: More than one logger defined for class: '" + clazz.getSimpleName() + "'.\n" );
       }
-      logger.setLevel( debugLevel );
+      logger.setLevel( logLevel );
 
       return logger;
    }
