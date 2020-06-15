@@ -20,7 +20,6 @@ import org.epics.ca.Constants;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.epics.ca.util.net.InetAddressUtil;
 
-
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
 
@@ -58,7 +57,7 @@ class CARepeater
     */
    CARepeater( int repeaterPort ) throws CaRepeaterStartupException
    {
-      Validate.inclusiveBetween(1, 65535, repeaterPort, "The port must be in the range 1-65535." );
+      Validate.inclusiveBetween( 1, 65535, repeaterPort, "The port must be in the range 1-65535." );
 
       logger.info( "Creating CA repeater instance which will bind to the wildcard address on port " + repeaterPort + "." ) ;
 
