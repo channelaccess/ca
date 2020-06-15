@@ -4,19 +4,21 @@ import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 
 public interface Constants
 {
-
    enum ChannelProperties
    {
       nativeType, nativeTypeCode, remoteAddress, nativeElementCount
    }
 
    /**
-    * Defines the value of the JVM property key to specify the level of the log messages emitted by the library.
+    * String value of the JVM property key which specifies the minimum level of the log messages
+    * that the CA library will send to the console.
+    * @see java.util.logging.Level
     */
    String CA_LIBRARY_LOG_LEVEL = "CA_LIBRARY_LOG_LEVEL";
 
    /**
-    * String value of the JVM property key to strip hostname returned by InetAddress.getLocalHost().getHostName().
+    * String value of the JVM property key which specifies whether to strip the hostname returned by
+    * InetAddress.getLocalHost().getHostName().
     */
    String CA_STRIP_HOSTNAME = "CA_STRIP_HOSTNAME";
 
@@ -29,6 +31,33 @@ public interface Constants
     * String value of the JVM property key to configure the monitor notification engine.
     */
    String CA_MONITOR_NOTIFIER_IMPL = "CA_MONITOR_NOTIFIER_IMPL";
+
+   /**
+    * String value of the JVM property key which specifies the minimum level of the log messages that the CA Repeater
+    * will send to the console. This property is only considered when the <code>CA_REPEATER_OUTPUT_CAPTURE</code>
+    * JBM property is set to true.
+    * @see java.util.logging.Level
+    */
+   String CA_REPEATER_LOG_LEVEL = "CA_REPEATER_LOG_LEVEL";
+
+   /**
+    * Defines the value of the JVM property key which specify whether the output of the CA Repeater should be
+    * captured in the CA library log.
+    */
+   String CA_REPEATER_OUTPUT_CAPTURE = "CA_REPEATER_OUTPUT_CAPTURE";
+
+   /**
+    * Defines the value of a JVM property key which specifies whether an attempt should be made to
+    * ensure that a CA Repeater has been spawned and is running when a CA library context is created.
+    */
+   String CA_REPEATER_START_ON_CONTEXT_OPEN = "CA_REPEATER_START_ON_CONTEXT_OPEN";
+
+   /**
+    * Defines the value of the JVM property key which specifies whether an attempt should be made to
+    * shutdown any spawned CA Repeater when the last remaining CA library context is closed.
+    */
+   String CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE = "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE";
+
 
    /**
     * String value defining the default monitor notification engine.
@@ -60,7 +89,6 @@ public interface Constants
     */
    short CHANNEL_PRIORITY_OPI = CHANNEL_PRIORITY_MIN;
 
-
    /* -------- Core CA constants -------- */
 
    /**
@@ -88,15 +116,6 @@ public interface Constants
     */
    int CA_SERVER_PORT = CA_PORT_BASE + 2 * CA_MAJOR_PROTOCOL_REVISION;
 
-   /**
-    * Defines the value of the JVM property key to specify the level of the log messages emitted by the CA Repeater.
-    */
-   String CA_REPEATER_LOG_LEVEL = "CA_REPEATER_LOG_LEVEL";
-
-   /**
-    * Defines the value of the JVM property key to specify whether the output of the CA Repeater should be captured.
-    */
-   String CA_REPEATER_OUTPUT_CAPTURE = "CA_REPEATER_OUTPUT_CAPTURE";
 
    /**
     * Default CA repeater port.
@@ -107,7 +126,7 @@ public interface Constants
     * Initial delay in milliseconds between creation of a new Context and the
     * first attempt to register with the CA Repeater.
     */
-   int CA_REPEATER_INITIAL_DELAY = 500;
+   int CA_REPEATER_INITIAL_REGISTRATION_DELAY = 500;
 
    /**
     * CA Repeater attempted registration interval in milliseconds.
