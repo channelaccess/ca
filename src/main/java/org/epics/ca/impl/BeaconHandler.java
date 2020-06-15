@@ -4,7 +4,10 @@ package org.epics.ca.impl;
 
 /*- Imported packages --------------------------------------------------------*/
 
+import org.epics.ca.util.logging.LibraryLogManager;
+
 import java.net.InetSocketAddress;
+import java.util.logging.Logger;
 
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -18,6 +21,8 @@ public class BeaconHandler
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
+
+   private static final Logger logger = LibraryLogManager.getLogger( BeaconHandler.class );
 
    /**
     * Context instance.
@@ -81,11 +86,12 @@ public class BeaconHandler
    {
       final boolean networkChanged = updateBeaconPeriod( remoteTransportRevision, timestamp, sequentialID );
 
-      //if ( networkChanged )
-      //{
+      if ( networkChanged )
+      {
+         logger.fine( "The network topology has changed." );
          //  what to do here?!!
          // report changedTransport
-      //}
+      }
    }
 
 
