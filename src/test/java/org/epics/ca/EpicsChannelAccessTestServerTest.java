@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Properties;
 import java.util.logging.Level;
 
+import static org.epics.ca.Constants.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -86,10 +87,10 @@ public class EpicsChannelAccessTestServerTest
       // should be multiple messages as the test server comes up and sends beacon
       // messages which the repeater forwards to the CA client library.
       final Properties properties = new Properties();
-      properties.setProperty( "CA_LIBRARY_LOG_LEVEL", Level.ALL.toString() );
-      properties.setProperty( "CA_REPEATER_LOG_LEVEL", Level.ALL.toString() );
-      properties.setProperty( "CA_REPEATER_OUTPUT_CAPTURE", "true" );
-      properties.setProperty( "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE", "true");
+      properties.setProperty( CA_LIBRARY_LOG_LEVEL, Level.ALL.toString() );
+      properties.setProperty( CA_REPEATER_LOG_LEVEL, Level.ALL.toString() );
+      properties.setProperty( CA_REPEATER_OUTPUT_CAPTURE, "true" );
+      properties.setProperty( CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE, "true");
 
       // Create a new Context. This will cause a CA Repeater instance to be spawned.
       // If the system property "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE" is asserted
