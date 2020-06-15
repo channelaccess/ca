@@ -1,13 +1,22 @@
+/*- Package Declaration ------------------------------------------------------*/
+
 package org.epics.ca.impl.search;
+
+/*- Imported packages --------------------------------------------------------*/
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 import org.epics.ca.Constants;
 import org.epics.ca.impl.BroadcastTransport;
 import org.epics.ca.impl.ChannelImpl;
 import org.epics.ca.impl.Messages;
+import org.epics.ca.util.logging.LibraryLogManager;
+
+/*- Interface Declaration ----------------------------------------------------*/
+/*- Class Declaration --------------------------------------------------------*/
 
 /**
  * CA channel search manager.
@@ -16,6 +25,20 @@ import org.epics.ca.impl.Messages;
  */
 public class ChannelSearchManager
 {
+
+/*- Public attributes --------------------------------------------------------*/
+/*- Private attributes -------------------------------------------------------*/
+
+   private static final int MIN_SEND_INTERVAL_MS_DEFAULT = 100;
+   private static final int MAX_SEND_INTERVAL_MS_DEFAULT = 30000;
+   private static final int INTERVAL_MULTIPLIER_DEFAULT = 2;
+
+   private static final int MESSAGE_COALESCENCE_TIME_MS = 3;
+
+   private static final int MAX_NUMBER_IMMEDIATE_PACKETS = 5;
+   private static final int IMMEDIATE_PACKETS_DELAY_MS = 10;
+
+   private static final Logger logger = LibraryLogManager.getLogger( ChannelSearchManager.class );
 
    /**
     * Minimum time between sending packets (ms).
@@ -32,130 +55,11 @@ public class ChannelSearchManager
     */
    private final int intervalMultiplier;
 
-   private static final int MIN_SEND_INTERVAL_MS_DEFAULT = 100;
-   private static final int MAX_SEND_INTERVAL_MS_DEFAULT = 30000;
-   private static final int INTERVAL_MULTIPLIER_DEFAULT = 2;
+   private final SearchTimer timer = new SearchTimer();
+   private final AtomicBoolean canceled = new AtomicBoolean();
 
-   private static final int MESSAGE_COALESCENCE_TIME_MS = 3;
-
-   private static final int MAX_NUMBER_IMMEDIATE_PACKETS = 5;
-   private static final int IMMEDIATE_PACKETS_DELAY_MS = 10;
-
-   private final SearchTimer timer = new SearchTimer ();
-   private final AtomicBoolean canceled = new AtomicBoolean ();
-
-   private final AtomicInteger immediatePacketCount = new AtomicInteger ();
-
-   private class ChannelSearchTimerTask extends SearchTimer.TimerTask
-   {
-      private final ChannelImpl<?> channel;
-
-      ChannelSearchTimerTask( ChannelImpl<?> channel )
-      {
-         this.channel = channel;
-      }
-
-      public long timeout()
-      {
-
-         // send search message
-         generateSearchRequestMessage (channel, true);
-
-         if ( !timer.hasNext (MESSAGE_COALESCENCE_TIME_MS) )
-         {
-            flushSendBuffer ();
-            immediatePacketCount.set (0);
-         }
-
-         // reschedule
-         long dT = getDelay ();
-         dT *= intervalMultiplier;
-         if ( dT > maxSendInterval )
-            dT = maxSendInterval;
-         if ( dT < minSendInterval )
-            dT = minSendInterval;
-
-         return dT;
-      }
-
-   }
-
-   /**
-    * Register channel.
-    *
-    * @param channel the channel to register.
-    * @return true if the channel was successfully registered.
-    */
-   public boolean registerChannel( ChannelImpl<?> channel )
-   {
-      if ( canceled.get () )
-         return false;
-
-      ChannelSearchTimerTask timerTask = new ChannelSearchTimerTask (channel);
-      channel.setTimerId (timerTask);
-
-      timer.executeAfterDelay (MESSAGE_COALESCENCE_TIME_MS, timerTask);
-
-      channelCount.incrementAndGet ();
-
-      return true;
-   }
-
-   /**
-    * Unregister channel.
-    *
-    * @param channel channel to unregister
-    */
-   public void unregisterChannel( ChannelImpl<?> channel )
-   {
-      if ( canceled.get () )
-         return;
-
-      Object timerTask = channel.getTimerId ();
-      if ( timerTask != null )
-      {
-         SearchTimer.cancel (timerTask);
-         channel.setTimerId (null);
-      }
-
-      channelCount.decrementAndGet ();
-   }
-
-   private final AtomicInteger channelCount = new AtomicInteger ();
-
-   /**
-    * Get number of registered channels.
-    *
-    * @return number of registered channels.
-    */
-   public int registeredChannelCount()
-   {
-      return channelCount.get ();
-   }
-
-   /**
-    * Beacon anomaly detected.
-    * Boost searching of all channels.
-    */
-   public void beaconAnomalyNotify()
-   {
-      if ( canceled.get () )
-         return;
-
-      timer.rescheduleAllAfterDelay (0);
-   }
-
-   /**
-    * Cancel.
-    */
-   public void cancel()
-   {
-      if ( canceled.getAndSet (true) )
-         return;
-
-      timer.shutDown ();
-   }
-
+   private final AtomicInteger immediatePacketCount = new AtomicInteger();
+   private final AtomicInteger channelCount = new AtomicInteger();
 
    /**
     * Broadcast transport.
@@ -172,6 +76,10 @@ public class ChannelSearchManager
     */
    private final ByteBuffer sendBuffer;
 
+
+/*- Main ---------------------------------------------------------------------*/
+/*- Constructor --------------------------------------------------------------*/
+
    /**
     * Constructor.
     *
@@ -186,9 +94,93 @@ public class ChannelSearchManager
       intervalMultiplier = INTERVAL_MULTIPLIER_DEFAULT;
 
       // create and initialize send buffer
-      sendBuffer = ByteBuffer.allocateDirect (Constants.MAX_UDP_SEND);
+      sendBuffer = ByteBuffer.allocateDirect( Constants.MAX_UDP_SEND );
       initializeSendBuffer ();
    }
+
+
+/*- Public methods -----------------------------------------------------------*/
+
+   /**
+    * Register channel.
+    *
+    * @param channel the channel to register.
+    * @return true if the channel was successfully registered.
+    */
+   public boolean registerChannel( ChannelImpl<?> channel )
+   {
+      if ( canceled.get() )
+      {
+         return false;
+      }
+
+      final ChannelSearchTimerTask timerTask = new ChannelSearchTimerTask (channel);
+      channel.setTimerId (timerTask);
+
+      timer.executeAfterDelay( MESSAGE_COALESCENCE_TIME_MS, timerTask );
+      channelCount.incrementAndGet();
+      return true;
+   }
+
+   /**
+    * Unregister channel.
+    *
+    * @param channel channel to unregister
+    */
+   public void unregisterChannel( ChannelImpl<?> channel )
+   {
+      if ( canceled.get() )
+      {
+         return;
+      }
+
+      final Object timerTask = channel.getTimerId ();
+      if ( timerTask != null )
+      {
+         SearchTimer.cancel (timerTask);
+         channel.setTimerId (null);
+      }
+      channelCount.decrementAndGet ();
+   }
+
+   /**
+    * Get number of registered channels.
+    *
+    * @return number of registered channels.
+    */
+   public int registeredChannelCount()
+   {
+      return channelCount.get();
+   }
+
+   /**
+    * Beacon anomaly detected.
+    * Boost searching of all channels.
+    */
+   public void beaconAnomalyNotify()
+   {
+      logger.fine( "A beacon anomaly has been detected" );
+      if ( canceled.get() )
+      {
+         return;
+      }
+      timer.rescheduleAllAfterDelay(0 );
+   }
+
+   /**
+    * Cancel.
+    */
+   public void cancel()
+   {
+      if ( canceled.getAndSet(true) )
+      {
+         return;
+      }
+      timer.shutDown();
+   }
+
+
+/*- Private methods ----------------------------------------------------------*/
 
    /**
     * Initialize send buffer.
@@ -199,7 +191,7 @@ public class ChannelSearchManager
 
       // put version message
       sequenceNumber.incrementAndGet();
-      Messages.generateVersionRequestMessage (broadcastTransport, sendBuffer, (short) 0, sequenceNumber.get(), true);
+      Messages.generateVersionRequestMessage( broadcastTransport, sendBuffer, (short) 0, sequenceNumber.get(), true );
    }
 
    /**
@@ -213,15 +205,15 @@ public class ChannelSearchManager
          {
             Thread.sleep (IMMEDIATE_PACKETS_DELAY_MS);
          }
-         catch ( InterruptedException e )
+         catch ( InterruptedException ex )
          {
             // noop
          }
-         immediatePacketCount.set (0);
+         immediatePacketCount.set( 0 );
       }
 
       broadcastTransport.send (sendBuffer);
-      initializeSendBuffer ();
+      initializeSendBuffer();
    }
 
    /**
@@ -231,15 +223,17 @@ public class ChannelSearchManager
     * @param allowNewFrame flag indicating if new search request message is allowed to be put in new frame.
     * @return <code>true</code> if new frame was sent.
     */
-   private synchronized boolean generateSearchRequestMessage( ChannelImpl<?> channel, boolean allowNewFrame )
+   private synchronized boolean generateSearchRequestMessage( ChannelImpl<?> channel, @SuppressWarnings( "SameParameterValue" ) boolean allowNewFrame )
    {
       boolean success = channel.generateSearchRequestMessage (broadcastTransport, sendBuffer);
       // buffer full, flush
       if ( !success )
       {
-         flushSendBuffer ();
+         flushSendBuffer();
          if ( allowNewFrame )
-            channel.generateSearchRequestMessage (broadcastTransport, sendBuffer);
+         {
+            channel.generateSearchRequestMessage( broadcastTransport, sendBuffer );
+         }
          return true;
       }
 
@@ -254,6 +248,46 @@ public class ChannelSearchManager
    public void searchResponse( ChannelImpl<?> channel )
    {
       unregisterChannel (channel);
+   }
+
+
+/*- Nested Classes -----------------------------------------------------------*/
+
+   private class ChannelSearchTimerTask extends SearchTimer.TimerTask
+   {
+      private final ChannelImpl<?> channel;
+
+      ChannelSearchTimerTask( ChannelImpl<?> channel )
+      {
+         this.channel = channel;
+      }
+
+      public long timeout()
+      {
+         // send search message
+         generateSearchRequestMessage(channel, true );
+
+         if ( !timer.hasNext(MESSAGE_COALESCENCE_TIME_MS) )
+         {
+            flushSendBuffer();
+            immediatePacketCount.set(0);
+         }
+
+         // reschedule
+         long dT = getDelay();
+
+         dT *= intervalMultiplier;
+         if ( dT > maxSendInterval )
+         {
+            dT = maxSendInterval;
+         }
+         if ( dT < minSendInterval )
+         {
+            dT = minSendInterval;
+         }
+
+         return dT;
+      }
    }
 
 }
