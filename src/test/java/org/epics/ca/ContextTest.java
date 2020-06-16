@@ -82,7 +82,7 @@ class ContextTest
    @Test
    void testConstructor_withNullProperties_doesThrow()
    {
-      final Exception ex = assertThrows( IllegalArgumentException.class, () -> {
+      final Exception ex = assertThrows( NullPointerException.class, () -> {
          try ( Context ignored = new Context( null ) )
          {
             logger.warning("The new context was created but shouldn't have been." );
@@ -100,30 +100,30 @@ class ContextTest
          {
             fail ("null name/type accepted");
          }
-         catch ( IllegalArgumentException iae )
+         catch ( NullPointerException npe )
          {
             // expected
          }
 
          try ( Channel<?> ignored = context.createChannel(null, Double.class) )
          {
-            fail ("null name accepted");
+            fail( "null name accepted" );
          }
-         catch ( IllegalArgumentException iae )
+         catch ( NullPointerException npe )
          {
             // expected
          }
 
          try ( Channel<?> ignored = context.createChannel( TEST_CHANNEL_NAME, null) )
          {
-            fail ("null type accepted");
+            fail( "null type accepted" );
          }
-         catch ( IllegalArgumentException iae )
+         catch ( NullPointerException npe )
          {
             // expected
          }
 
-         final String tooLongName = Stream.generate (() -> "a").limit (10000).collect (joining ());
+         final String tooLongName = Stream.generate (() -> "a").limit( 10000 ).collect (joining () );
          try ( Channel<?> ignored = context.createChannel( tooLongName, Double.class) )
          {
             fail ("too long name accepted");
