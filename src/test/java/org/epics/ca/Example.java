@@ -17,8 +17,6 @@ public class Example
 
       // Configure the CA library context and start it.
       final Properties properties = new Properties();
-      properties.setProperty( "java.net.preferIPv4Stack", "true" );
-      properties.setProperty( "java.net.preferIPv6Stack", "false" );
       properties.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
       properties.setProperty( Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString(), "NO" );
       try ( Context context = new Context( properties ) )
