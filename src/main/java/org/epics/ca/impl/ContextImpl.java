@@ -39,25 +39,48 @@ import org.epics.ca.util.logging.LibraryLogManager;
 import org.epics.ca.util.net.InetAddressUtil;
 import org.epics.ca.util.sync.NamedLockPattern;
 
+import static org.epics.ca.Constants.*;
+
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
 
-public class ContextImpl implements AutoCloseable, Constants
+public class ContextImpl implements AutoCloseable
 {
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   /**
-    * Context logger.
-    */
+   // The CA protocol only works on IPV4 enabled network stacks.
+   // The definition below ensures that the external users of the library do not
+   // have to explicitly set these definitions when using the library.
+   static {
+      System.setProperty( "java.net.preferIPv4Stack", "true" );
+      System.setProperty( "java.net.preferIPv6Stack", "false" );
+   }
+
    private static final Logger logger = LibraryLogManager.getLogger( ContextImpl.class );
 
    /**
-    * Debug level
+    * Whether opening a new context should attempt to spawn a CA Repeater.
     */
-   private Level debugLevel = Level.INFO;
+   private boolean caRepeaterStartOnContextCreate = false;
+
+   /**
+    *
+    * Whether closing a context should attempt to shutdown any spawned CA Repeater.
+    */
+   private boolean caRepeaterShutdownOnContextClose = false;
+
+   /**
+    * Whether the console output from any spawned CA Repeater should be logged.
+    */
+   private boolean caRepeaterOutputCapture;
+
+   /**
+    * Default value of the log level for the CA Repeater.
+    */
+   private Level caRepeaterLogLevel;
 
    /**
     * A space-separated list of broadcast address for process variable name resolution.
@@ -131,7 +154,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Leader/followers thread pool.
     */
-   protected final LeaderFollowersThreadPool leaderFollowersThreadPool;
+   private final LeaderFollowersThreadPool leaderFollowersThreadPool;
 
    /**
     * Context instance.
@@ -167,7 +190,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Map of channels (keys are CIDs).
     */
-   protected final IntHashMap<ChannelImpl<?>> channelsByCID = new IntHashMap<>();
+   private final IntHashMap<ChannelImpl<?>> channelsByCID = new IntHashMap<>();
 
    /**
     * Last IOID cache.
@@ -177,7 +200,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Map of requests (keys are IOID).
     */
-   protected final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<>();
+   private final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<>();
 
    /**
     * Cached hostname.
@@ -197,7 +220,7 @@ public class ContextImpl implements AutoCloseable, Constants
    /**
     * Beacon handler map.
     */
-   protected final Map<InetSocketAddress, BeaconHandler> beaconHandlers = new HashMap<>();
+   private final Map<InetSocketAddress, BeaconHandler> beaconHandlers = new HashMap<>();
 
 
 /*- Main ---------------------------------------------------------------------*/
@@ -217,18 +240,15 @@ public class ContextImpl implements AutoCloseable, Constants
     *
     * @param properties the properties specifying configuration information for
     *    the new context.
-    * @throws IllegalArgumentException if the supplied properties was null.
+    *
+    * @throws NullPointerException if the supplied properties was null.
     */
    public ContextImpl( Properties properties )
    {
-      if ( properties == null )
-      {
-         throw new IllegalArgumentException( "null properties" );
-      }
+      Validate.notNull( properties, "null properties" );
 
-      debugLevel = readDebugLevelProperty( CA_LIBRARY_LOG_LEVEL.toString(), properties, Level.INFO );
-
-      loadEpicsChannelAccessProtocolConfig(properties );
+      loadChannelAccessProtocolConfigurationProperties(properties );
+      loadOtherConfigurationProperties( properties );
 
       hostName = InetAddressUtil.getHostName ();
       userName = System.getProperty ("user.name", "nobody");
@@ -252,24 +272,22 @@ public class ContextImpl implements AutoCloseable, Constants
       broadcastTransport.set( initializeUDPTransport() );
 
       // Attempt to spawn the CA Repeater if the relevant configuration property is set and it is not already running.
-      if( readBooleanProperty( CA_REPEATER_START_ON_CONTEXT_OPEN, properties, true ) )
+      if( caRepeaterStartOnContextCreate )
       {
-         final boolean caRepeaterOutputCapture = this.readBooleanProperty( CA_REPEATER_OUTPUT_CAPTURE, properties, false );
-         final Level caRepeaterLogLevel = this.readDebugLevelProperty( CA_REPEATER_LOG_LEVEL, properties, Level.INFO );
          try
          {
              CARepeaterStarter.startRepeaterIfNotAlreadyRunning( repeaterPort, caRepeaterLogLevel, caRepeaterOutputCapture );
          }
          catch ( RuntimeException ex )
          {
-            logger.log(Level.WARNING, "Failed to start CA Repeater on port " + repeaterPort, ex);
+            logger.log( Level.WARNING, "Failed to start CA Repeater on port " + repeaterPort, ex);
          }
       }
 
-      // Start task to register with CA Repeater
+      // Always start task to register with CA Repeater (even if not started by this library).
       final InetSocketAddress repeaterLocalAddress = new InetSocketAddress (InetAddress.getLoopbackAddress (), repeaterPort );
       repeaterRegistrationFuture = timer.scheduleWithFixedDelay( new RepeaterRegistrationTask( repeaterLocalAddress ),
-                                                                 CA_REPEATER_INITIAL_DELAY,
+                                                                 CA_REPEATER_INITIAL_REGISTRATION_DELAY,
                                                                  CA_REPEATER_REGISTRATION_INTERVAL,
                                                                  TimeUnit.MILLISECONDS );
 
@@ -466,11 +484,11 @@ public class ContextImpl implements AutoCloseable, Constants
    {
       synchronized ( beaconHandlers )
       {
-         BeaconHandler handler = beaconHandlers.get (responseFrom);
+         BeaconHandler handler = beaconHandlers.get( responseFrom );
          if ( handler == null )
          {
-            handler = new BeaconHandler (this, responseFrom);
-            beaconHandlers.put (responseFrom, handler);
+            handler = new BeaconHandler( this, responseFrom );
+            beaconHandlers.put( responseFrom, handler );
          }
          return handler;
       }
@@ -481,44 +499,21 @@ public class ContextImpl implements AutoCloseable, Constants
       return timer;
    }
 
-
    public <T> Channel<T> createChannel( String channelName, Class<T> channelType )
    {
-      return createChannel (channelName, channelType, CHANNEL_PRIORITY_DEFAULT);
+      return createChannel( channelName, channelType, CHANNEL_PRIORITY_DEFAULT );
    }
 
    public <T> Channel<T> createChannel( String channelName, Class<T> channelType, int priority )
    {
-      if ( closed.get () )
-      {
-         throw new RuntimeException("context closed");
-      }
+      Validate.validState( ! closed.get(), "context closed" );
+      Validate.notEmpty( channelName, "null or empty channel name" );
+      Validate.isTrue(channelName.length() <= Math.min( MAX_UDP_SEND - CA_MESSAGE_HEADER_SIZE, UNREASONABLE_CHANNEL_NAME_LENGTH ), "name too long" );
+      Validate.notNull( channelType, "null channel type" );
+      Validate.isTrue( TypeSupports.isNativeType( channelType ) || channelType.equals (Object.class), "invalid channel native type" );
+      Validate.inclusiveBetween( CHANNEL_PRIORITY_MIN, CHANNEL_PRIORITY_MAX, priority,"priority out of bounds" );
 
-      if ( channelName == null || channelName.length () == 0 )
-      {
-         throw new IllegalArgumentException("null or empty channel name");
-      }
-      else if ( channelName.length() > Math.min( MAX_UDP_SEND - CA_MESSAGE_HEADER_SIZE, UNREASONABLE_CHANNEL_NAME_LENGTH) )
-      {
-         throw new IllegalArgumentException("name too long");
-      }
-
-      if ( channelType == null )
-      {
-         throw new IllegalArgumentException("null channel type");
-      }
-
-      if ( !TypeSupports.isNativeType( channelType ) && !channelType.equals (Object.class) )
-      {
-         throw new IllegalArgumentException("invalid channel native type");
-      }
-
-      if ( priority < CHANNEL_PRIORITY_MIN || priority > CHANNEL_PRIORITY_MAX )
-      {
-         throw new IllegalArgumentException("priority out of bounds");
-      }
-
-      return new ChannelImpl<>(this, channelName, channelType, priority);
+      return new ChannelImpl<>( this, channelName, channelType, priority );
    }
 
    @Override
@@ -531,7 +526,7 @@ public class ContextImpl implements AutoCloseable, Constants
       }
 
       // Shutdown repeater if the options is set.
-      if ( Boolean.parseBoolean( System.getProperty( "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE", "false" ) ) )
+      if ( caRepeaterShutdownOnContextClose )
       {
          CARepeaterStarter.shutdownLastStartedRepeater();
       }
@@ -634,6 +629,7 @@ public class ContextImpl implements AutoCloseable, Constants
     * @param properties the properties object to search for configuration data.
     * @param defaultValue the value to return when not explicitly specified.
     * @return the result.
+    * @throws NullPointerException if any of the arguments were null.
     */
    private String readStringProperty( String item, Properties properties, String defaultValue )
    {
@@ -659,6 +655,7 @@ public class ContextImpl implements AutoCloseable, Constants
     * @param properties the properties object to search for configuration data.
     * @param defaultValue the value to return when not explicitly specified.
     * @return the result.
+    * @throws NullPointerException if any of the arguments were null.
     */
    private boolean readBooleanProperty( String item, Properties properties, boolean defaultValue )
    {
@@ -699,6 +696,7 @@ public class ContextImpl implements AutoCloseable, Constants
     * @param properties the properties object to search for configuration data.
     * @param defaultValue the value to return when not explicitly specified.
     * @return the result.
+    * @throws NullPointerException if any of the arguments were null.
     */
    private float readFloatProperty( String item, Properties properties,  float defaultValue )
    {
@@ -731,6 +729,7 @@ public class ContextImpl implements AutoCloseable, Constants
     * @param properties the properties object to search for configuration data.
     * @param defaultValue the value to return when not explicitly specified.
     * @return the result.
+    * @throws NullPointerException if any of the arguments were null.
     */
    private int readIntegerProperty( String item, Properties properties, int defaultValue )
    {
@@ -762,9 +761,10 @@ public class ContextImpl implements AutoCloseable, Constants
     * @param item the name of the property (or environment variable).
     * @param properties the properties object to search for configuration data.
     * @param defaultValue the value to return when not explicitly specified.
-    *
     * @return the result.
+    * @throws NullPointerException if any of the arguments were null.
     */
+   @SuppressWarnings( "SameParameterValue" )
    private Level readDebugLevelProperty( String item, Properties properties, Level defaultValue )
    {
       Validate.notNull( item );
@@ -790,7 +790,7 @@ public class ContextImpl implements AutoCloseable, Constants
     *
     * @param properties the properties object to search for configuration data.
     */
-   private void loadEpicsChannelAccessProtocolConfig( Properties properties )
+   private void loadChannelAccessProtocolConfigurationProperties( Properties properties )
    {
       // dump version
       logger.config( "Java CA v" + LibraryVersion.getAsString() );
@@ -821,20 +821,31 @@ public class ContextImpl implements AutoCloseable, Constants
          maxArrayBytes = Math.max( 1024, maxArrayBytes );
       }
       logger.config( Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString() + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
-
-      monitorNotifierConfigImpl = readStringProperty( CA_MONITOR_NOTIFIER_IMPL, properties, CA_MONITOR_NOTIFIER_DEFAULT_IMPL );
-      logger.config("CA_MONITOR_NOTIFIER_IMPL: " + monitorNotifierConfigImpl);
    }
 
    /**
-    * Initialize context logger.
+    * Configures the current context according to any other parameters which may
+    * be supplied either as Java system properties or through environment variables.
     *
-    * @param properties the properties to be used for the logger.
+    * @param properties the properties object to search for configuration data.
     */
-   private void initializeLogger( Properties properties )
+   private void loadOtherConfigurationProperties( Properties properties )
    {
-      final String debugProperty = readStringProperty( CA_LIBRARY_LOG_LEVEL, properties, Level.INFO.toString() );
-      debugLevel = Level.parse( debugProperty );
+      monitorNotifierConfigImpl = readStringProperty( CA_MONITOR_NOTIFIER_IMPL, properties, CA_MONITOR_NOTIFIER_DEFAULT_IMPL );
+      logger.config(CA_MONITOR_NOTIFIER_IMPL + ": " + monitorNotifierConfigImpl);
+
+      caRepeaterStartOnContextCreate = readBooleanProperty(CA_REPEATER_START_ON_CONTEXT_CREATE, properties, CA_REPEATER_START_ON_CONTEXT_CREATE_DEFAULT );
+      logger.config(CA_REPEATER_START_ON_CONTEXT_CREATE + ": " + caRepeaterStartOnContextCreate );
+
+      caRepeaterShutdownOnContextClose = readBooleanProperty( CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE, properties, CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE_DEFAULT );
+      logger.config(CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE + ": " + caRepeaterShutdownOnContextClose );
+
+      caRepeaterOutputCapture = this.readBooleanProperty( CA_REPEATER_OUTPUT_CAPTURE, properties, CA_REPEATER_OUTPUT_CAPTURE_DEFAULT );
+      logger.config(CA_REPEATER_OUTPUT_CAPTURE + ": " + caRepeaterOutputCapture );
+
+      caRepeaterLogLevel = this.readDebugLevelProperty( CA_REPEATER_LOG_LEVEL, properties, CA_REPEATER_LOG_LEVEL_DEFAULT );
+      logger.config(CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE + ": " + caRepeaterLogLevel );
+
    }
 
    private BroadcastTransport initializeUDPTransport()
@@ -972,7 +983,7 @@ public class ContextImpl implements AutoCloseable, Constants
       SocketChannel socket = null;
 
       // first try to check cache w/o named lock...
-      TCPTransport transport = (TCPTransport) transportRegistry.get (address, priority);
+      TCPTransport transport = (TCPTransport) transportRegistry.get( address, priority );
       if ( transport != null )
       {
          logger.log ( Level.FINER,"Reusing existing connection to CA server: " + address);
@@ -980,7 +991,7 @@ public class ContextImpl implements AutoCloseable, Constants
             return transport;
       }
 
-      boolean lockAcquired = namedLocker.acquireSynchronizationObject (address, LOCK_TIMEOUT);
+      final boolean lockAcquired = namedLocker.acquireSynchronizationObject( address, LOCK_TIMEOUT );
       if ( lockAcquired )
       {
          try
@@ -1022,9 +1033,9 @@ public class ContextImpl implements AutoCloseable, Constants
             reactor.register (socket, SelectionKey.OP_READ, handler);
 
             // issue version including priority, username and local hostname
-            Messages.versionMessage (transport, (short) priority, 0, false);
-            Messages.userNameMessage (transport, userName);
-            Messages.hostNameMessage (transport, hostName);
+            Messages.versionMessage( transport, (short) priority, 0, false );
+            Messages.userNameMessage( transport, userName );
+            Messages.hostNameMessage( transport, hostName );
             transport.flush ();
 
             logger.log ( Level.FINER, "Connected to CA server: " + address);
@@ -1038,23 +1049,25 @@ public class ContextImpl implements AutoCloseable, Constants
             try
             {
                if ( socket != null )
-                  socket.close ();
+               {
+                  socket.close();
+               }
             }
             catch ( Throwable t )
             { /* noop */
             }
 
-            logger.log (Level.WARNING, th, () -> "Failed to connect to '" + address + "'.");
+            logger.log( Level.WARNING, th, () -> "Failed to connect to '" + address + "'.");
             return null;
          }
          finally
          {
-            namedLocker.releaseSynchronizationObject (address);
+            namedLocker.releaseSynchronizationObject( address );
          }
       }
       else
       {
-         logger.severe (() -> "Failed to obtain synchronization lock for '" + address + "', possible deadlock.");
+         logger.severe( () -> "Failed to obtain synchronization lock for '" + address + "', possible deadlock." );
          return null;
       }
    }
