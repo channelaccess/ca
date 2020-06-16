@@ -8,6 +8,7 @@ import org.apache.commons.lang3.Validate;
 import java.util.logging.*;
 
 import static org.epics.ca.Constants.CA_LIBRARY_LOG_LEVEL;
+import static org.epics.ca.Constants.CA_LIBRARY_LOG_LEVEL_DEFAULT;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -20,14 +21,15 @@ public class LibraryLogManager
 
    private static final StreamHandler flushingStandardOutputStreamHandler;
 
-   static {
+   static
+   {
       // Could consider here setting the default locale for this instance of
       // the Java Virtual Machine. But currently (2020-05-10) it is not
       // considered that the library "owns" this decision.
       // Locale.setDefault( Locale.ROOT );
       // Note: the definition below determines the format of all log messages
       // emitted by the CA library.
-      System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %3$s %4$s %5$s %6$s %n");
+      System.setProperty( "java.util.logging.SimpleFormatter.format", "%1$tF %1$tT.%1$tL %3$s %4$s %5$s %6$s %n" );
 
       // Create a stream handler that is like the normal output stream handler except
       // it will ensure that each message gets flushed to the console. Note: this may
@@ -37,7 +39,8 @@ public class LibraryLogManager
       flushingStandardOutputStreamHandler = new StreamHandler( System.out, new SimpleFormatter() )
       {
          @Override
-         public synchronized void publish( final LogRecord record ) {
+         public synchronized void publish( final LogRecord record )
+         {
             super.publish( record );
             flush();
          }
@@ -73,7 +76,7 @@ public class LibraryLogManager
    {
       Validate.notNull( clazz );
       
-      final String loglevelAsString = System.getProperty( CA_LIBRARY_LOG_LEVEL, Level.INFO.toString() );
+      final String loglevelAsString = System.getProperty( CA_LIBRARY_LOG_LEVEL, CA_LIBRARY_LOG_LEVEL_DEFAULT.toString() );
       final Level logLevel = Level.parse( loglevelAsString );
       return getLogger( clazz, logLevel );
    }
