@@ -108,7 +108,7 @@ public class CARepeaterStarter
     * running.
     *
     * @param repeaterPort specifies the port to listen on in the inclusive range 1-65535.
-    * @param debugLevel the debug level to be used for logging in the spawned process.
+    * @param logLevel the logging level to be used in the spawned process.
     * @param outputCaptureEnable whether the standard output and standard error of
     *   the spawned subprocess should be captured and sent to the logging system in
     *   the owning process.
@@ -117,7 +117,7 @@ public class CARepeaterStarter
     *    repeater from being started.
     * @throws RuntimeException if the JVM network stack was incorrectly configured.
     */
-   public static void startRepeaterIfNotAlreadyRunning( int repeaterPort, Level debugLevel, boolean outputCaptureEnable )
+   public static void startRepeaterIfNotAlreadyRunning( int repeaterPort, Level logLevel, boolean outputCaptureEnable )
    {
       Validate.inclusiveBetween( 1, 65535, repeaterPort, "The port must be in the inclusive range 1-65535.");
 
@@ -130,7 +130,7 @@ public class CARepeaterStarter
       {
          if ( ! isRepeaterRunning( repeaterPort ) )
          {
-            final JavaProcessManager processManager = startRepeaterInSeparateJvmProcess(repeaterPort, debugLevel, outputCaptureEnable );
+            final JavaProcessManager processManager = startRepeaterInSeparateJvmProcess( repeaterPort, logLevel, outputCaptureEnable );
             javaProcessManager.set(processManager );
          }
       }
