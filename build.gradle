@@ -6,15 +6,15 @@ buildscript {
 }
 
 plugins {
-    id "base"
-    id "java"
-    id "com.jfrog.bintray" version "1.8.5"
-    id "maven-publish"
-    id "jacoco"
+    id 'base'
+    id 'java'
+    id 'com.jfrog.bintray' version '1.8.5'
+    id 'maven-publish'
+    id 'jacoco'
 }
 
 jacoco {
-    toolVersion = "0.8.5"
+    toolVersion = '0.8.5'
 }
 
 // Explicitly describe the current build environment
@@ -29,11 +29,11 @@ version = '1.3.0'
 //noinspection GroovyUnusedAssignment
 archivesBaseName = 'ca'
 
-ext.isReleaseVersion = ! version.endsWith( "SNAPSHOT")
+ext.isReleaseVersion = ! version.endsWith( 'SNAPSHOT' )
 
 // Define extra properties used to control build.
-// ext.deployOSS = "X" // Don't care about the value just whether its defined or not.
-// ext.deployPSI = "X" // Don't care about the value just whether its defined or not.
+// ext.deployOSS = 'X' // Don't care about the value just whether its defined or not.
+// ext.deployPSI = 'X' // Don't care about the value just whether its defined or not.
 
 // Define which version of the Java compiler to use.
 java {
@@ -117,7 +117,7 @@ dependencies {
 }
 
 test {
-    println "The test target has been invoked."
+    println 'The test target has been invoked.'
 
     // Note: this configuration is automatically used for all gradle-triggered tests.
     useJUnitPlatform()
@@ -136,8 +136,8 @@ test {
     //systemProperty 'EPICS_CA_AUTO_ADDR_LIST', 'NO'
 
     testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
         outputs.upToDateWhen {false}
         showStandardStreams = false
     }
@@ -149,7 +149,7 @@ javadoc {
     // (2020-05-07) this will not work with Java 8. Need to wait for upgrade
     // to Java 11 then try again.
     // options.addBooleanOption( 'html5', true)
-    options.addStringOption( "tag", "implNote:a:Implementation Note:" )
+    options.addStringOption( 'tag', 'implNote:a:Implementation Note:' )
 }
 
 task javadocJar(type: Jar) {
