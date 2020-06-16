@@ -105,7 +105,7 @@ public class CARepeaterStarterTest
       logger.info("The CA Repeater process was created.");
       logger.info("Verifying that the CA Repeater process is reported as being alive...");
       try {
-         assertThat(processManager.isAlive(), is(true));
+         assertThat(processManager.isAlive(), is(true ) );
          logger.info("OK");
          logger.info("Waiting a moment to allow the spawned process time to reserve the listening port...");
          Thread.sleep(1500);
@@ -121,7 +121,7 @@ public class CARepeaterStarterTest
          logger.info("Waiting a moment to allow the OS to release the listening port...");
          Thread.sleep(1500);
          logger.info("Verifying that the CA Repeater is no longer detected as running...");
-         assertThat(CARepeaterStarter.isRepeaterRunning(testPort), is(false));
+         assertThat(CARepeaterStarter.isRepeaterRunning( testPort ), is(false));
          logger.info("OK");
       }
       finally {
