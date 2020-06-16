@@ -7,8 +7,8 @@ import org.apache.commons.lang3.Validate;
 
 import java.util.logging.*;
 
-import static org.epics.ca.Constants.CA_LIBRARY_LOG_LEVEL;
 import static org.epics.ca.Constants.CA_LIBRARY_LOG_LEVEL_DEFAULT;
+import static org.epics.ca.Constants.CA_LIBRARY_LOG_LEVEL;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -75,8 +75,8 @@ public class LibraryLogManager
    public static Logger getLogger( Class<?> clazz )
    {
       Validate.notNull( clazz );
-      
-      final String loglevelAsString = System.getProperty( CA_LIBRARY_LOG_LEVEL, CA_LIBRARY_LOG_LEVEL_DEFAULT.toString() );
+
+      final String loglevelAsString = System.getProperty( CA_LIBRARY_LOG_LEVEL, CA_LIBRARY_LOG_LEVEL_DEFAULT  );
       final Level logLevel = Level.parse( loglevelAsString );
       return getLogger( clazz, logLevel );
    }
