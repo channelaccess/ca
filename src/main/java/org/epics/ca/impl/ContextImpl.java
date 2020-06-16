@@ -643,11 +643,11 @@ public class ContextImpl implements AutoCloseable
 
    /**
     * Returns the boolean value of the specified configuration item which may be
-    * provided either by means of a Java  property or from a variable set in
+    * provided either by means of a Java property or from a variable set in
     * the operating system environment.
     *
-    * When a boolean value is provided it's uppercase value should be either
-    * "YES" or "NO".
+    * When a boolean value is specified any of the following string values may
+    * be used: "yes" / "true" / "no" / "false".
     *
     * If no value is explicitly defined the specified default value is returned.
     *
@@ -665,11 +665,11 @@ public class ContextImpl implements AutoCloseable
       final String sValue = properties.getProperty( item, System.getenv( item ) );
       if ( sValue != null )
       {
-         if ( sValue.equalsIgnoreCase("YES" ) )
+         if ( ( sValue.equalsIgnoreCase( "yes" ) ) || ( sValue.equalsIgnoreCase( "true" ) ) )
          {
             return true;
          }
-         else if ( sValue.equalsIgnoreCase("NO" ) )
+         else if ( ( sValue.equalsIgnoreCase( "no" ) ) || ( sValue.equalsIgnoreCase( "false" ) ) )
          {
             return false;
          }
@@ -765,13 +765,13 @@ public class ContextImpl implements AutoCloseable
     * @throws NullPointerException if any of the arguments were null.
     */
    @SuppressWarnings( "SameParameterValue" )
-   private Level readDebugLevelProperty( String item, Properties properties, Level defaultValue )
+   private Level readDebugLevelProperty( String item, Properties properties, String defaultValue )
    {
       Validate.notNull( item );
       Validate.notNull( properties );
       Validate.notNull( defaultValue );
 
-      final String sValue = readStringProperty( item, properties, defaultValue.toString() );
+      final String sValue = readStringProperty( item, properties, defaultValue );
       try
       {
          return Level.parse( sValue );
@@ -780,7 +780,7 @@ public class ContextImpl implements AutoCloseable
       {
          logger.config( "Failed to parse debug level value for property " + item + ": \"" + sValue + "\"." );
       }
-      return defaultValue;
+      return Level.parse( defaultValue );
    }
 
    /**
