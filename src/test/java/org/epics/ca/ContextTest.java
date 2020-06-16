@@ -14,6 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import org.epics.ca.impl.repeater.CARepeaterStarter;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,7 +95,7 @@ class ContextTest
    @Test
    void testCreateChannel()
    {
-      try ( Context context = new Context () )
+      try ( Context context = new Context() )
       {
          try ( Channel<?> ignored = context.createChannel(null, null) )
          {
@@ -206,6 +207,33 @@ class ContextTest
       {
          // expected
       }
+   }
+
+   @Test
+   void testCreateContext_doesNotStartRepeater_whenDisabled() throws InterruptedException
+   {
+      final Properties properties = new Properties();
+      properties.setProperty( Constants.CA_REPEATER_START_ON_CONTEXT_CREATE, "false" );
+      try ( final Context ignored = new Context( properties ) )
+      {
+         Thread.sleep( 1500 );
+         assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( false ) );
+      }
+   }
+
+   @Test
+   void testCreateContext_doesStartRepeater_whenEnabled_butShutsItDownAgain() throws InterruptedException
+   {
+      final Properties properties = new Properties();
+      properties.setProperty( Constants.CA_REPEATER_START_ON_CONTEXT_CREATE, "true" );
+      properties.setProperty( Constants.CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE, "true" );
+      try ( final Context ignored = new Context( properties ) )
+      {
+         Thread.sleep( 1500 );
+         assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( true ) );
+      }
+      Thread.sleep( 1500 );
+      assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( false ) );
    }
 
    @Test
