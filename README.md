@@ -30,7 +30,7 @@ Maven:
 <dependency>
   <groupId>org.epics</groupId>
   <artifactId>ca</artifactId>
-  <version>1.3.0</version>
+  <version>1.3.1</version>
 </dependency>
 ```
 
