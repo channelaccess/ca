@@ -154,8 +154,29 @@ public class CARepeaterStarter
       }
    }
 
+   /**
+    * Check if a repeater is running bound to any of the addresses associated
+    * with the local machine.
+    *
+    * @param repeaterPort repeater port.
+    * @return <code>true</code> if repeater is already running, <code>false</code> otherwise
+    */
+   public static boolean isRepeaterRunning( int repeaterPort )
+   {
+      logger.finest( "Checking whether repeater is running on port " + repeaterPort );
 
-/*- Package-level access methods ---------------------------------------------*/
+      // The idea here is that binding to a port on thewildcard addreess we check all
+      // possible network interfaces on which the CA Repeater may be already running.
+      final InetSocketAddress wildcardSocketAddress = new InetSocketAddress( repeaterPort );
+      logger.finest( "Checking socket address " + wildcardSocketAddress );
+      final boolean repeaterIsRunning = ! UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress );
+      final String runningOrNot = repeaterIsRunning ? " IS " : " IS NOT ";
+      logger.finest( "The repeater on port " + repeaterPort + runningOrNot + "running." ) ;
+      return repeaterIsRunning;
+   }
+
+
+   /*- Package-level access methods ---------------------------------------------*/
 
    /**
     * Starts the CA Repeater, which should not already be running, in a separate
@@ -196,27 +217,6 @@ public class CARepeaterStarter
       final JavaProcessManager processManager = new JavaProcessManager( CARepeaterStarter.class, properties, programArgs );
       processManager.start( outputCaptureEnable );
       return processManager;
-   }
-
-   /**
-    * Check if a repeater is running bound to any of the addresses associated
-    * with the local machine.
-    *
-    * @param repeaterPort repeater port.
-    * @return <code>true</code> if repeater is already running, <code>false</code> otherwise
-    */
-   static boolean isRepeaterRunning( int repeaterPort )
-   {
-      logger.finest( "Checking whether repeater is running on port " + repeaterPort );
-
-      // The idea here is that binding to a port on thewildcard addreess we check all
-      // possible network interfaces on which the CA Repeater may be already running.
-      final InetSocketAddress wildcardSocketAddress = new InetSocketAddress( repeaterPort );
-      logger.finest( "Checking socket address " + wildcardSocketAddress );
-      final boolean repeaterIsRunning = ! UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress );
-      final String runningOrNot = repeaterIsRunning ? " IS " : " IS NOT ";
-      logger.finest( "The repeater on port " + repeaterPort + runningOrNot + "running." ) ;
-      return repeaterIsRunning;
    }
 
 /*- Private methods ----------------------------------------------------------*/
