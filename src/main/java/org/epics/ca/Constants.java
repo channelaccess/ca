@@ -2,8 +2,6 @@ package org.epics.ca;
 
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 
-import java.util.logging.Level;
-
 public class Constants
 {
    public enum ChannelProperties
@@ -140,12 +138,12 @@ public class Constants
    /**
     * Default value of the log level for the CA Repeater.
     */
-   public static final Level CA_REPEATER_LOG_LEVEL_DEFAULT = Level.INFO;
+   public static final String CA_REPEATER_LOG_LEVEL_DEFAULT = "INFO";
 
    /**
     * Default value of the log level for the CA Library.
     */
-   public static final Level CA_LIBRARY_LOG_LEVEL_DEFAULT = Level.INFO;
+   public static final String CA_LIBRARY_LOG_LEVEL_DEFAULT = "INFO";
 
    /**
     * Default CA repeater port.
