@@ -159,11 +159,12 @@ public class ChannelSearchManager
     */
    public void beaconAnomalyNotify()
    {
-      logger.fine( "A beacon anomaly has been detected" );
+      logger.fine( "A beacon anomaly has been detected." );
       if ( canceled.get() )
       {
          return;
       }
+      logger.fine( "Reinstigating channel search." );
       timer.rescheduleAllAfterDelay(0 );
    }
 
