@@ -1,5 +1,9 @@
 # Overview [![Build Status](https://travis-ci.com/channelaccess/ca.svg?branch=master)](https://travis-ci.com/channelaccess/ca)
-__ca__ is a pure Java Channel Access client implementation. __ca__ is the easiest way in Java to access Channel Access channels.
+The __ca__  library is a pure Java Channel Access client implementation. __ca__ strives to provide the _easiest_ 
+way of accessing EPICS Channel Access channels from Java.
+
+These notes are aimed to assist the __users__ of the library. Developers and __maintainers__ of the library are invited 
+to consult the [Developer](DEVELOPER.md) notes.
 
 ## Features
 * Simplicity.
@@ -8,23 +12,35 @@ __ca__ is a pure Java Channel Access client implementation. __ca__ is the easies
 * Efficient handling of parallel operations without the need to use threads.
 * Chaining of actions/operations, e.g. set this, then set that, ...
 * Easily get additional metadata to value: Timestamp, Alarms, Graphic, Control.
-* Supports channel monitoring including mask capability to select events-of-interest (eg value, log, alarm 
-and/or property changes).
+* Supports channel monitoring, including mask capability to select events-of-interest (eg value, log, alarm and/or 
+property changes).
 * Supports the following listeners: ConnectionListener, AccessRightsListener.
 
 ## Compatibility
 
-Implements CA protocol specified in version 4.13 of the Channel Access Protocol Specification. The CA protocol
-specification is distributed in the documents associated with each EPICS base release. For developer convenience a 
-PDF of the current version is available in the [documents](docs) area of this project. 
+Implements CA protocol specified in __Version 4.13__ of the Channel Access Protocol Specification. 
 
-# Installation
+The CA protocol specification is available on the new EPICS website [here](https://docs.epics-controls.org/en/latest/specs/ca_protocol.html).
+Because links have a tendency to go out-of-date a [PDF](docs/Channel%20Access%20Protocol%20Specification.pdf) 
+version is archived in the [documents](docs) area of this project. 
 
-The current Travis build status of the latest release in the GitHub repository is:
+The __ca__ library 1.x.y series of releases are compatible with __Java 8__ and higher.
 
-__ca__ is available on Maven Central. It can be easily retrieved by Maven or Gradle as follows:
+It is anticipated that the current __ca__ release (1.3.1) will be the __last release to support Java 8__ and 
+that future releases will require at least __Java 11__.
 
-Maven:
+## Distribution
+
+The __ca__ library is available as an Apache Maven package for use in Java projects which use Maven, Gradle, Ivy etc
+as their build system.
+ 
+The current distribution home of the library is [JCenter](https://bintray.com/paulscherrerinstitute/hltools/org.epics%3Aca).
+Here you can find the most recent library builds. Earlier versions (up to 1.2.2) were available at 
+[Maven Central](https://search.maven.org/artifact/org.epics/ca).
+
+#### Maven Project Usage
+
+Add the following dependency:
 
 ```xml
 <dependency>
@@ -34,80 +50,150 @@ Maven:
 </dependency>
 ```
 
-Gradle:
+and the following repository:
 
-```gradle
-compile 'org.epics:ca:1.3.0'
+```xml
+<repositories>
+    <repository>
+      <id>jcenter</id>
+      <url>https://jcenter.bintray.com/</url>
+    </repository>
+</repositories>
 ```
 
-__Note:__ To be able to retrieve the current snapshot version you have to configure the following repository:
+#### Gradle Project Usage
+
+Add the following dependency:
+
+```gradle
+compile 'org.epics:ca:1.3.1'
+```
+
+and the following repository:
 
 ```gradle
 repositories {
-  maven {
-    url 'http://oss.sonatype.org/content/repositories/snapshots'
-  }
-}
+    maven {
+        url "https://jcenter.bintray.com" 
+    }
 ```
 
-# Usage
+# Library Usage
+
+## Configuration
+
+#### EPICS Channel Access Protocol Configuration
+
+The __ca__ library supports the configuration of the operating parameters of the EPICS Channel Access Protocol by
+means of the "normal" configuration variables.
+
+These can be specified by means of environmental variables in the host OS, through Java System properties, or by 
+passing an appropriately configured properties object when creating a context. The following properties are
+supported:
+
+| Property                 | Description                                                                                | Default Value |
+|--------------------------|--------------------------------------------------------------------------------------------|---------------|
+| EPICS_CA_ADDR_LIST       | Address list to search for channels.                                                       | empty         | 
+| EPICS_CA_AUTO_ADDR_LIST  | Automatically build up search address list by introspecting local network interfaces.      | "true"        | 
+| EPICS_CA_CONN_TMO        | UDP Beacon Message Timeout.                                                                | "30s"         |
+| EPICS_CA_REPEATER_PORT   | CA Repeater listening port.                                                                | "5065"        |
+| EPICS_CA_SERVER_PORT     | Channel access server port                                                                 | "5064"        | 
+| EPICS_CA_MAX_ARRAY_BYTES | Maximum size in bytes of an array/waveform                                                 | unlimited     |
+
+_Note:_ In contrast to other Channel Access libraries EPICS_CA_MAX_ARRAY_BYTES is set to unlimited by default. Usually 
+there is no reason to set this property since the memory is dynamically acquired as required.
+
+By default the __ca__ library will discover the available EPICS channels by broadcasting search requests on all 
+locally-enabled network interfaces.
+
+#### General Purpose Library Configuration
+
+The __ca__ library supports the following general purpose configuration variables:
+
+| Property                    | Description                                                                             | Default Value |
+|-----------------------------|-----------------------------------------------------------------------------------------|---------------|
+| CA_LIBRARY_LOG_LEVEL        | The level at which CA library log messages will be sent to the standard output stream.  | "INFO"        | 
+| CA_REPEATER_LOG_LEVEL       | The level at which CA Repeater log messages will be sent to the standard output stream. | "INFO"        | 
+| CA_REPEATER_DISABLE         | Whether the CA library will start/stop a local CA Repeater instance.                    | "false"       |
+| CA_REPEATER_OUTPUT_CAPTURE  | Whether to capture the output of the CA Repeater's log messages.                        | "false"       |
+| CA_MONITOR_NOTIFIER_IMPL    | The configuration of the CA library monitor notification engine.                        | see below     |
+
+#### Monitor Notification Engine Configuration
+
+Internally the __ca__ library uses a monitor notification engine to deliver the notifications received from the remote IOCs 
+to the local library users via the Java ```Consumer``` interface.
+
+The ```CA_MONITOR_NOTIFIER_IMPL``` property can be used to configure the properties of this engine as follows:
+
+| Configuration String                                                           | Default Buffer Size     | Default Number of Consumer Notification Threads| Additional Comment |
+|--------------------------------------------------------------------------------|-------------------------|------------------------------------------------|----------------------------------------------------|
+| "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl {,threads}{,bufsiz}"| Integer.MAX_VALUE       | 16                                             | Threads and buffer size are configurable.          |
+| "BlockingQueueSingleWorkerMonitorNotificationServiceImpl {,threads}{,bufsiz}"  | Integer.MAX_VALUE       |  1                                             | Threads parameter is ignored and fixed to 1.       |                                           | Experimental. Attempts to improve on the old one.  |
+| "StripedExecutorServiceMonitorNotificationServiceImpl {,threads}"              | Integer.MAX_VALUE       | 10                                             | Uses Heinz Kabbutz StripedExecutorService.         |
+
+Note: 
+
+1. The configuration of the monitor notification engine was always intended as an experimental feature. The LMAX-Disruptor
+based notification engines which were available previously have now been retired. The primary reason for this is because 
+they did not scale well to multiple channels. 
+1. The ```BlockingQueueMultipleWorkerMonitorNotificationServiceImpl``` and ```StripedExecutorServiceMonitorNotificationServiceImpl```
+notification engines provide optional configuration parameters allowing the size of the notification buffer and number 
+of consumer notification threads to be configured. 
+1. In the future it is likely that the ```StripedExecutorServiceMonitorNotificationServiceImpl``` will also be retired 
+and that the __ca__ library will offer only a single notification engine based on the blocking queue implementation.  
+This engine will remain fully configurable to meet the needs of all client applications.   
+1. Further details on the requirements for the monitor notification engine and its performance are available in the
+   following [MONITOR_INFO.md](https://github.com/channelaccess/ca/blob/master/MONITOR_INFO.md) file.
 
 ## Context
 
-To be able to create channels a Context need to be created. The context is a container for channels. If the context is closed also all channels created with the context will be closed.
+In order to create channels a Context must first be created. The context acts as a channel container. When the context 
+is closed also all channels created with that context will be automatically closed.
 
 This is how to create a context:
 
-```java
+```
 Context context = new Context()
 ```
 
-A context accepts several properties. Properties can be set at Context creation time as follows:
+Each context supports the configuration properties defined in the previous section. By default whencreated these 
+properties are taken from the CA library environment. If finer-grained control is required over each context then
+an appropriately configured properties object can be supplied in the class constructor.
 
-```java
+```
 Properties properties = new Properties();
-properties.setProperty(Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "10.10.10.255");
+properties.setProperty( Context.ProtocolConfiguration.EPICS_CA_ADDR_LIST.toString(), "10.10.10.255");
 new Context(properties);
 ```
 
-All possible properties are available in the `Configuration` enumeration inside the Context class. The available properties are:
+The context's resources (= network sockets and allocated memory) should be disposed of when the context is no longer 
+required.  This can be achieved by callling the `close` method.
 
-| Property | Desciption |
-|----|----|
-|EPICS_CA_ADDR_LIST|Address list to search the channel|
-|EPICS_CA_AUTO_ADDR_LIST|Automatically build up search address list|
-|EPICS_CA_CONN_TMO||
-|EPICS_CA_BEACON_PERIOD||
-|EPICS_CA_REPEATER_PORT||
-|EPICS_CA_SERVER_PORT|Channel access server port|
-|EPICS_CA_MAX_ARRAY_BYTES|Maximum size in bytes of an array/waveform - see note below!|
-
-_Note:_ In contrast to other Channel Access libraries EPICS_CA_MAX_ARRAY_BYTES is set to unlimited by default. Usually there is no reason to set this property. Memory is dynamically acquired as needed.
-
-The context need to be closed at the end of the application via:
-
-```java
+```
 context.close();
 ```
 
-_Note:_ As Context implements `AutoCloseable` you can also use
+Alternatively as the Context implements the Java `AutoCloseable` interface it can also be used inside a 
+try-with-resources statement to ensure that the context's resources are automatically disposed when the 
+context is no longer in scope. 
 
-```java
-try(Context context = new Context){
-  // Code
+```
+try ( Context context = new Context)
+{
+  // Code using context
 }
 ```
 
 ## Channel
 To create a channel use:
 
-```java
+```
 Channel<Double> channel = context.createChannel("MY_CHANNEL", Double.class);
 ```
 
 At creation time of the channel its type need to be defined. If you want to have a generic type of the channel (i.e. you want to use the type set on the server) use:
 
-```java
+```
 Channel<Object> channel = context.createChannel("ARIDI-PCT:CURRENT", Object.class);
 ```
 
@@ -115,13 +201,13 @@ When getting a value from the channel you will get the correct/corresponding Jav
 
 After creating the channel object the channel needs to be connected. There is a synchronous and asynchronous way to do so. The synchronous/blocking way is to call:
 
-```java
+```
 channel.connect()
 ```
 
 The asynchronous way is to call:
 
-```java
+```
 `connectAsync()`
 ```
 
@@ -133,7 +219,7 @@ channel.connectAsync().get(1, java.util.concurrent.TimeUnit.SECONDS);
 
 For connecting multiple channels in parallel use:
 
-```java
+```
 Channel<Integer> channel1 = context.createChannel("adc02", Integer.class);
 Channel<String> channel2 = context.createChannel("adc03", String.class);
 
@@ -149,7 +235,7 @@ After creating a channel you are able to get and put values via the `get()` and 
 
 To put a value in a fire and forget style use `putNoWait(value)`. This method will put the value change request on the network but does not wait for any kind of acknowledgement.
 
-```java
+```
 // Get value
 double value = channel.get();
 // Set value
@@ -162,7 +248,7 @@ Beside the synchronous (i.e. blocking until the operation is done) versions of `
 
 Example asynchronous get:
 
-```java
+```
 CompletableFuture<Double> future = channel.getAsync();
 CompletableFuture<Double> future2 = channel2.getAsync();
 
@@ -179,7 +265,7 @@ double value2 = future2.get();
 
 Example asynchronous put:
 
-```java
+```
 CompletableFuture<Status> future = channel.putAsync(1.0); // this could, for example start some move of a motor ...
 CompletableFuture<Status> future2 = channel2.putAsync(5.0);
 
@@ -197,35 +283,36 @@ future2.get(); // this will return a status object that can be queried if put wa
 ### Metadata
 If you want to retrieve more metadata besides the value from the channel you can request this by specifying the type of metadata with the get call. For example if you also want to get the value modification/update time besides the value from the cannel use:
 
-```java
+```
 channel.get(Timestamped.class)
 ```
 
 Ca supports all metadata types Channel Access provides, namely `Timestamped`, `Alarm`, `Graphic` and `Control`.
 
-|Metadata Type| Metadata|
-|----|----|
-|Timestamped| seconds, nanos|
-|Alarm| alarmStatus, alarmSeverity|
-|Graphic| alarmStatus, alarmSeverity, units, precision, upperDisplay, lowerDisplay, upperAlarm, lowerAlarm, upperWarning, lowerWarning|
-|Control| alarmStatus, alarmSeverity, units, precision, upperDisplay, lowerDisplay, upperAlarm, lowerAlarm, upperWarning, lowerWarning, upperControl, lowerControl|
+|Metadata Type | Metadata                   |
+|--------------|----------------------------|
+| Timestamped  | seconds, nanos             |
+| Alarm        | alarmStatus, alarmSeverity |
+| Graphic      | alarmStatus, alarmSeverity, units, precision, upperDisplay, lowerDisplay, upperAlarm, lowerAlarm, upperWarning, lowerWarning |
+| Control      | alarmStatus, alarmSeverity, units, precision, upperDisplay, lowerDisplay, upperAlarm, lowerAlarm, upperWarning, lowerWarning, upperControl, lowerControl |
 
 ### Monitors
 If you want to monitor a channel you can attach a monitor to it like this:
 
-```java
+```
 Monitor<Double> monitor = channel.addValueMonitor(value -> System.out.println(value));
 ```
 
 To close a monitor use:
 
-```java
+```
 monitor.close()
 ```
 
-Again if you like more metadata from the monitor you can specify the type of metadata you are interested in.
+Again if you would like to obtain metadata from the monitor you can specify the type of metadata that you are 
+interested in.
 
-```java
+```
 Monitor<Timestamped<Double>> monitor =
     channel.addMonitor(
         Timestamped.class,
@@ -233,44 +320,11 @@ Monitor<Timestamped<Double>> monitor =
             );
 ```
 
-Internally the CA library uses a monitor notification engine to deliver the  notifications received from the
-remote IOCs to the local Consumer. The properties of this engine are configurable using either a system 
-property or via a ```Properties``` object passed to the Context at the time of construction.
-
-The property, named ```CA_MONITOR_NOTIFIER_IMPL```, can be used as follows:
-
-```java
-final Properties contextProperties = new Properties();
-contextProperties.setProperty( "CA_MONITOR_NOTIFIER_IMPL", <my_monitor_config> );
-try ( final Context context = new Context( contextProperties ) ) {
-   ... create and use your monitor as normal here...
-}
-```
-
-The configuration string is used as follows:
-
-|Configuration String                                                           | Type            | Default Buffer Size  | Default Number of Consumer Notification Threads| Additional Comment |
-|-------------------------------------------------------------------------------|-----------------|----------------------|------------------------------------------------|----------------------------------------------------|
-|"BlockingQueueMultipleWorkerMonitorNotificationServiceImpl {,threads}{,bufsiz}"| Non-lossy       | Integer.MAX_VALUE    | 16                                             | Threads and buffer size are configurable.          |
-|"BlockingQueueSingleWorkerMonitorNotificationServiceImpl {,threads}{,bufsiz}"  | Non-lossy       | Integer.MAX_VALUE    |  1                                             | Threads parameter is ignored and fixed to 1.       |                                           | Experimental. Attempts to improve on the old one.  |
-|"StripedExecutorServiceMonitorNotificationServiceImpl {,threads}"              | Non-lossy       | Integer.MAX_VALUE    | 10                                             | Uses Heinz Kabbutz StripedExecutorService.         |
-
-Note: 
-
-1. The configuration of the monitor notification engine was an experimental feature. The LMAX Disruptor based 
-notification engines have been retired in CA Release 1.3.0. In the future it is possible and/or likely that 
-the library will offer only a single engine, fully configurable to meet the needs of all client applications.   
-1. The ```BlockingQueueMultipleWorkerMonitorNotificationServiceImpl``` and ```StripedExecutorServiceMonitorNotificationServiceImpl```
-notification engines provide optional configuration parameters allowing the size of the notification buffer and number 
-of consumer notification threads to be configured. 
-1. Further details on the requirements for the monitor notification engine and its performance are available in the
-   following [MONITOR_INFO.md](https://github.com/channelaccess/ca/blob/master/MONITOR_INFO.md) file.
-
 ### Listeners
 A channel can have Access Right and Connection listeners. These two types of listeners are attached as follows.
 
 
-```java
+```
 Listener connectionListener = channel.addConnectionListener((channel, state) -> System.out.println(channel.getName() + " is connected? " + state));
 
 
@@ -278,7 +332,7 @@ Listener accessRightListener = channel.addAccessRightListener((channel, rights) 
 ```
 To remove the listener(s), or use `try-catch-resources` (i.e. Listeners implement `AutoCloseable`) or
 
-```java
+```
 listener.close()
 ```
 
@@ -288,17 +342,17 @@ _Note:_ These listeners can be attached to the channel before connecting.
 ### ConnectionState
 The channels connection state can be checked as follows:
 
-```java
+```
 channel.getConnectionState()
 ```
 
 ## Channels
-The utility class `Channels` provides various convenience functions to create, close and operate on channels.
+The utility class `Channels` provides various convenience functions to perform bulk operations on groups of channels. 
 
 ### Create
 To create channels `Channels` provides these functions:
 
-```java
+```
 // Create and connect channel
 Channel<String> channel1 = Channels.create(context, "name", String.class);
 
@@ -317,7 +371,7 @@ All of these function will __create__ and __connect__ the specified channels. a
 ### WaitForValue
 For waiting until a channel reaches a specified value `Channels` provide following functions:
 
-```java
+```
 waitForValue(channel, "value")
 
 // Use custom comparator for checking what is equal ...
@@ -327,7 +381,7 @@ waitForValue(channel, "value", comparator)
 
 Both functions are also available in an __async__ version. Instead of blocking they return a CompletableFuture.
 
-```java
+```
 CompletableFuture<String> future = waitForValue(channel, "value")
 // ... do something\
 future.get();
@@ -343,7 +397,7 @@ future1.get()
 Ca provides the annotation, __@CaChannel__,  to annotate channel declarations within a class. While using the `Channels` utility class these annotations can be used to easily and efficiently create these channels.
 
 All that needs to done is, to annotate the channel declarations as follows:
-```java
+```
 class AnnotatedClass {
 		@CaChannel(name="adc01", type=Double.class)
 		private Channel<Double> doubleChannel;
@@ -368,20 +422,20 @@ class AnnotatedClass {
 
 Afterwards the channels can be created via `Channels` as follows:
 
-```java
+```
 AnnotatedClass object = new AnnotatedClass();
 Channels.create(context, object);
 ```
 
 To close all annotated channels use:
 
-```java
+```
 Channels.close(object);
 ```
 
 As channel names should not be hardcoded within an annotation, the name of a channel may contain multiple macros (e.g. `@CaChannel(name="adc${MACRO1}", type=String.class)`). While creating the channels a map of macros need to be passed to the `Channels.create` function.
 
-```java
+```
 Map<String,String> macros = new HashMap<>();
 macros.put("MACRO1","01");
 AnnotatedClass object = new AnnotatedClass();
@@ -394,7 +448,7 @@ Macro names are __case sensitive__!
 
 Create simple channel:
 
-```java
+```
 try (Context context = new Context())
 {
   try(Channel<Double> channel = Channels.create(context, "MY_CHANNEL", Double.class)){
@@ -403,25 +457,13 @@ try (Context context = new Context())
 }
 ```
 
-An extended usage example can be found at [src/test/java/org/epics/ca/test/Example.java](src/test/java/org/epics/ca/test/Example.java).
+An extended usage example can be found at [src/test/java/org/epics/ca/test/Example.java](src/test/java/org/epics/ca/Example.java).
 
+# Documentation
 
-# Development
-The project can be build via *gradle* by executing the provided wrapper scripts as follows:
- * Linux: `./gradlew build`
- * Windows: `gradlew.bat build`
+Since __ca__ release 1.3.x the Javadoc for the library is published in the GitHub repository [pages]() area.
+ 
 
-There is no need to have *gradle* installed on your machine, the only prerequisite for building is a Java >= 8 installed.
+# Further Information
 
-__Note:__ The first time you execute this command the required jars for the build system will be automatically downloaded and the build will start afterwards. The next time you execute the command the build should be faster.
-
-## Maven Central
-To push the latest version to Maven Central (via the OSS Sonatype Nexus Repository) use
-
-```bash
-./gradlew uploadArchives
-```
-
-To be able to do so you need to have your ~/.gradle/gradle.properties file in place with your Sonatype username/password as well you need to be part of the group *org.epics*
-
-For further information on using gradle to upload binary releases to the Sonatype OSS Nexus Repository please see the document [here.](https://central.sonatype.org/pages/gradle.html)
+Please see the separate [DEVELOPER](DEVELOPER.md) notes.
