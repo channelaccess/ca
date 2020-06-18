@@ -36,11 +36,11 @@ class LibraryConfigurationTest
    {
       final LibraryConfiguration instance = LibraryConfiguration.getInstance();
       assertThat( instance, is( notNullValue() ) );
-      assertThat( ! instance.isRepeaterEnabled(), is( LibraryConfiguration.PropertyDefaults.CA_REPEATER_DISABLE.getDefaultValue() ) );
-      assertThat( instance.isRepeaterOutputCaptureEnabled(), is( LibraryConfiguration.PropertyDefaults.CA_REPEATER_OUTPUT_CAPTURE.getDefaultValue() )  );
-      assertThat( instance.getLibraryLogLevel(), is( LibraryConfiguration.PropertyDefaults.CA_LIBRARY_LOG_LEVEL.getDefaultValue() )  );
-      assertThat( instance.getRepeaterLogLevel(), is( LibraryConfiguration.PropertyDefaults.CA_REPEATER_LOG_LEVEL.getDefaultValue() )  );
-      assertThat( instance.getMonitorNotifierImplementation(), is( LibraryConfiguration.PropertyDefaults.CA_MONITOR_NOTIFIER_IMPL.getDefaultValue() )  );
+      assertThat( ! instance.isRepeaterEnabled(), is( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
+      assertThat( instance.isRepeaterOutputCaptureEnabled(), is( LibraryConfiguration.CA_REPEATER_OUTPUT_CAPTURE_DEFAULT ) );
+      assertThat( instance.getLibraryLogLevel(), is( LibraryConfiguration.CA_LIBRARY_LOG_LEVEL_LOG_LEVEL_DEFAULT ) );
+      assertThat( instance.getRepeaterLogLevel(), is( LibraryConfiguration.CA_REPEATER_LOG_LEVEL_DEFAULT ) );
+      assertThat( instance.getMonitorNotifierImplementation(), is( LibraryConfiguration.CA_MONITOR_NOTIFIER_IMPL_DEFAULT ) );
    }
 
    @Test

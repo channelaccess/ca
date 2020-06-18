@@ -23,6 +23,11 @@ import java.util.Properties;
 public class ProtocolConfiguration
 {
 
+/*- Private attributes -------------------------------------------------------*/
+
+   private static final int CA_PORT_BASE = 5056;
+   private final Properties properties;
+
 /*- Public attributes --------------------------------------------------------*/
 
    public enum PropertyNames
@@ -35,34 +40,48 @@ public class ProtocolConfiguration
       EPICS_CA_MAX_ARRAY_BYTES
    }
 
-   public enum PropertyDefaults
-   {
-      EPICS_CA_ADDR_LIST( "" ),
-      EPICS_CA_AUTO_ADDR_LIST( true ),
-      EPICS_CA_CONN_TMO( 30.0f ),
-      EPICS_CA_REPEATER_PORT( Constants.CA_REPEATER_PORT_DEFAULT ),
-      EPICS_CA_SERVER_PORT( Constants.CA_SERVER_PORT_DEFAULT ),
-      EPICS_CA_MAX_ARRAY_BYTES( Integer.MAX_VALUE );
+   /**
+    * Default address list
+    */
+   public static final String EPICS_CA_ADDR_LIST_DEFAULT = "";
 
-      private final Object defaultValue;
+   /**
+    * Default address list
+    */
+   public static final boolean EPICS_CA_AUTO_ADDR_LIST_DEFAULT = true;
 
-      PropertyDefaults( Object defaultValue )
-      {
-         this.defaultValue = defaultValue;
-      }
+   /**
+    * Default connection timeout.
+    */
+   public static final float EPICS_CA_CONN_TMO_DEFAULT = 30.0f;
 
-      public Object getDefaultValue()
-      {
-         return defaultValue;
-      }
-   }
+   /**
+    * Default CA repeater port.
+    */
+   public static final int EPICS_CA_REPEATER_PORT_DEFAULT = CA_PORT_BASE + 2 * Constants.CA_MAJOR_PROTOCOL_REVISION + 1;
 
-/*- Private attributes -------------------------------------------------------*/
+   /**
+    * Default CA server port.
+    */
+   public static final int EPICS_CA_SERVER_PORT_DEFAULT = CA_PORT_BASE + 2 * Constants.CA_MAJOR_PROTOCOL_REVISION;
 
-   private final Properties properties;
+   /**
+    * Default maximum size of array passed through CA. (&lt;=0 means unlimited).
+    */
+   public static final int EPICS_CA_MAX_ARRAY_BYTES_DEFAULT = 0;
+
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
+
+   /**
+    * Constructs a new instance whose default values may be overrideen
+    * by environmental variables only.
+    */
+   public ProtocolConfiguration()
+   {
+      this( new Properties() );
+   }
 
    /**
     * Constructs a new instance whose default values may be overridden by
@@ -88,8 +107,7 @@ public class ProtocolConfiguration
     */
    public String getAddressList()
    {
-      final String defaultValue = (String) PropertyDefaults.EPICS_CA_ADDR_LIST.getDefaultValue();
-      return ConfigurationReader.readStringProperty( PropertyDefaults.EPICS_CA_ADDR_LIST.toString(), properties, defaultValue );
+      return ConfigurationReader.readStringProperty( PropertyNames.EPICS_CA_ADDR_LIST.toString(), properties, EPICS_CA_ADDR_LIST_DEFAULT );
    }
 
    /**
@@ -99,8 +117,7 @@ public class ProtocolConfiguration
     */
    public boolean getAutoAddressList()
    {
-      final boolean defaultValue = (Boolean) PropertyDefaults.EPICS_CA_AUTO_ADDR_LIST.getDefaultValue();
-      return ConfigurationReader.readBooleanProperty( PropertyDefaults.EPICS_CA_AUTO_ADDR_LIST.toString(), properties, defaultValue );
+      return ConfigurationReader.readBooleanProperty( PropertyNames.EPICS_CA_AUTO_ADDR_LIST.toString(), properties, EPICS_CA_AUTO_ADDR_LIST_DEFAULT );
    }
 
    /**
@@ -113,8 +130,7 @@ public class ProtocolConfiguration
     */
    public float getConnectionTimeout()
    {
-      final float defaultValue = (Float) PropertyDefaults.EPICS_CA_CONN_TMO.getDefaultValue();
-      return ConfigurationReader.readFloatProperty( PropertyDefaults.EPICS_CA_CONN_TMO.toString(), properties, defaultValue );
+      return ConfigurationReader.readFloatProperty( PropertyNames.EPICS_CA_CONN_TMO.toString(), properties, EPICS_CA_CONN_TMO_DEFAULT );
    }
 
    /**
@@ -123,8 +139,7 @@ public class ProtocolConfiguration
     */
    public int getRepeaterPort()
    {
-      final int defaultValue = (Integer) PropertyDefaults.EPICS_CA_REPEATER_PORT.getDefaultValue();
-      return ConfigurationReader.readIntegerProperty( PropertyDefaults.EPICS_CA_REPEATER_PORT.toString(), properties, defaultValue );
+      return ConfigurationReader.readIntegerProperty( PropertyNames.EPICS_CA_REPEATER_PORT.toString(), properties, EPICS_CA_REPEATER_PORT_DEFAULT );
    }
 
    /**
@@ -133,8 +148,7 @@ public class ProtocolConfiguration
     */
    public int getServerPort()
    {
-      final int defaultValue = (Integer) PropertyDefaults.EPICS_CA_SERVER_PORT.getDefaultValue();
-      return ConfigurationReader.readIntegerProperty( PropertyDefaults.EPICS_CA_SERVER_PORT.toString(), properties, defaultValue );
+      return ConfigurationReader.readIntegerProperty( PropertyNames.EPICS_CA_SERVER_PORT.toString(), properties, EPICS_CA_SERVER_PORT_DEFAULT );
    }
 
    /**
@@ -145,8 +159,7 @@ public class ProtocolConfiguration
     */
    public int getMaxArrayBytes()
    {
-      final int defaultValue = (Integer) PropertyDefaults.EPICS_CA_MAX_ARRAY_BYTES.getDefaultValue();
-      return ConfigurationReader.readIntegerProperty( PropertyDefaults.EPICS_CA_MAX_ARRAY_BYTES.toString(), properties, defaultValue );
+      return ConfigurationReader.readIntegerProperty( PropertyNames.EPICS_CA_MAX_ARRAY_BYTES.toString(), properties, EPICS_CA_MAX_ARRAY_BYTES_DEFAULT );
    }
 
 /*- Private methods ----------------------------------------------------------*/

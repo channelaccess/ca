@@ -32,25 +32,31 @@ public class LibraryConfiguration
       CA_LIBRARY_LOG_LEVEL
    }
 
-   public enum PropertyDefaults
-   {
-      CA_MONITOR_NOTIFIER_IMPL( "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,16" ),
-      CA_REPEATER_DISABLE( false ),
-      CA_REPEATER_OUTPUT_CAPTURE( false ),
-      CA_REPEATER_LOG_LEVEL( Level.INFO ),
-      CA_LIBRARY_LOG_LEVEL( Level.INFO ) ;
+   /**
+    * Default Monitor Notifier Engine configuration.
+    */
+   public static final String CA_MONITOR_NOTIFIER_IMPL_DEFAULT = "BlockingQueueMultipleWorkerMonitorNotificationServiceImpl,16";
 
-      private final Object defaultValue;
-      PropertyDefaults( Object defaultValue )
-      {
-         this.defaultValue = defaultValue;
-      }
+   /**
+    * Default state of enablement of the CA Repeater spawned by the CA library.
+    */
+   public static final boolean CA_REPEATER_DISABLE_DEFAULT = false;
 
-      public Object getDefaultValue()
-      {
-         return defaultValue;
-      }
-   }
+   /**
+    * Default state of enablement of CA Repater output capture.
+    */
+   public static final boolean CA_REPEATER_OUTPUT_CAPTURE_DEFAULT = false;
+
+   /**
+    * Default log level for the CA Repeater.
+    */
+   public static final Level CA_REPEATER_LOG_LEVEL_DEFAULT = Level.INFO;
+
+   /**
+    * Default log level for the CA library.
+    */
+   public static final Level CA_LIBRARY_LOG_LEVEL_LOG_LEVEL_DEFAULT = Level.INFO;
+
 
 /*- Private attributes -------------------------------------------------------*/
 
@@ -87,8 +93,7 @@ public class LibraryConfiguration
     */
    public String getMonitorNotifierImplementation()
    {
-      final String defaultValue = (String) PropertyDefaults.CA_MONITOR_NOTIFIER_IMPL.getDefaultValue();
-      return ConfigurationReader.readStringProperty( PropertyDefaults.CA_MONITOR_NOTIFIER_IMPL.toString(), properties, defaultValue );
+      return ConfigurationReader.readStringProperty( PropertyNames.CA_MONITOR_NOTIFIER_IMPL.toString(), properties, CA_MONITOR_NOTIFIER_IMPL_DEFAULT );
    }
 
    /**
@@ -102,8 +107,7 @@ public class LibraryConfiguration
     */
    public boolean isRepeaterEnabled()
    {
-      final boolean defaultValue = (Boolean) PropertyDefaults.CA_REPEATER_DISABLE.getDefaultValue();
-      return ! ConfigurationReader.readBooleanProperty( PropertyDefaults.CA_REPEATER_DISABLE.toString(), properties, defaultValue );
+      return ! ConfigurationReader.readBooleanProperty( PropertyNames.CA_REPEATER_DISABLE.toString(), properties, CA_REPEATER_DISABLE_DEFAULT );
    }
 
    /**
@@ -112,8 +116,7 @@ public class LibraryConfiguration
     */
    public boolean isRepeaterOutputCaptureEnabled()
    {
-      final boolean defaultValue = (Boolean) PropertyDefaults.CA_REPEATER_OUTPUT_CAPTURE.getDefaultValue();
-      return ConfigurationReader.readBooleanProperty( PropertyDefaults.CA_REPEATER_OUTPUT_CAPTURE.toString(), properties, defaultValue );
+      return ConfigurationReader.readBooleanProperty( PropertyNames.CA_REPEATER_OUTPUT_CAPTURE.toString(), properties, CA_REPEATER_OUTPUT_CAPTURE_DEFAULT );
    }
 
    /**
@@ -122,8 +125,7 @@ public class LibraryConfiguration
     */
    public Level getRepeaterLogLevel()
    {
-      final Level defaultValue = (Level) PropertyDefaults.CA_REPEATER_LOG_LEVEL.getDefaultValue();
-      return ConfigurationReader.readDebugLevelProperty( PropertyDefaults.CA_REPEATER_LOG_LEVEL.toString(), properties, defaultValue );
+      return ConfigurationReader.readDebugLevelProperty( PropertyNames.CA_REPEATER_LOG_LEVEL.toString(), properties, CA_REPEATER_LOG_LEVEL_DEFAULT );
    }
 
    /**
@@ -132,8 +134,7 @@ public class LibraryConfiguration
     */
    public Level getLibraryLogLevel()
    {
-      final Level defaultValue = (Level) PropertyDefaults.CA_LIBRARY_LOG_LEVEL.getDefaultValue();
-      return ConfigurationReader.readDebugLevelProperty( PropertyDefaults.CA_LIBRARY_LOG_LEVEL.toString(), properties, defaultValue );
+      return ConfigurationReader.readDebugLevelProperty( PropertyNames.CA_LIBRARY_LOG_LEVEL.toString(), properties, CA_LIBRARY_LOG_LEVEL_LOG_LEVEL_DEFAULT );
    }
 
 /*- Private methods ----------------------------------------------------------*/

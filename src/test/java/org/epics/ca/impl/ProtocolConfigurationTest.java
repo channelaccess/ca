@@ -34,14 +34,14 @@ class ProtocolConfigurationTest
    @Test
    void testDefaults()
    {
-      final ProtocolConfiguration instance = new ProtocolConfiguration( new Properties() );
+      final ProtocolConfiguration instance = new ProtocolConfiguration();
       assertThat( instance, is( notNullValue() ) );
-      assertThat( instance.getAddressList(), is( ProtocolConfiguration.PropertyDefaults.EPICS_CA_ADDR_LIST.getDefaultValue() ) );
-      assertThat( instance.getAutoAddressList(), is( ProtocolConfiguration.PropertyDefaults.EPICS_CA_AUTO_ADDR_LIST.getDefaultValue() )  );
-      assertThat( instance.getConnectionTimeout(), is( ProtocolConfiguration.PropertyDefaults.EPICS_CA_CONN_TMO.getDefaultValue() )  );
-      assertThat( instance.getMaxArrayBytes(), is( ProtocolConfiguration.PropertyDefaults.EPICS_CA_MAX_ARRAY_BYTES.getDefaultValue() )  );
-      assertThat( instance.getRepeaterPort(), is( ProtocolConfiguration.PropertyDefaults.EPICS_CA_REPEATER_PORT.getDefaultValue() )  );
-      assertThat( instance.getServerPort(), is( ProtocolConfiguration.PropertyDefaults.EPICS_CA_SERVER_PORT.getDefaultValue() )  );
+      assertThat( instance.getAddressList(), is( ProtocolConfiguration.EPICS_CA_ADDR_LIST_DEFAULT ) );
+      assertThat( instance.getAutoAddressList(), is( ProtocolConfiguration.EPICS_CA_AUTO_ADDR_LIST_DEFAULT ) );
+      assertThat( instance.getConnectionTimeout(), is( ProtocolConfiguration.EPICS_CA_CONN_TMO_DEFAULT ) );
+      assertThat( instance.getMaxArrayBytes(), is( ProtocolConfiguration.EPICS_CA_MAX_ARRAY_BYTES_DEFAULT ) );
+      assertThat( instance.getRepeaterPort(), is( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ) );
+      assertThat( instance.getServerPort(), is( ProtocolConfiguration.EPICS_CA_SERVER_PORT_DEFAULT ) );
    }
 
    @Test
