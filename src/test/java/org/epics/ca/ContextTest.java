@@ -14,6 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import org.epics.ca.impl.LibraryConfiguration;
 import org.epics.ca.impl.repeater.CARepeaterStarter;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
@@ -212,9 +213,8 @@ class ContextTest
    @Test
    void testCreateContext_doesNotStartRepeater_whenDisabled() throws InterruptedException
    {
-      final Properties properties = new Properties();
-      properties.setProperty( Constants.CA_REPEATER_START_ON_CONTEXT_CREATE, "false" );
-      try ( final Context ignored = new Context( properties ) )
+      System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "true" );
+      try ( final Context ignored = new Context() )
       {
          Thread.sleep( 1500 );
          assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( false ) );
@@ -224,10 +224,8 @@ class ContextTest
    @Test
    void testCreateContext_doesStartRepeater_whenEnabled_butShutsItDownAgain() throws InterruptedException
    {
-      final Properties properties = new Properties();
-      properties.setProperty( Constants.CA_REPEATER_START_ON_CONTEXT_CREATE, "true" );
-      properties.setProperty( Constants.CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE, "true" );
-      try ( final Context ignored = new Context( properties ) )
+      System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "false" );
+      try ( final Context ignored = new Context() )
       {
          Thread.sleep( 1500 );
          assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( true ) );
@@ -243,10 +241,9 @@ class ContextTest
       // by eye to see whether the repeater successfully registered. There should
       // be messages in the log saying that one client was registered.
       final Properties properties = new Properties();
-      properties.setProperty( "CA_LIBRARY_LOG_LEVEL", Level.FINER.toString() );
-      properties.setProperty( "CA_REPEATER_LOG_LEVEL", Level.ALL.toString() );
-      properties.setProperty( "CA_REPEATER_OUTPUT_CAPTURE", "true");
-      properties.setProperty( "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE", "true");
+      properties.setProperty( LibraryConfiguration.PropertyNames.CA_LIBRARY_LOG_LEVEL.toString(), Level.FINER.toString() );
+      properties.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_LOG_LEVEL.toString(), Level.ALL.toString() );
+      properties.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_OUTPUT_CAPTURE.toString(), "true");
       try ( Context ignored = new Context( properties ) )
       {
          // This needs to be longer than the CA_REPEATER_INITIAL_DELAY value of currently 500ms.
