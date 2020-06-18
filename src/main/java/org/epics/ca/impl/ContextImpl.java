@@ -227,8 +227,9 @@ public class ContextImpl implements AutoCloseable
 /*- Constructor --------------------------------------------------------------*/
 
    /**
-    * Create a new context which will be initialised using the information in
-    * the system properties object.
+    * Create an instance whose Channel-Access protocol configuration is based on
+    * the values of environmental variables set in the operating system environment,
+    * the Java system properties, or the library defaults.
     */
    public ContextImpl()
    {
@@ -236,12 +237,15 @@ public class ContextImpl implements AutoCloseable
    }
 
    /**
-    * Create a new context based on the supplied properties object.
+    * Create an instance whose Channel-Access protocol configuration is based on
+    * the values of environmental variables set in the operating system environment,
+    * the values supplied in the supplied properties object, or the library
+    * defaults.
     *
-    * @param properties the properties specifying configuration information for
-    *    the new context.
+    * @param properties an object whose property values will ovverride the
+    *   values set in the OS environment, or the library defaults.
     *
-    * @throws NullPointerException if the supplied properties was null.
+    * @throws NullPointerException if the properties argument was null.
     */
    public ContextImpl( Properties properties )
    {
@@ -272,11 +276,13 @@ public class ContextImpl implements AutoCloseable
       broadcastTransport.set( initializeUDPTransport() );
 
       // Attempt to spawn the CA Repeater if the relevant configuration property is set and it is not already running.
-      if( caRepeaterStartOnContextCreate )
+      if ( LibraryConfiguration.getInstance().isRepeaterEnabled() )
       {
          try
          {
-             CARepeaterStarter.startRepeaterIfNotAlreadyRunning( repeaterPort, caRepeaterLogLevel, caRepeaterOutputCapture );
+             CARepeaterStarter.startRepeaterIfNotAlreadyRunning(protocolConfiguration.getRepeaterPort(),
+                                                                LibraryConfiguration.getInstance().getRepeaterLogLevel(),
+                                                                LibraryConfiguration.getInstance().isRepeaterOutputCaptureEnabled() );
          }
          catch ( RuntimeException ex )
          {
@@ -880,9 +886,13 @@ public class ContextImpl implements AutoCloseable
          broadcastAddressList = InetAddressUtil.getBroadcastAddresses (serverPort);
       }
 
-      if ( logger.isLoggable (Level.CONFIG) && broadcastAddressList != null )
+      if ( logger.isLoggable(Level.CONFIG) && broadcastAddressList != null )
+      {
          for ( int i = 0; i < broadcastAddressList.length; i++ )
-            logger.log( Level.CONFIG, "Broadcast address #" + i + ": " + broadcastAddressList[ i ] + '.');
+         {
+            logger.log(Level.CONFIG, "Broadcast address #" + i + ": " + broadcastAddressList[ i ] + '.');
+         }
+      }
 
       // any address
       InetSocketAddress connectAddress = new InetSocketAddress (0);
@@ -919,7 +929,9 @@ public class ContextImpl implements AutoCloseable
          try
          {
             if ( channel != null )
-               channel.close ();
+            {
+               channel.close();
+            }
          }
          catch ( Throwable t )
          { /* noop */ }
@@ -946,7 +958,9 @@ public class ContextImpl implements AutoCloseable
          try
          {
             if ( channel != null )
+            {
                channel.close();
+            }
          }
          catch ( Throwable th )
          {
@@ -992,7 +1006,9 @@ public class ContextImpl implements AutoCloseable
       {
          logger.log ( Level.FINER,"Reusing existing connection to CA server: " + address);
          if ( transport.acquire (client) )
+         {
             return transport;
+         }
       }
 
       final boolean lockAcquired = namedLocker.acquireSynchronizationObject( address, LOCK_TIMEOUT );
@@ -1013,19 +1029,19 @@ public class ContextImpl implements AutoCloseable
 
             logger.log ( Level.FINER, "Connecting to CA server: " + address);
 
-            socket = tryConnect (address, 3);
+            socket = tryConnect( address, 3 );
 
             // use non-blocking channel (no need for soTimeout)
-            socket.configureBlocking (false);
+            socket.configureBlocking( false );
 
             // enable TCP_NODELAY (disable Nagle's algorithm)
-            socket.socket ().setTcpNoDelay (true);
+            socket.socket().setTcpNoDelay( true );
 
             // enable TCP_KEEPALIVE
-            socket.socket ().setKeepAlive (true);
+            socket.socket().setKeepAlive( true );
 
             // create transport
-            transport = new TCPTransport (this, client, ResponseHandlers::handleResponse, socket, minorRevision, priority );
+            transport = new TCPTransport( this, client, ResponseHandlers::handleResponse, socket, minorRevision, priority );
 
             ReactorHandler handler = transport;
             if ( leaderFollowersThreadPool != null )
@@ -1034,7 +1050,7 @@ public class ContextImpl implements AutoCloseable
             }
 
             // register to reactor
-            reactor.register (socket, SelectionKey.OP_READ, handler);
+            reactor.register( socket, SelectionKey.OP_READ, handler );
 
             // issue version including priority, username and local hostname
             Messages.versionMessage( transport, (short) priority, 0, false );
