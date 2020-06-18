@@ -4,11 +4,9 @@ package org.epics.ca.util.logging;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.Validate;
+import org.epics.ca.impl.LibraryConfiguration;
 
 import java.util.logging.*;
-
-import static org.epics.ca.Constants.CA_LIBRARY_LOG_LEVEL_DEFAULT;
-import static org.epics.ca.Constants.CA_LIBRARY_LOG_LEVEL;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -75,10 +73,7 @@ public class LibraryLogManager
    public static Logger getLogger( Class<?> clazz )
    {
       Validate.notNull( clazz );
-
-      final String loglevelAsString = System.getProperty( CA_LIBRARY_LOG_LEVEL, CA_LIBRARY_LOG_LEVEL_DEFAULT  );
-      final Level logLevel = Level.parse( loglevelAsString );
-      return getLogger( clazz, logLevel );
+      return getLogger( clazz, LibraryConfiguration.getInstance().getLibraryLogLevel() );
    }
 
    /**
