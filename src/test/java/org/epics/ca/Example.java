@@ -17,8 +17,8 @@ public class Example
 
       // Configure the CA library context and start it.
       final Properties properties = new Properties();
-      properties.setProperty( Context.Configuration.EPICS_CA_ADDR_LIST.toString(), "127.0.0.1" );
-      properties.setProperty( Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString(), "NO" );
+      properties.setProperty( "EPICS_CA_ADDR_LIST", "127.0.0.1" );
+      properties.setProperty( "EPICS_CA_AUTO_ADDR_LIST", "NO" );
       try ( Context context = new Context( properties ) )
       {
          // 1.0 Create a Channel
