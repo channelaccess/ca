@@ -2,7 +2,6 @@
     
 This file contains random notes intended to assist software developers.
 
-
 ## Java Network Configuration for CA Library
     
 We need to force the library to use only IPv4 sockets since EPICS CA protocol does not work with IPv6 sockets.
@@ -31,3 +30,25 @@ If a host has both IPv4 and IPv6 addresses, and IPv6 is available, then the defa
 addresses over IPv6. This allows backward compatibility. If applications that depend on an IPv4 address representation, 
 for example: 192.168.1.1. Then, set this property to true to change the preference and use IPv6 addresses over IPv4 
 where possible."
+
+
+#
+
+The project can be build via *gradle* by executing the provided wrapper scripts as follows:
+ * Linux: `./gradlew build`
+ * Windows: `gradlew.bat build`
+
+There is no need to have *gradle* installed on your machine, the only prerequisite for building is a Java >= 8 installed.
+
+__Note:__ The first time you execute this command the required jars for the build system will be automatically downloaded and the build will start afterwards. The next time you execute the command the build should be faster.
+
+## Maven Central
+To push the latest version to Maven Central (via the OSS Sonatype Nexus Repository) use
+
+```bash
+./gradlew uploadArchives
+```
+
+To be able to do so you need to have your ~/.gradle/gradle.properties file in place with your Sonatype username/password as well you need to be part of the group *org.epics*
+
+For further information on using gradle to upload binary releases to the Sonatype OSS Nexus Repository please see the document [here.](https://central.sonatype.org/pages/gradle.html)

@@ -403,7 +403,7 @@ class UdpSocketUtilitiesTest
 
       // Verify the precondition: there should be nothing running on this socket at the start of
       // the test so the socket should be available !
-      assertThat(UdpSocketUtilities.isSocketAvailable(localHostSocketAddress ), is(true ) );
+      assertThat(UdpSocketUtilities.isSocketAvailable( localHostSocketAddress ), is(true ) );
 
       // Note: socket is opened using try-with-resources to ensure that the socket gets autoclosed regardless of outcome
       // Note: the socket-in-use is also bound to the localhost socket address.
