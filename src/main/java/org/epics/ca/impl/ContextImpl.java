@@ -367,17 +367,17 @@ public class ContextImpl implements AutoCloseable
 
    public int getServerPort()
    {
-      return serverPort;
+      return protocolConfiguration.getServerPort();
    }
 
    public float getConnectionTimeout()
    {
-      return connectionTimeout;
+      return protocolConfiguration.getConnectionTimeout();
    }
 
    public int getMaxArrayBytes()
    {
-      return maxArrayBytes;
+      return protocolConfiguration.getMaxArrayBytes();
    }
 
    public TransportRegistry getTransportRegistry()
@@ -526,7 +526,7 @@ public class ContextImpl implements AutoCloseable
       }
 
       // Shutdown repeater if the options is set.
-      if ( caRepeaterShutdownOnContextClose )
+      if ( LibraryConfiguration.getInstance().isRepeaterEnabled() )
       {
          CARepeaterStarter.shutdownLastStartedRepeater();
       }
@@ -850,6 +850,10 @@ public class ContextImpl implements AutoCloseable
 
    private BroadcastTransport initializeUDPTransport()
    {
+      final String addressList = this.protocolConfiguration.getAddressList();
+      final boolean autoAddressList = this.protocolConfiguration.getAutoAddressList();
+      final int serverPort = this.protocolConfiguration.getServerPort();
+
       // set broadcast address list
       InetSocketAddress[] broadcastAddressList = null;
       if ( addressList != null && addressList.length () > 0 )
