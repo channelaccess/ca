@@ -24,8 +24,6 @@ import java.util.logging.Logger;
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.Channel;
 import org.epics.ca.Constants;
-import org.epics.ca.Context;
-import org.epics.ca.LibraryVersion;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 import org.epics.ca.impl.monitor.MonitorNotificationServiceFactory;
 import org.epics.ca.impl.reactor.Reactor;
@@ -51,80 +49,10 @@ public class ContextImpl implements AutoCloseable
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   // The CA protocol only works on IPV4 enabled network stacks.
-   // The definition below ensures that the external users of the library do not
-   // have to explicitly set these definitions when using the library.
-   static {
-      System.setProperty( "java.net.preferIPv4Stack", "true" );
-      System.setProperty( "java.net.preferIPv6Stack", "false" );
-   }
-
    private static final Logger logger = LibraryLogManager.getLogger( ContextImpl.class );
 
-   /**
-    * Whether opening a new context should attempt to spawn a CA Repeater.
-    */
-   private boolean caRepeaterStartOnContextCreate = false;
 
-   /**
-    *
-    * Whether closing a context should attempt to shutdown any spawned CA Repeater.
-    */
-   private boolean caRepeaterShutdownOnContextClose = false;
-
-   /**
-    * Whether the console output from any spawned CA Repeater should be logged.
-    */
-   private boolean caRepeaterOutputCapture;
-
-   /**
-    * Default value of the log level for the CA Repeater.
-    */
-   private Level caRepeaterLogLevel;
-
-   /**
-    * A space-separated list of broadcast address for process variable name resolution.
-    * Each address must be of the form: ip.number:port or host.name:port
-    */
-   private String addressList = "";
-
-   /**
-    * Define whether or not the network interfaces should be discovered at runtime.
-    */
-   private boolean autoAddressList = true;
-
-   /**
-    * If the context doesn't see a beacon from a server that it is connected to for
-    * connectionTimeout seconds then a state-of-health message is sent to the server over TCP/IP.
-    * If this state-of-health message isn't promptly replied to then the context will assume that
-    * the server is no longer present on the network and disconnect.
-    */
-   private float connectionTimeout = 30.0f;
-
-   /**
-    * Period in second between two beacon signals.
-    */
-   private float beaconPeriod = 15.0f;
-
-   /**
-    * Port number for the repeater to listen to.
-    */
-   private int repeaterPort = CA_REPEATER_PORT;
-
-   /**
-    * Port number for the server to listen to.
-    */
-   private int serverPort = CA_SERVER_PORT;
-
-   /**
-    * Length in bytes of the maximum array size that may pass through CA, defaults to 0 (&lt;=0 means unlimited).
-    */
-   private int maxArrayBytes = 0; //16384;
-
-   /**
-    * Configuration for the monitor notifier.
-    */
-   private String monitorNotifierConfigImpl = MonitorNotificationServiceFactoryCreator.DEFAULT_IMPL;
+   private final ProtocolConfiguration protocolConfiguration;
 
    /**
     * Timer.
@@ -251,8 +179,8 @@ public class ContextImpl implements AutoCloseable
    {
       Validate.notNull( properties, "null properties" );
 
-      loadChannelAccessProtocolConfigurationProperties(properties );
-      loadOtherConfigurationProperties( properties );
+      // Instantiate the protocol configuration object for this Context.
+      this.protocolConfiguration = new ProtocolConfiguration( properties );
 
       hostName = InetAddressUtil.getHostName ();
       userName = System.getProperty ("user.name", "nobody");
@@ -286,19 +214,19 @@ public class ContextImpl implements AutoCloseable
          }
          catch ( RuntimeException ex )
          {
-            logger.log( Level.WARNING, "Failed to start CA Repeater on port " + repeaterPort, ex);
+            logger.log(Level.WARNING, "Failed to start CA Repeater on port " + protocolConfiguration.getRepeaterPort(), ex);
          }
       }
 
       // Always start task to register with CA Repeater (even if not started by this library).
-      final InetSocketAddress repeaterLocalAddress = new InetSocketAddress (InetAddress.getLoopbackAddress (), repeaterPort );
+      final InetSocketAddress repeaterLocalAddress = new InetSocketAddress (InetAddress.getLoopbackAddress (), protocolConfiguration.getRepeaterPort() );
       repeaterRegistrationFuture = timer.scheduleWithFixedDelay( new RepeaterRegistrationTask( repeaterLocalAddress ),
                                                                  CA_REPEATER_INITIAL_REGISTRATION_DELAY,
                                                                  CA_REPEATER_REGISTRATION_INTERVAL,
                                                                  TimeUnit.MILLISECONDS );
 
       channelSearchManager = new ChannelSearchManager( broadcastTransport.get() );
-      monitorNotificationServiceFactory = MonitorNotificationServiceFactoryCreator.create( monitorNotifierConfigImpl );
+      monitorNotificationServiceFactory = MonitorNotificationServiceFactoryCreator.create( LibraryConfiguration.getInstance().getMonitorNotifierImplementation() );
    }
 
 /*- Public methods -----------------------------------------------------------*/
@@ -624,236 +552,6 @@ public class ContextImpl implements AutoCloseable
 
 /*- Private methods ----------------------------------------------------------*/
 
-   /**
-    * Returns the String value of the specified configuration item which may be
-    * provided either by means of a Java  property or from a variable set in
-    * the operating system environment.
-    *
-    * If no value is explicitly defined the specified default value is returned.
-    *
-    * @param item the name of the property (or environment variable).
-    * @param properties the properties object to search for configuration data.
-    * @param defaultValue the value to return when not explicitly specified.
-    * @return the result.
-    * @throws NullPointerException if any of the arguments were null.
-    */
-   private String readStringProperty( String item, Properties properties, String defaultValue )
-   {
-      Validate.notNull( item );
-      Validate.notNull( properties );
-      Validate.notNull( defaultValue );
-
-      final String sValue = properties.getProperty( item, System.getenv( item ) );
-      return (sValue != null) ? sValue : defaultValue;
-   }
-
-   /**
-    * Returns the boolean value of the specified configuration item which may be
-    * provided either by means of a Java property or from a variable set in
-    * the operating system environment.
-    *
-    * When a boolean value is specified any of the following string values may
-    * be used: "yes" / "true" / "no" / "false".
-    *
-    * If no value is explicitly defined the specified default value is returned.
-    *
-    * @param item the name of the property (or environment variable).
-    * @param properties the properties object to search for configuration data.
-    * @param defaultValue the value to return when not explicitly specified.
-    * @return the result.
-    * @throws NullPointerException if any of the arguments were null.
-    */
-   private boolean readBooleanProperty( String item, Properties properties, boolean defaultValue )
-   {
-      Validate.notNull( item );
-      Validate.notNull( properties );
-
-      final String sValue = properties.getProperty( item, System.getenv( item ) );
-      if ( sValue != null )
-      {
-         if ( ( sValue.equalsIgnoreCase( "yes" ) ) || ( sValue.equalsIgnoreCase( "true" ) ) )
-         {
-            return true;
-         }
-         else if ( ( sValue.equalsIgnoreCase( "no" ) ) || ( sValue.equalsIgnoreCase( "false" ) ) )
-         {
-            return false;
-         }
-         else
-         {
-            logger.config( "Failed to parse boolean value for property " + item + ": \"" + sValue + "\", \"YES\" or \"NO\" expected.");
-            return defaultValue;
-         }
-      }
-      else
-      {
-         return defaultValue;
-      }
-   }
-
-   /**
-    * Returns the float value of the specified configuration item which may be
-    * provided either by means of a Java  property or from a variable set in
-    * the operating system environment.
-    *
-    * If no value is explicitly defined the specified default value is returned.
-    *
-    * @param item the name of the property (or environment variable).
-    * @param properties the properties object to search for configuration data.
-    * @param defaultValue the value to return when not explicitly specified.
-    * @return the result.
-    * @throws NullPointerException if any of the arguments were null.
-    */
-   private float readFloatProperty( String item, Properties properties,  float defaultValue )
-   {
-      Validate.notNull( item );
-      Validate.notNull( properties );
-
-      final String sValue = properties.getProperty( item, System.getenv( item ));
-      if ( sValue != null )
-      {
-         try
-         {
-            return Float.parseFloat( sValue );
-         }
-         catch ( Throwable th )
-         {
-            logger.config( "Failed to parse float value for property " + item + ": \"" + sValue + "\"." );
-         }
-      }
-      return defaultValue;
-   }
-
-   /**
-    * Returns the integer value of the specified configuration item which may be
-    * provided either by means of a Java  property or from a variable set in
-    * the operating system environment.
-    *
-    * If no value is explicitly defined the specified default value is returned.
-    *
-    * @param item the name of the property (or environment variable).
-    * @param properties the properties object to search for configuration data.
-    * @param defaultValue the value to return when not explicitly specified.
-    * @return the result.
-    * @throws NullPointerException if any of the arguments were null.
-    */
-   private int readIntegerProperty( String item, Properties properties, int defaultValue )
-   {
-      Validate.notNull( item );
-      Validate.notNull( properties );
-
-      final String sValue = properties.getProperty( item, System.getenv( item ));
-      if ( sValue != null )
-      {
-         try
-         {
-            return Integer.parseInt( sValue );
-         }
-         catch ( Throwable th )
-         {
-            logger.config( "Failed to parse integer value for property " + item + ": \"" + sValue + "\"." );
-         }
-      }
-      return defaultValue;
-   }
-
-   /**
-    * Returns the debug level of the specified configuration item which may be
-    * provided either by means of a Java  property or from a variable set in
-    * the operating system environment.
-    *
-    * If no value is explicitly defined the specified default value is returned.
-    *
-    * @param item the name of the property (or environment variable).
-    * @param properties the properties object to search for configuration data.
-    * @param defaultValue the value to return when not explicitly specified.
-    * @return the result.
-    * @throws NullPointerException if any of the arguments were null.
-    */
-   @SuppressWarnings( "SameParameterValue" )
-   private Level readDebugLevelProperty( String item, Properties properties, String defaultValue )
-   {
-      Validate.notNull( item );
-      Validate.notNull( properties );
-      Validate.notNull( defaultValue );
-
-      final String sValue = readStringProperty( item, properties, defaultValue );
-      try
-      {
-         return Level.parse( sValue );
-      }
-      catch ( Throwable th )
-      {
-         logger.config( "Failed to parse debug level value for property " + item + ": \"" + sValue + "\"." );
-      }
-      return Level.parse( defaultValue );
-   }
-
-   /**
-    * Configures the current context according to the standard EPICS CA protocol
-    * variables, which may be supplied either as Java system propertires or
-    * through environment variables.
-    *
-    * @param properties the properties object to search for configuration data.
-    */
-   private void loadChannelAccessProtocolConfigurationProperties( Properties properties )
-   {
-      // dump version
-      logger.config( "Java CA v" + LibraryVersion.getAsString() );
-
-      addressList = readStringProperty(Context.Configuration.EPICS_CA_ADDR_LIST.toString(),  properties, addressList );
-      logger.config( Context.Configuration.EPICS_CA_ADDR_LIST.toString() + ": " + addressList );
-
-      autoAddressList = readBooleanProperty(Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString(),  properties, autoAddressList );
-      logger.config( Context.Configuration.EPICS_CA_AUTO_ADDR_LIST.toString() + ": " + autoAddressList);
-
-      connectionTimeout = readFloatProperty(Context.Configuration.EPICS_CA_CONN_TMO.toString(),  properties, connectionTimeout );
-      connectionTimeout = Math.max (0.1f, connectionTimeout);
-      logger.config( Context.Configuration.EPICS_CA_CONN_TMO.toString() + ": " + connectionTimeout);
-
-      beaconPeriod = readFloatProperty( Context.Configuration.EPICS_CA_BEACON_PERIOD.toString(),  properties, beaconPeriod );
-      beaconPeriod = Math.max (0.1f, beaconPeriod);
-      logger.config( Context.Configuration.EPICS_CA_BEACON_PERIOD.toString() + ": " + beaconPeriod);
-
-      repeaterPort = readIntegerProperty( Context.Configuration.EPICS_CA_REPEATER_PORT.toString(), properties, repeaterPort );
-      logger.config( Context.Configuration.EPICS_CA_REPEATER_PORT.toString() + ": " + repeaterPort);
-
-      serverPort = readIntegerProperty( Context.Configuration.EPICS_CA_SERVER_PORT.toString(), properties, serverPort);
-      logger.config( Context.Configuration.EPICS_CA_SERVER_PORT.toString() + ": " + serverPort);
-
-      maxArrayBytes = readIntegerProperty( Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString(), properties,maxArrayBytes );
-      if ( maxArrayBytes > 0 )
-      {
-         maxArrayBytes = Math.max( 1024, maxArrayBytes );
-      }
-      logger.config( Context.Configuration.EPICS_CA_MAX_ARRAY_BYTES.toString() + ": " + (maxArrayBytes > 0 ? maxArrayBytes : "(undefined)"));
-   }
-
-   /**
-    * Configures the current context according to any other parameters which may
-    * be supplied either as Java system properties or through environment variables.
-    *
-    * @param properties the properties object to search for configuration data.
-    */
-   private void loadOtherConfigurationProperties( Properties properties )
-   {
-      monitorNotifierConfigImpl = readStringProperty( CA_MONITOR_NOTIFIER_IMPL, properties, CA_MONITOR_NOTIFIER_DEFAULT_IMPL );
-      logger.config(CA_MONITOR_NOTIFIER_IMPL + ": " + monitorNotifierConfigImpl);
-
-      caRepeaterStartOnContextCreate = readBooleanProperty(CA_REPEATER_START_ON_CONTEXT_CREATE, properties, CA_REPEATER_START_ON_CONTEXT_CREATE_DEFAULT );
-      logger.config(CA_REPEATER_START_ON_CONTEXT_CREATE + ": " + caRepeaterStartOnContextCreate );
-
-      caRepeaterShutdownOnContextClose = readBooleanProperty( CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE, properties, CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE_DEFAULT );
-      logger.config(CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE + ": " + caRepeaterShutdownOnContextClose );
-
-      caRepeaterOutputCapture = this.readBooleanProperty( CA_REPEATER_OUTPUT_CAPTURE, properties, CA_REPEATER_OUTPUT_CAPTURE_DEFAULT );
-      logger.config(CA_REPEATER_OUTPUT_CAPTURE + ": " + caRepeaterOutputCapture );
-
-      caRepeaterLogLevel = this.readDebugLevelProperty( CA_REPEATER_LOG_LEVEL, properties, CA_REPEATER_LOG_LEVEL_DEFAULT );
-      logger.config(CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE + ": " + caRepeaterLogLevel );
-
-   }
-
    private BroadcastTransport initializeUDPTransport()
    {
       final String addressList = this.protocolConfiguration.getAddressList();
@@ -862,16 +560,16 @@ public class ContextImpl implements AutoCloseable
 
       // set broadcast address list
       InetSocketAddress[] broadcastAddressList = null;
-      if ( addressList != null && addressList.length () > 0 )
+      if ( addressList != null && addressList.length() > 0 )
       {
          // if auto is true, add it to specified list
          InetSocketAddress[] appendList = null;
          if ( autoAddressList )
          {
-            appendList = InetAddressUtil.getBroadcastAddresses( serverPort );
+            appendList = InetAddressUtil.getBroadcastAddresses(serverPort);
          }
 
-         final InetSocketAddress[] list = InetAddressUtil.getSocketAddressList( addressList, serverPort, appendList );
+         final InetSocketAddress[] list = InetAddressUtil.getSocketAddressList(addressList, serverPort, appendList);
          if ( list.length > 0 )
          {
             broadcastAddressList = list;
@@ -879,11 +577,11 @@ public class ContextImpl implements AutoCloseable
       }
       else if ( !autoAddressList )
       {
-         logger.log ( Level.WARNING, "Empty broadcast search address list, all connects will fail.");
+         logger.log(Level.WARNING, "Empty broadcast search address list, all connects will fail.");
       }
       else
       {
-         broadcastAddressList = InetAddressUtil.getBroadcastAddresses (serverPort);
+         broadcastAddressList = InetAddressUtil.getBroadcastAddresses( serverPort );
       }
 
       if ( logger.isLoggable(Level.CONFIG) && broadcastAddressList != null )
