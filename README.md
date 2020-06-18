@@ -462,11 +462,16 @@ try (Context context = new Context())
 
 An extended usage example can be found at [src/test/java/org/epics/ca/test/Example.java](src/test/java/org/epics/ca/Example.java).
 
-# Documentation
+# Library API Documentation
 
-Since __ca__ release 1.3.x the Javadoc for the library is published in the GitHub repository [pages]() area.
+Since __ca__ release 1.3.x the Javadoc for the library is published in the GitHub repository [pages](https://channelaccess.github.io/ca/) area.
  
+_Note:_ the javadoc is currently in a rather rudimentary state. Over time we plan to improve it. 
 
-# Further Information
+# Developer / Maintainer Information
 
 Please see the separate [DEVELOPER](DEVELOPER.md) notes.
+
+# Contact
+
+If you have questions please contact: 'simon.rees@psi.ch' or 'simon.ebner@psi.ch'.
