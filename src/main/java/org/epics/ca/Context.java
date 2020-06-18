@@ -24,8 +24,10 @@ public class Context implements AutoCloseable
 /*- Constructor --------------------------------------------------------------*/
 
    /**
-    * Creates a new context based on the default properties (that are overridable
-    * by environment variables set on the local host).
+    * Create an instance whose channel-access protocol configuration is based on
+    * the values of operating system environmental variables, the values of the
+    * the Java system properties, or twhen not otherwise specified, the library
+    * defaults.
     */
    public Context()
    {
@@ -33,11 +35,14 @@ public class Context implements AutoCloseable
    }
 
    /**
-    * Creates a new context based on the default properties, that are overridable
-    * by environment variables set on the local host, or by definitions passed
-    * in the supplied properties object).
+    * Create an instance whose channel-access protocol configuration is based on
+    * the values of operating system environmental variables, the values of
+    * the supplied properties object, or when not otherwise specified, the
+    * library defaults.
     *
-    * @param properties the properties object
+    * @param properties an object whose definitions may override the
+    *   values set in the operating system environment.
+    * @throws NullPointerException if the properties argument was null.
     */
    public Context( Properties properties )
    {
@@ -48,7 +53,8 @@ public class Context implements AutoCloseable
 /*- Public methods -----------------------------------------------------------*/
 
    /**
-    * Creates a new channel of the specified name and type.
+    * Creates a new channel of the specified name and type and with the
+    * default priority.
     *
     * @param channelName the name of the Channel (which should follow standard
     *   EPICS naming conventions).
@@ -59,14 +65,17 @@ public class Context implements AutoCloseable
     *    native type on the server.
     *
     * @param <T> the type parameter.
-    *
     * @return the channel.
+    *
+    * @throws NullPointerException if the channel name was null.
+    * @throws NullPointerException if the channel type was null.
+    * @throws IllegalArgumentException if the channel name was an empty string.
+    * @throws IllegalArgumentException if the channel name was of an unreasonable length.
+    * @throws IllegalArgumentException if the channel type was invalid.
+    * @throws IllegalStateException if the context was already closed.
     */
    public <T> Channel<T> createChannel( String channelName, Class<T> channelType )
    {
-      Validate.notNull( channelName );
-      Validate.notNull( channelType );
-
       return delegate.createChannel( channelName, channelType, Constants.CHANNEL_PRIORITY_DEFAULT );
    }
 
@@ -80,19 +89,28 @@ public class Context implements AutoCloseable
     *    type used when communicating with the remote channel access server.
     *    Note: &lt;Object&gt; can be used to force the channel to use the
     *    native type on the server.
-    * @param <T> the type parameter.
-    * @param priority the priority that should be informed to the channel access
-    *    server during communcation.
     *
+    * @param <T> the type parameter.
+    * @param priority the priority to be registered with the channel access server.
     * @return the channel.
+    *
+    * @throws NullPointerException if the channel name was null.
+    * @throws NullPointerException if the channel type was null.
+    * @throws IllegalArgumentException if the channel name was an empty string.
+    * @throws IllegalArgumentException if the channel name was of an unreasonable length.
+    * @throws IllegalArgumentException if the channel type was invalid.
+    * @throws IllegalArgumentException if the priority was outside the allowed range.
+    * @throws IllegalStateException if the context was already closed.
     */
    public <T> Channel<T> createChannel( String channelName, Class<T> channelType, int priority )
    {
+      Validate.notNull( channelName );
+      Validate.notNull( channelType );
       return delegate.createChannel( channelName, channelType, priority);
    }
 
    /**
-    * Closes the cintext disposing of all underlying resources.
+    * Closes the context, disposing of all underlying resources.
     */
    @Override
    public void close()
