@@ -168,3 +168,23 @@ This log describes the functionality of tagged versions within the repository.
   * Linux RHEL7: 505 tests successful / 0 tests failed / 0 tests skipped.
   * Windows 10: 505 tests successful / 0 tests failed / 0 tests skipped.
 
+* [1.3.1](https://github.com/channelaccess/ca/releases/tag/1.3.1) Released 2020-06-16.
+
+  ###### Overview:
+  This release fixes a regression bug in the previous 1.3.0 release which forced users of the library to explicitly 
+  define System properties "java.net.preferIPv4Stack" and "java.net.preferIPv6Stack".
+  Improved library configuration options and documented them better.
+  Other minor changes.
+  
+  ###### Change List: 
+  * [Issue #94](https://github.com/channelaccess/ca/issues/94) Update README file to match latest (1.3.1) implementation.
+  * [Issue #95](https://github.com/channelaccess/ca/issues/95) Cleanup implementation of the user-configurable parameters.
+  * [Issue #96](https://github.com/channelaccess/ca/issues/96) Extract Protocol Configuration and Library Configuration constants from Constants class.
+  * [Issue #97](https://github.com/channelaccess/ca/issues/97) Update CHANGELIST with details of release 1.3.1
+    
+  ###### Java Release Compatibility
+  
+  See previous release.
+  
+  ###### Test Results: 
+  * Mac OSX: 512 tests successful / 0 tests failed / 0 tests skipped.    
