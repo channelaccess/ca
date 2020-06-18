@@ -6,8 +6,8 @@ package org.epics.ca.impl.repeater;
 /*- Class Declaration --------------------------------------------------------*/
 
 import org.apache.commons.lang3.Validate;
-import org.epics.ca.Constants;
 import org.epics.ca.impl.JavaProcessManager;
+import org.epics.ca.impl.ProtocolConfiguration;
 import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.io.*;
@@ -68,7 +68,7 @@ public class CARepeaterStarter
       logger.info( "The arguments were: " + Arrays.toString( argv ) );
 
       final boolean portArgumentSupplied = ( argv.length >= 2 && ( argv[ 0 ].equals ("-p") || argv[ 0 ].equals ("--port") ) );
-      final int fallbackRepeaterPort = parseToInt( System.getProperty( "EPICS_CA_REPEATER_PORT" ), Constants.CA_REPEATER_PORT );
+      final int fallbackRepeaterPort = new ProtocolConfiguration().getRepeaterPort();
       final int port = portArgumentSupplied ? parseToInt( argv[ 1 ], fallbackRepeaterPort ) : fallbackRepeaterPort;
 
       // Nothing to do, if a repeater instance is already running
