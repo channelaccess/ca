@@ -89,6 +89,7 @@ public class ProtocolConfiguration
     * object.
     *
     * @param properties an object providing property overrides.
+    * @throws NullPointerException if the properties argument was null.
     */
    public ProtocolConfiguration( Properties properties )
    {
