@@ -222,7 +222,20 @@ class ContextTest
    }
 
    @Test
-   void testCreateContext_doesStartRepeater_whenEnabled_butShutsItDownAgain() throws InterruptedException
+   void testCreateContext_startsRepeaterByDefault() throws InterruptedException
+   {
+      try ( final Context ignored = new Context() )
+      {
+         Thread.sleep( 1500 );
+         assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( true ) );
+      }
+      Thread.sleep( 1500 );
+      assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( false ) );
+   }
+
+
+   @Test
+   void testCreateContext_startsRepeaterWhenEnabled_thenShutsItDownAgainWhenContextGoesOutOfScope() throws InterruptedException
    {
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "false" );
       try ( final Context ignored = new Context() )
@@ -233,6 +246,44 @@ class ContextTest
       Thread.sleep( 1500 );
       assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( false ) );
    }
+
+   @Test
+   void testCreateMultipleContexts_repeaterShutsdownOnlyAfterLastContextIsClosed() throws InterruptedException
+   {
+      //System.setProperty( LibraryConfiguration.PropertyNames.CA_LIBRARY_LOG_LEVEL.toString(), "ALL" );
+      System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "false" );
+      logger.info( "CREATING FIRST CONTEXT..." );
+      final Context ignored1 = new Context();
+      Thread.sleep( 1500 );
+
+      logger.info( "CHECKING REPEATER IS RUNNING..." );
+      assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( true ) );
+      logger.info( "OK" );
+
+      logger.info( "CREATING SECOND CONTEXT..." );
+      try ( final Context ignored2 = new Context() )
+      {
+         Thread.sleep( 1500 );
+         logger.info( "CHECKING REPEATER IS RUNNING..." );
+         assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( true ) );
+         logger.info( "OK" );
+         logger.info( "CLOSING SECOND CONTEXT..." );
+      }
+
+      Thread.sleep( 1500 );
+      logger.info( "CHECKING REPEATER IS STILL RUNNING..." );
+      assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( true ) );
+      logger.info( "OK" );
+
+      logger.info( "CLOSING FIRST CONTEXT..." );
+      ignored1.close();
+
+      Thread.sleep( 1500 );
+      logger.info( "CHECKING REPEATER IS NOW STOPPED..." );
+      assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( false ) );
+      logger.info( "OK" );
+   }
+
 
    @Test
    void testRepeaterRegistration() throws InterruptedException
