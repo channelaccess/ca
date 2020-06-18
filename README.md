@@ -82,23 +82,37 @@ repositories {
 
 ## Configuration
 
+#### Library Configuration
+
+The __ca__ library supports the following configuration variables which can be specified, once per JVM instance, by 
+means of environmental variables set in the host OS, or through Java System properties passed on the command-line.
+
+| Property Name               | Description                                                                             | Default Value |
+|-----------------------------|-----------------------------------------------------------------------------------------|---------------|
+| CA_LIBRARY_LOG_LEVEL        | The level at which CA library log messages will be sent to the standard output stream.  | "INFO"        | 
+| CA_REPEATER_LOG_LEVEL       | The level at which CA Repeater log messages will be sent to the standard output stream. | "INFO"        | 
+| CA_REPEATER_DISABLE         | Whether the CA library will start/stop a local CA Repeater instance.                    | "false"       |
+| CA_REPEATER_OUTPUT_CAPTURE  | Whether to capture the output of the CA Repeater's log messages.                        | "false"       |
+| CA_MONITOR_NOTIFIER_IMPL    | The configuration of the CA library monitor notification engine.                        | see below     |
+
+
 #### EPICS Channel Access Protocol Configuration
 
 The __ca__ library supports the configuration of the operating parameters of the EPICS Channel Access Protocol by
-means of the "normal" configuration variables.
+means of the "normal" configuration variables. These can be set once per context instance.
 
 These can be specified by means of environmental variables in the host OS, through Java System properties, or by 
 passing an appropriately configured properties object when creating a context. The following properties are
 supported:
 
-| Property                 | Description                                                                                | Default Value |
+| Property Name            | Description                                                                                | Default Value |
 |--------------------------|--------------------------------------------------------------------------------------------|---------------|
-| EPICS_CA_ADDR_LIST       | Address list to search for channels.                                                       | empty         | 
+| EPICS_CA_ADDR_LIST       | The address list to be used when searching for channels.                                   | empty         | 
 | EPICS_CA_AUTO_ADDR_LIST  | Automatically build up search address list by introspecting local network interfaces.      | "true"        | 
-| EPICS_CA_CONN_TMO        | UDP Beacon Message Timeout.                                                                | "30s"         |
-| EPICS_CA_REPEATER_PORT   | CA Repeater listening port.                                                                | "5065"        |
-| EPICS_CA_SERVER_PORT     | Channel access server port                                                                 | "5064"        | 
-| EPICS_CA_MAX_ARRAY_BYTES | Maximum size in bytes of an array/waveform                                                 | unlimited     |
+| EPICS_CA_CONN_TMO        | The UDP Beacon Message Timeout.                                                            | "30s"         |
+| EPICS_CA_REPEATER_PORT   | The port to be used when communicating with the local CA Repeater instance.                | "5065"        |
+| EPICS_CA_SERVER_PORT     | The port to be used when broadcasting channel search requests to the CA servers.           | "5064"        | 
+| EPICS_CA_MAX_ARRAY_BYTES | The maximum size in bytes of an array/waveform.                                            | unlimited     |
 
 _Note:_ In contrast to other Channel Access libraries EPICS_CA_MAX_ARRAY_BYTES is set to unlimited by default. Usually 
 there is no reason to set this property since the memory is dynamically acquired as required.
@@ -106,17 +120,6 @@ there is no reason to set this property since the memory is dynamically acquired
 By default the __ca__ library will discover the available EPICS channels by broadcasting search requests on all 
 locally-enabled network interfaces.
 
-#### General Purpose Library Configuration
-
-The __ca__ library supports the following general purpose configuration variables:
-
-| Property                    | Description                                                                             | Default Value |
-|-----------------------------|-----------------------------------------------------------------------------------------|---------------|
-| CA_LIBRARY_LOG_LEVEL        | The level at which CA library log messages will be sent to the standard output stream.  | "INFO"        | 
-| CA_REPEATER_LOG_LEVEL       | The level at which CA Repeater log messages will be sent to the standard output stream. | "INFO"        | 
-| CA_REPEATER_DISABLE         | Whether the CA library will start/stop a local CA Repeater instance.                    | "false"       |
-| CA_REPEATER_OUTPUT_CAPTURE  | Whether to capture the output of the CA Repeater's log messages.                        | "false"       |
-| CA_MONITOR_NOTIFIER_IMPL    | The configuration of the CA library monitor notification engine.                        | see below     |
 
 #### Monitor Notification Engine Configuration
 
