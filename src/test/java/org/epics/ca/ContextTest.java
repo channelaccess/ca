@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import org.epics.ca.impl.LibraryConfiguration;
+import org.epics.ca.impl.ProtocolConfiguration;
 import org.epics.ca.impl.repeater.CARepeaterStarter;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
@@ -284,6 +285,33 @@ class ContextTest
       logger.info( "OK" );
    }
 
+   @Test
+   void testCreateMultipleContexts_withMultipleRepeaters_runningOnMultiplePorts() throws InterruptedException
+   {
+      final Properties ctx1Props = new Properties();
+      ctx1Props.setProperty(ProtocolConfiguration.PropertyNames.EPICS_CA_REPEATER_PORT.toString(), "1111" );
+      final Context ignored1 = new Context( ctx1Props );
+      Thread.sleep( 1500 );
+
+      assertThat( CARepeaterStarter.isRepeaterRunning( 1111 ), is( true ) );
+
+      final Properties ctx2Props = new Properties();
+      ctx2Props.setProperty(ProtocolConfiguration.PropertyNames.EPICS_CA_REPEATER_PORT.toString(), "2222" );
+
+      try ( final Context ignored2 = new Context( ctx2Props ) )
+      {
+         Thread.sleep( 1500 );
+         assertThat( CARepeaterStarter.isRepeaterRunning( 2222 ), is( true ) );
+      }
+
+      Thread.sleep( 1500 );
+      assertThat( CARepeaterStarter.isRepeaterRunning( 2222 ), is( false ) );
+
+      ignored1.close();
+
+      Thread.sleep( 1500 );
+      assertThat( CARepeaterStarter.isRepeaterRunning( 1111 ), is( false ) );
+   }
 
    @Test
    void testRepeaterRegistration() throws InterruptedException
