@@ -17,6 +17,7 @@ jacoco {
     toolVersion = '0.8.5'
 }
 
+
 // Explicitly describe the current build environment
 println "The Gradle version being used for this build is: ${gradle.gradleVersion}."
 println "The Java version being used for this gradle build is: ${JavaVersion.current()}."
@@ -139,6 +140,8 @@ test {
         outputs.upToDateWhen {false}
         showStandardStreams = false
     }
+
+    finalizedBy jacocoTestReport // report is always generated after tests run
 }
 
 javadoc {
@@ -278,6 +281,7 @@ artifacts {
 }
 
 jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
     reports {
         xml.enabled true
         html.enabled true
