@@ -11,10 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,12 +44,22 @@ public class ContextImpl implements AutoCloseable
 {
 
 /*- Public attributes --------------------------------------------------------*/
-/*- Private attributes -------------------------------------------------------*/
+/*- Private static attributes ------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( ContextImpl.class );
 
+   /**
+    * Context instance.
+    */
+   private static final int LOCK_TIMEOUT = 20 * 1000;   // 20s
 
-   private final ProtocolConfiguration protocolConfiguration;
+
+/*- Private final attributes (initialised immediately) -----------------------*/
+
+   /**
+    * Context instance.
+    */
+   private final NamedLockPattern namedLocker = new NamedLockPattern();
 
    /**
     * Timer.
@@ -65,6 +72,44 @@ public class ContextImpl implements AutoCloseable
    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
    /**
+    * TCP transport registry.
+    */
+   private final TransportRegistry transportRegistry = new TransportRegistry();
+
+   /**
+    * UDP broadcast transport - used for channel search requests.
+    */
+   private final AtomicReference<BroadcastTransport> broadcastTransport = new AtomicReference<>();
+
+   /**
+    * Beacon handler map.
+    */
+   private final Map<InetSocketAddress, BeaconHandler> beaconHandlers = new HashMap<>();
+
+   /**
+    * Map of channels (keys are CIDs).
+    */
+   private final IntHashMap<ChannelImpl<?>> channelsByCID = new IntHashMap<>();
+
+   /**
+    * Map of requests (keys are IOID).
+    */
+   private final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<>();
+
+   /**
+    * Closed flag.
+    */
+   private final AtomicBoolean closed = new AtomicBoolean();
+
+
+/*- Private final attributes (initialised by constructor) --------------------*/
+
+   /**
+    * The EPICS Channel-Access configuration variables to be used for this context.
+    */
+   private final ProtocolConfiguration protocolConfiguration;
+
+   /**
     * Factory to be used for creating MonitorNotificationService instances.
     */
    private final MonitorNotificationServiceFactory monitorNotificationServiceFactory;
@@ -75,60 +120,19 @@ public class ContextImpl implements AutoCloseable
    private final ScheduledFuture<?> repeaterRegistrationFuture;
 
    /**
-    * Reactor.
-    */
-   private final Reactor reactor;
-
-   /**
     * Leader/followers thread pool.
     */
    private final LeaderFollowersThreadPool leaderFollowersThreadPool;
 
    /**
-    * Context instance.
+    * Reactor.
     */
-   private static final int LOCK_TIMEOUT = 20 * 1000;   // 20s
+   private final Reactor reactor;
 
    /**
-    * Context instance.
-    */
-   private final NamedLockPattern namedLocker = new NamedLockPattern();
-
-   /**
-    * TCP transport registry.
-    */
-   private final TransportRegistry transportRegistry = new TransportRegistry();
-
-   /**
-    * Channel search manager.
-    * Manages UDP search requests.
+    * Channel search manager. Manages UDP search requests.
     */
    private final ChannelSearchManager channelSearchManager;
-
-   /**
-    * Broadcast (search) transport.
-    */
-   private final AtomicReference<BroadcastTransport> broadcastTransport = new AtomicReference<>();
-
-   /**
-    * Last CID cache.
-    */
-   private int lastCID = 0;
-
-   /**
-    * Map of channels (keys are CIDs).
-    */
-   private final IntHashMap<ChannelImpl<?>> channelsByCID = new IntHashMap<>();
-
-   /**
-    * Last IOID cache.
-    */
-   private int lastIOID = 0;
-
-   /**
-    * Map of requests (keys are IOID).
-    */
-   private final IntHashMap<ResponseRequest> responseRequests = new IntHashMap<>();
 
    /**
     * Cached hostname.
@@ -140,24 +144,29 @@ public class ContextImpl implements AutoCloseable
     */
    private final String userName;
 
-   /**
-    * Closed flag.
-    */
-   private final AtomicBoolean closed = new AtomicBoolean();
+
+/*- Private attributes --------------------------------------------------------*/
 
    /**
-    * Beacon handler map.
+    * Last CID cache.
     */
-   private final Map<InetSocketAddress, BeaconHandler> beaconHandlers = new HashMap<>();
+   private int lastCID = 0;
+
+
+   /**
+    * Last IOID cache.
+    */
+   private int lastIOID = 0;
 
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 
    /**
-    * Create an instance whose Channel-Access protocol configuration is based on
-    * the values of environmental variables set in the operating system environment,
-    * the Java system properties, or the library defaults.
+    * Create an instance whose channel-access protocol configuration is based on
+    * the values of operating system environmental variables, the values of the
+    * the Java system properties, or twhen not otherwise specified, the library
+    * defaults.
     */
    public ContextImpl()
    {
@@ -165,27 +174,27 @@ public class ContextImpl implements AutoCloseable
    }
 
    /**
-    * Create an instance whose Channel-Access protocol configuration is based on
-    * the values of environmental variables set in the operating system environment,
-    * the values supplied in the supplied properties object, or the library
-    * defaults.
+    * Create an instance whose channel-access protocol configuration is based on
+    * the values of operating system environmental variables, the values of
+    * the supplied properties object, or when not otherwise specified, the
+    * library defaults.
     *
-    * @param properties an object whose property values will ovverride the
-    *   values set in the OS environment, or the library defaults.
-    *
+    * @param properties an object whose definitions may override the
+    *   values set in the operating system environment.
     * @throws NullPointerException if the properties argument was null.
     */
    public ContextImpl( Properties properties )
    {
       Validate.notNull( properties, "null properties" );
 
-      // Instantiate the protocol configuration object for this Context.
+      // Instantiate the protocol configuration object.
       this.protocolConfiguration = new ProtocolConfiguration( properties );
 
-      hostName = InetAddressUtil.getHostName ();
-      userName = System.getProperty ("user.name", "nobody");
+      // Capture the hostname and username.
+      hostName = InetAddressUtil.getHostName();
+      userName = System.getProperty("user.name", "nobody" );
 
-      // async IO reactor
+      // Create the asynchronous IO reactor.
       try
       {
          reactor = new Reactor();
@@ -195,54 +204,118 @@ public class ContextImpl implements AutoCloseable
          throw new RuntimeException( "Failed to initialize reactor.", e);
       }
 
-      // leader/followers processing
+      // Initiate leader/followers processing.
       leaderFollowersThreadPool = new LeaderFollowersThreadPool();
 
-      // spawn initial leader
+      // Spawn the initial leader.
       leaderFollowersThreadPool.promoteLeader( reactor::process );
 
+      // Initialise the UDP transport.
       broadcastTransport.set( initializeUDPTransport() );
 
-      // Attempt to spawn the CA Repeater if the relevant configuration property is set and it is not already running.
-      if ( LibraryConfiguration.getInstance().isRepeaterEnabled() )
+      // Start the CA Repeater for this context (when enabled and when not already running).
+      try
       {
-         try
-         {
-             CARepeaterStarter.startRepeaterIfNotAlreadyRunning(protocolConfiguration.getRepeaterPort(),
-                                                                LibraryConfiguration.getInstance().getRepeaterLogLevel(),
-                                                                LibraryConfiguration.getInstance().isRepeaterOutputCaptureEnabled() );
-         }
-         catch ( RuntimeException ex )
-         {
-            logger.log(Level.WARNING, "Failed to start CA Repeater on port " + protocolConfiguration.getRepeaterPort(), ex);
-         }
+          CARepeaterStarter.startRepeaterOnPort( getRepeaterPort() );
+      }
+      catch ( RuntimeException ex )
+      {
+         logger.log(Level.WARNING, "Failed to start CA Repeater on port " + protocolConfiguration.getRepeaterPort(), ex);
       }
 
-      // Always start task to register with CA Repeater (even if not started by this library).
-      final InetSocketAddress repeaterLocalAddress = new InetSocketAddress (InetAddress.getLoopbackAddress (), protocolConfiguration.getRepeaterPort() );
-      repeaterRegistrationFuture = timer.scheduleWithFixedDelay( new RepeaterRegistrationTask( repeaterLocalAddress ),
+      // Start the task to register with CA Repeater (even if the lifecycle is not managed by this library).
+      final InetSocketAddress repeaterLocalAddress = new InetSocketAddress( InetAddress.getLoopbackAddress(),
+                                                                            protocolConfiguration.getRepeaterPort() );
+
+      final Runnable repeaterRegistrationTask = new RepeaterRegistrationTask( repeaterLocalAddress );
+      repeaterRegistrationFuture = timer.scheduleWithFixedDelay( repeaterRegistrationTask,
                                                                  CA_REPEATER_INITIAL_REGISTRATION_DELAY,
                                                                  CA_REPEATER_REGISTRATION_INTERVAL,
                                                                  TimeUnit.MILLISECONDS );
 
+      // Create the channel search manager.
       channelSearchManager = new ChannelSearchManager( broadcastTransport.get() );
-      monitorNotificationServiceFactory = MonitorNotificationServiceFactoryCreator.create( LibraryConfiguration.getInstance().getMonitorNotifierImplementation() );
+
+      // Create the monitor notification engine.
+      final String monitorNotifierImpl = LibraryConfiguration.getInstance().getMonitorNotifierImplementation();
+      monitorNotificationServiceFactory = MonitorNotificationServiceFactoryCreator.create( monitorNotifierImpl );
    }
 
 /*- Public methods -----------------------------------------------------------*/
 
    /**
-    * Searches for a response request with given channel IOID.
+    * Creates a new channel of the specified name and type and with the specified priority.
     *
-    * @param ioid I/O ID.
-    * @return request response with given I/O ID.
+    * @param channelName the name of the Channel (which should follow standard
+    *   EPICS naming conventions).
+    *
+    * @param channelType the type of the channel which will determine the
+    *    type used when communicating with the remote channel access server.
+    *    Note: &lt;Object&gt; can be used to force the channel to use the
+    *    native type on the server.
+    *
+    * @param <T> the type parameter.
+    * @param priority the priority to be registered with the channel access server.
+    * @return the channel.
+    *
+    * @throws NullPointerException if the channel name was null.
+    * @throws NullPointerException if the channel type was null.
+    * @throws IllegalArgumentException if the channel name was an empty string.
+    * @throws IllegalArgumentException if the channel name was of an unreasonable length.
+    * @throws IllegalArgumentException if the channel type was invalid.
+    * @throws IllegalArgumentException if the priority was outside the allowed range.
+    * @throws IllegalStateException if the context was already closed.
     */
-   public ResponseRequest getResponseRequest( int ioid )
+   public <T> Channel<T> createChannel( String channelName, Class<T> channelType, int priority )
    {
-      synchronized ( responseRequests )
+      Validate.validState( ! closed.get(), "context closed" );
+      Validate.notEmpty( channelName, "null or empty channel name" );
+      Validate.isTrue(channelName.length() <= Math.min( MAX_UDP_SEND - CA_MESSAGE_HEADER_SIZE, UNREASONABLE_CHANNEL_NAME_LENGTH ), "name too long" );
+      Validate.notNull( channelType, "null channel type" );
+      Validate.isTrue( TypeSupports.isNativeType( channelType ) || channelType.equals( Object.class ), "invalid channel native type" );
+      Validate.inclusiveBetween( CHANNEL_PRIORITY_MIN, CHANNEL_PRIORITY_MAX, priority,"priority out of bounds" );
+
+      return new ChannelImpl<>( this, channelName, channelType, priority );
+   }
+
+   /**
+    * Closes the context, disposing of all underlying resources.
+    */
+   @Override
+   public void close()
+   {
+      logger.finest( "Closing context." );
+      if ( closed.getAndSet (true) )
       {
-         return responseRequests.get (ioid);
+         return;
       }
+
+      // Stop the CA Repeater for this context (when enabled and when no other context needs it)
+      CARepeaterStarter.stopRepeaterOnPort( getRepeaterPort() );
+
+      channelSearchManager.cancel();
+      broadcastTransport.get().close();
+
+      // this will also close all CA transports
+      destroyAllChannels();
+
+      reactor.shutdown();
+      leaderFollowersThreadPool.shutdown ();
+      timer.shutdown();
+
+      // Dispose of the monitor service factory and all services which it has created
+      monitorNotificationServiceFactory.close();
+
+      executorService.shutdown();
+      try
+      {
+         executorService.awaitTermination (3, TimeUnit.SECONDS);
+      }
+      catch ( InterruptedException e )
+      {
+         // noop
+      }
+      executorService.shutdownNow();
    }
 
    /**
@@ -275,53 +348,34 @@ public class ContextImpl implements AutoCloseable
       }
    }
 
+/*- Package-level methods ----------------------------------------------------*/
+
+   /**
+    * Searches for a response request with given channel IOID.
+    *
+    * @param ioid I/O ID.
+    * @return request response with given I/O ID.
+    */
+   ResponseRequest getResponseRequest( int ioid )
+   {
+      synchronized ( responseRequests )
+      {
+         return responseRequests.get (ioid);
+      }
+   }
+
    /**
     * Searches for a channel with given channel ID.
     *
     * @param channelID CID.
     * @return channel with given CID, <code>null</code> if non-existent.
     */
-   public ChannelImpl<?> getChannel( int channelID )
+   ChannelImpl<?> getChannel( int channelID )
    {
       synchronized ( channelsByCID )
       {
          return channelsByCID.get (channelID);
       }
-   }
-
-   public ChannelSearchManager getChannelSearchManager()
-   {
-      return channelSearchManager;
-   }
-
-   public BroadcastTransport getBroadcastTransport()
-   {
-      return broadcastTransport.get ();
-   }
-
-   public int getServerPort()
-   {
-      return protocolConfiguration.getServerPort();
-   }
-
-   public float getConnectionTimeout()
-   {
-      return protocolConfiguration.getConnectionTimeout();
-   }
-
-   public int getMaxArrayBytes()
-   {
-      return protocolConfiguration.getMaxArrayBytes();
-   }
-
-   public TransportRegistry getTransportRegistry()
-   {
-      return transportRegistry;
-   }
-
-   public LeaderFollowersThreadPool getLeaderFollowersThreadPool()
-   {
-      return leaderFollowersThreadPool;
    }
 
    /**
@@ -334,7 +388,7 @@ public class ContextImpl implements AutoCloseable
     * @param minorRevision server minor CA revision.
     * @param serverAddress server address.
     */
-   public void searchResponse( int cid, int sid, short type, int count, short minorRevision, InetSocketAddress serverAddress )
+   void searchResponse( int cid, int sid, short type, int count, short minorRevision, InetSocketAddress serverAddress )
    {
       final ChannelImpl<?> channel = getChannel( cid );
       if ( channel == null )
@@ -375,7 +429,7 @@ public class ContextImpl implements AutoCloseable
       }
    }
 
-   public void repeaterConfirm( InetSocketAddress responseFrom )
+   void repeaterConfirm( InetSocketAddress responseFrom )
    {
       logger.fine( "Repeater registration confirmed from: " + responseFrom );
 
@@ -386,7 +440,7 @@ public class ContextImpl implements AutoCloseable
       }
    }
 
-   public boolean enqueueStatefullEvent( StatefullEventSource event )
+   boolean enqueueStatefullEvent( StatefullEventSource event )
    {
       if ( event.allowEnqueue () )
       {
@@ -399,7 +453,7 @@ public class ContextImpl implements AutoCloseable
       }
    }
 
-   public void beaconAnomalyNotify()
+   void beaconAnomalyNotify()
    {
       logger.fine( "A beacon anomaly has been detected." );
       if ( channelSearchManager != null )
@@ -414,7 +468,7 @@ public class ContextImpl implements AutoCloseable
     * @param responseFrom remote source address of received beacon.
     * @return beacon handler for particular server.
     */
-   public BeaconHandler getBeaconHandler( InetSocketAddress responseFrom )
+   BeaconHandler getBeaconHandler( InetSocketAddress responseFrom )
    {
       synchronized ( beaconHandlers )
       {
@@ -428,80 +482,6 @@ public class ContextImpl implements AutoCloseable
       }
    }
 
-   public ScheduledExecutorService getScheduledExecutor()
-   {
-      return timer;
-   }
-
-   public <T> Channel<T> createChannel( String channelName, Class<T> channelType )
-   {
-      return createChannel( channelName, channelType, CHANNEL_PRIORITY_DEFAULT );
-   }
-
-   public <T> Channel<T> createChannel( String channelName, Class<T> channelType, int priority )
-   {
-      Validate.validState( ! closed.get(), "context closed" );
-      Validate.notEmpty( channelName, "null or empty channel name" );
-      Validate.isTrue(channelName.length() <= Math.min( MAX_UDP_SEND - CA_MESSAGE_HEADER_SIZE, UNREASONABLE_CHANNEL_NAME_LENGTH ), "name too long" );
-      Validate.notNull( channelType, "null channel type" );
-      Validate.isTrue( TypeSupports.isNativeType( channelType ) || channelType.equals (Object.class), "invalid channel native type" );
-      Validate.inclusiveBetween( CHANNEL_PRIORITY_MIN, CHANNEL_PRIORITY_MAX, priority,"priority out of bounds" );
-
-      return new ChannelImpl<>( this, channelName, channelType, priority );
-   }
-
-   @Override
-   public void close()
-   {
-      logger.finest( "Closing context." );
-      if ( closed.getAndSet (true) )
-      {
-         return;
-      }
-
-      // Shutdown repeater if the options is set.
-      if ( LibraryConfiguration.getInstance().isRepeaterEnabled() )
-      {
-         CARepeaterStarter.shutdownLastStartedRepeater();
-      }
-
-      channelSearchManager.cancel();
-      broadcastTransport.get().close ();
-
-      // this will also close all CA transports
-      destroyAllChannels();
-
-      reactor.shutdown();
-      leaderFollowersThreadPool.shutdown ();
-      timer.shutdown();
-
-      // Dispose of the monitor service factory and all services which it has created
-      monitorNotificationServiceFactory.close();
-
-      executorService.shutdown();
-      try
-      {
-         executorService.awaitTermination (3, TimeUnit.SECONDS);
-      }
-      catch ( InterruptedException e )
-      {
-         // noop
-      }
-      executorService.shutdownNow();
-   }
-
-   public Reactor getReactor()
-   {
-      return reactor;
-   }
-
-/*- Package-level methods ----------------------------------------------------*/
-
-   MonitorNotificationServiceFactory getMonitorNotificationServiceFactory()
-   {
-      return monitorNotificationServiceFactory;
-   }
-
    /**
     * Generate Client channel ID (CID).
     *
@@ -513,13 +493,13 @@ public class ContextImpl implements AutoCloseable
       {
          // search first free (theoretically possible loop of death)
          //noinspection StatementWithEmptyBody
-         while ( channelsByCID.containsKey (++lastCID) )
+         while ( channelsByCID.containsKey( ++lastCID ) )
          {
             // Intentionally left blank
          }
 
          // reserve CID
-         channelsByCID.put (lastCID, null);
+         channelsByCID.put( lastCID, null );
          return lastCID;
       }
    }
@@ -548,6 +528,63 @@ public class ContextImpl implements AutoCloseable
       {
          channelsByCID.remove (channel.getCID ());
       }
+   }
+
+/*- Package-level getter methods ---------------------------------------------*/
+
+   ChannelSearchManager getChannelSearchManager()
+   {
+      return channelSearchManager;
+   }
+
+   BroadcastTransport getBroadcastTransport()
+   {
+      return broadcastTransport.get ();
+   }
+
+   TransportRegistry getTransportRegistry()
+   {
+      return transportRegistry;
+   }
+
+   LeaderFollowersThreadPool getLeaderFollowersThreadPool()
+   {
+      return leaderFollowersThreadPool;
+   }
+
+   int getRepeaterPort()
+   {
+      return protocolConfiguration.getRepeaterPort();
+   }
+
+   int getServerPort()
+   {
+      return protocolConfiguration.getServerPort();
+   }
+
+   float getConnectionTimeout()
+   {
+      return protocolConfiguration.getConnectionTimeout();
+   }
+
+   int getMaxArrayBytes()
+   {
+      return protocolConfiguration.getMaxArrayBytes();
+   }
+
+   ScheduledExecutorService getScheduledExecutor()
+   {
+      return timer;
+   }
+
+   Reactor getReactor()
+   {
+      return reactor;
+   }
+
+   MonitorNotificationServiceFactory getMonitorNotificationServiceFactory()
+   {
+      return monitorNotificationServiceFactory;
    }
 
 /*- Private methods ----------------------------------------------------------*/
