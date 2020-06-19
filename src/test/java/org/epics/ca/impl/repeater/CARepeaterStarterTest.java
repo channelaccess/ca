@@ -98,14 +98,14 @@ public class CARepeaterStarterTest
    }
 
    @Test
-   void testStartRepeaterInSeparateJvmProcess() throws Throwable
+   void testStartRepeater() throws Throwable
    {
       logger.info("Starting CA Repeater in separate process.");
-      final JavaProcessManager processManager = CARepeaterStarter.startRepeater( testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable);
+      final JavaProcessManager repeaterProcessManager = CARepeaterStarter.startRepeater( testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable);
       logger.info("The CA Repeater process was created.");
       logger.info("Verifying that the CA Repeater process is reported as being alive...");
       try {
-         assertThat(processManager.isAlive(), is(true ) );
+         assertThat( repeaterProcessManager.isAlive(), is(true ) );
          logger.info("OK");
          logger.info("Waiting a moment to allow the spawned process time to reserve the listening port...");
          Thread.sleep(1500);
@@ -114,24 +114,24 @@ public class CARepeaterStarterTest
          assertThat(CARepeaterStarter.isRepeaterRunning(testPort), is(true));
          logger.info("OK");
          logger.info("Shutting down the CA Repeater process...");
-         processManager.shutdown();
+         CARepeaterStarter.stopRepeater( repeaterProcessManager );
          logger.info("Verifying that the CA Repeater process is no longer reported as being alive...");
-         assertThat(processManager.isAlive(), is(false));
+         assertThat( repeaterProcessManager.isAlive(), is(false));
          logger.info("OK");
          logger.info("Waiting a moment to allow the OS to release the listening port...");
          Thread.sleep(1500);
          logger.info("Verifying that the CA Repeater is no longer detected as running...");
-         assertThat(CARepeaterStarter.isRepeaterRunning( testPort ), is(false));
+         assertThat( CARepeaterStarter.isRepeaterRunning( testPort ), is(false));
          logger.info("OK");
       }
-      finally {
-         processManager.shutdown();
-
+      finally
+      {
+         CARepeaterStarter.stopRepeater( repeaterProcessManager );
       }
    }
 
    @Test
-   void testStartRepeaterInCurrentJvmProcess() throws Throwable
+   void testIsRepeaterRunning_startRepeaterInCurrentJvmProcess() throws Throwable
    {
       final CARepeater repeater = new CARepeater( testPort );
       repeater.start();
