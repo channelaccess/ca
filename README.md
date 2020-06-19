@@ -1,4 +1,6 @@
 # Overview [![Build Status](https://travis-ci.com/channelaccess/ca.svg?branch=master)](https://travis-ci.com/channelaccess/ca)
+[![codecov](https://codecov.io/gh/channelaccess/ca/branch/master/graph/badge.svg)](https://codecov.io/gh/channelaccess/ca)
+
 The __ca__  library is a pure Java Channel Access client implementation. __ca__ strives to provide the _easiest_ 
 way of accessing EPICS Channel Access channels from Java.
 
