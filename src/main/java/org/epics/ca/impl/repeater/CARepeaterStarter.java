@@ -7,6 +7,7 @@ package org.epics.ca.impl.repeater;
 
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.impl.JavaProcessManager;
+import org.epics.ca.impl.LibraryConfiguration;
 import org.epics.ca.impl.ProtocolConfiguration;
 import org.epics.ca.util.logging.LibraryLogManager;
 
@@ -14,7 +15,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,8 +31,8 @@ public class CARepeaterStarter
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterStarter.class );
    private static final File NULL_FILE = new File( ( System.getProperty("os.name").startsWith( "Windows") ? "NUL" : "/dev/null" ) );
 
-   private static final AtomicReference<JavaProcessManager> javaProcessManager =  new AtomicReference<>();
-
+   private static final Map<Integer,JavaProcessManager> repeaterProcessMap = new HashMap<>();
+   private static final Map<Integer,Integer> repeaterInterestMap = new HashMap<>();
 
 /*- Main ---------------------------------------------------------------------*/
 
@@ -82,10 +82,8 @@ public class CARepeaterStarter
       final CARepeater repeater;
       try
       {
-         {
-            logger.info( "Creating CA Repeater instance which will run on port " + port + "." );
-            repeater = new CARepeater( port );
-         }
+         logger.info( "Creating CA Repeater instance which will run on port " + port + "." );
+         repeater = new CARepeater( port );
       }
       catch( CARepeater.CaRepeaterStartupException ex )
       {
@@ -103,54 +101,82 @@ public class CARepeaterStarter
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
 
-   /**
-    * Starts the CA Repeater in a separate JVM process, if it is not already
-    * running.
-    *
-    * @param repeaterPort specifies the port to listen on in the inclusive range 1-65535.
-    * @param logLevel the logging level to be used in the spawned process.
-    * @param outputCaptureEnable whether the standard output and standard error of
-    *   the spawned subprocess should be captured and sent to the logging system in
-    *   the owning process.
-    * @throws IllegalArgumentException if the repeater port is out of range.
-    * @throws IllegalStateException if some other unexpected condition prevents
-    *    repeater from being started.
-    * @throws RuntimeException if the JVM network stack was incorrectly configured.
-    */
-   public static void startRepeaterIfNotAlreadyRunning( int repeaterPort, Level logLevel, boolean outputCaptureEnable )
+   public static void startRepeaterOnPort( int repeaterPort )
    {
-      Validate.inclusiveBetween( 1, 65535, repeaterPort, "The port must be in the inclusive range 1-65535.");
-
-      if( ! NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible() )
+      synchronized( CARepeaterStarter.class )
       {
-         throw new RuntimeException( "The network stack is incorrectly configured for EPICS CA protocol." );
-      }
+         logger.info( "Processing request to start CA Repeater on port: '" + repeaterPort + "'." );
 
-      synchronized ( CARepeaterStarter.class  )
-      {
-         if ( ! isRepeaterRunning( repeaterPort ) )
+         if ( ! LibraryConfiguration.getInstance().isRepeaterEnabled() )
          {
-            final JavaProcessManager processManager = startRepeaterInSeparateJvmProcess( repeaterPort, logLevel, outputCaptureEnable );
-            javaProcessManager.set(processManager );
+            logger.info( "The CA Repeater lifecycle management is disabled => nothing to do." );
+            return;
          }
+
+//         if ( isRepeaterRunning( repeaterPort ) )
+//         {
+//            logger.warning( "The CA Repeater is already running on port: '" + repeaterPort + "' => nothing to do." );
+//            return;
+//         }
+
+         if ( ! repeaterInterestMap.containsKey( repeaterPort ) )
+         {
+            final Level logLevel = LibraryConfiguration.getInstance().getRepeaterLogLevel();
+            final boolean outputCaptureEnable = LibraryConfiguration.getInstance().isRepeaterOutputCaptureEnabled();
+            final JavaProcessManager repeaterProcessManager = startRepeater( repeaterPort, logLevel, outputCaptureEnable );
+            repeaterProcessMap.put( repeaterPort, repeaterProcessManager );
+            repeaterInterestMap.put( repeaterPort, 1 );
+            return;
+         }
+
+         final int currentInterestLevel = repeaterInterestMap.get( repeaterPort );
+         logger.info( "Increasing interest level in the repeater running on port: '" + repeaterPort + "'." );
+         repeaterInterestMap.put( repeaterPort, currentInterestLevel + 1 );
       }
    }
 
-   /**
-    * Shuts down the last repeater that this class started (if any)
-    */
-   public static void shutdownLastStartedRepeater()
+   public static void stopRepeaterOnPort( int repeaterPort )
    {
-      logger.fine( "Shutting down any CA Repeaters that were started by this process..." );
-      if ( javaProcessManager.get() != null )
+      synchronized( CARepeaterStarter.class )
       {
-         logger.fine( "A CA Repeater was found." );
-         javaProcessManager.get().shutdown();
-         logger.fine( "The CA Repeater was sent a termination signal." );
-      }
-      else
-      {
-         logger.fine( "There are NO CA Repeaters that need terminating." );
+         logger.info("Processing request to stop CA Repeater on port: '" + repeaterPort + "'.");
+
+         if ( ! LibraryConfiguration.getInstance().isRepeaterEnabled() )
+         {
+            logger.info("The CA Repeater lifecycle management is disabled => nothing to do.");
+            return;
+         }
+
+//         if ( ! isRepeaterRunning( repeaterPort ) )
+//         {
+//            logger.info("The local repeater is NOT running on port: '" + repeaterPort + "' => nothing to do.");
+//            return;
+//         }
+
+//         if ( ! repeaterProcessMap.containsKey( repeaterPort ) )
+//         {
+//            logger.warning("There was no CA Repeater instance running on port: '" + repeaterPort + "' that was started by the current JVM instance => nothing to do.");
+//            return;
+//         }
+
+         if ( repeaterInterestMap.get( repeaterPort) == 0 )
+         {
+            logger.warning("Attempt to shutdown a repeater on port '" + repeaterPort + " for which there was already no expressed interest => nothing to do.");
+            return;
+         }
+
+         final int currentInterestLevel = repeaterInterestMap.get( repeaterPort );
+         if ( currentInterestLevel == 1 )
+         {
+            logger.info("Shutting down the repeater running on port: '" + repeaterPort + "'.");
+            final JavaProcessManager repeaterProcessManager = repeaterProcessMap.get( repeaterPort );
+            stopRepeater( repeaterProcessManager );
+            repeaterInterestMap.remove( repeaterPort );
+            return;
+         }
+
+         logger.info("Reducing interest level in the repeater running on port: '" + repeaterPort + "'.");
+         repeaterInterestMap.put( repeaterPort, currentInterestLevel - 1);
       }
    }
 
@@ -175,8 +201,7 @@ public class CARepeaterStarter
       return repeaterIsRunning;
    }
 
-
-   /*- Package-level access methods ---------------------------------------------*/
+/*- Package-level access methods ---------------------------------------------*/
 
    /**
     * Starts the CA Repeater, which should not already be running, in a separate
@@ -192,12 +217,14 @@ public class CARepeaterStarter
     * @return process handle which can subsequently be used to monitor the process
     *    and/or shut it down.
     * @throws IllegalArgumentException if the repeater port is out of range.
+    * @throws NullPointerException if the debugLevel argument was null.
     * @throws IllegalStateException if the repeater was already running.
     * @throws RuntimeException if some other unexpected condition prevents
     *    repeater from being started.
     */
-   static JavaProcessManager startRepeaterInSeparateJvmProcess( int repeaterPort, Level debugLevel, boolean outputCaptureEnable )
+   static JavaProcessManager startRepeater( int repeaterPort, Level debugLevel, boolean outputCaptureEnable )
    {
+      Validate.notNull( debugLevel );
       Validate.inclusiveBetween( 1, 65535, repeaterPort, "The port must be in the inclusive range 1-65535.");
       Validate.validState( ! isRepeaterRunning( repeaterPort ), "The repeater is already running on port." + repeaterPort );
 
@@ -217,6 +244,28 @@ public class CARepeaterStarter
       final JavaProcessManager processManager = new JavaProcessManager( CARepeaterStarter.class, properties, programArgs );
       processManager.start( outputCaptureEnable );
       return processManager;
+   }
+
+   /**
+    * Shuts down the CA Repeater which was previously started by the supplied Java
+    * process manager.
+    *
+    * @param repeaterProcessManager the process manager.
+    * @throws NullPointerException if the repeaterProcessManager argument was null.
+    */
+   static void stopRepeater( JavaProcessManager repeaterProcessManager )
+   {
+      Validate.notNull( repeaterProcessManager );
+      if(  repeaterProcessManager.isAlive() )
+      {
+         logger.fine( "Sending the CA Repeater a termination signal..." );
+         repeaterProcessManager.shutdown();
+         logger.fine( "The CA Repeater was sent a termination signal." );
+      }
+      else
+      {
+         logger.fine( "The CA Repeater process was no longer alive => nothing to do." );
+      }
    }
 
 /*- Private methods ----------------------------------------------------------*/
