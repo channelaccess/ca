@@ -101,7 +101,7 @@ public class CARepeaterStarterTest
    void testStartRepeaterInSeparateJvmProcess() throws Throwable
    {
       logger.info("Starting CA Repeater in separate process.");
-      final JavaProcessManager processManager = CARepeaterStarter.startRepeaterInSeparateJvmProcess(testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable);
+      final JavaProcessManager processManager = CARepeaterStarter.startRepeater( testPort, caRepeaterDebugLevel, caRepeaterOutputCaptureEnable);
       logger.info("The CA Repeater process was created.");
       logger.info("Verifying that the CA Repeater process is reported as being alive...");
       try {
