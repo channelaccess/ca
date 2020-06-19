@@ -279,8 +279,9 @@ artifacts {
 
 jacocoTestReport {
     reports {
-        xml.enabled( project.properties[ 'covxml' ] ? true : false )
-        html.enabled( project.properties[ 'covxml' ] ? false : true )
+        xml.enabled true
+        html.enabled true
+        csv.enabled false
     }
 }
 
