@@ -6,6 +6,8 @@ package org.epics.ca.impl;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -69,6 +71,7 @@ class LibraryConfigurationTest
       System.clearProperty( LibraryConfiguration.PropertyNames.CA_MONITOR_NOTIFIER_IMPL.name() );
    }
 
+   @EnabledOnOs( {OS.MAC, OS.LINUX} )
    @Test
    void testEnvironmentalVariablesOverrides() throws Exception
    {
