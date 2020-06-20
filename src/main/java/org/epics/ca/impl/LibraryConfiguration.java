@@ -55,7 +55,7 @@ public class LibraryConfiguration
    /**
     * Default log level for the CA library.
     */
-   public static final Level CA_LIBRARY_LOG_LEVEL_LOG_LEVEL_DEFAULT = Level.INFO;
+   public static final Level CA_LIBRARY_LOG_LEVEL_DEFAULT = Level.INFO;
 
 
 /*- Private attributes -------------------------------------------------------*/
@@ -134,7 +134,7 @@ public class LibraryConfiguration
     */
    public Level getLibraryLogLevel()
    {
-      return ConfigurationReader.readDebugLevelProperty( PropertyNames.CA_LIBRARY_LOG_LEVEL.toString(), properties, CA_LIBRARY_LOG_LEVEL_LOG_LEVEL_DEFAULT );
+      return ConfigurationReader.readDebugLevelProperty(PropertyNames.CA_LIBRARY_LOG_LEVEL.toString(), properties, CA_LIBRARY_LOG_LEVEL_DEFAULT);
    }
 
 /*- Private methods ----------------------------------------------------------*/
