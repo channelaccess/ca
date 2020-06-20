@@ -1,10 +1,14 @@
+# Note the values in this file are currently (2020-06-20) the default values
+# that would be already assumed by codecov if the file was not present.
+# Nevertheless, the inclusion of the file makes the behaviour more explicit
+# to future software maintainers.
 codecov:
-  require_ci_to_pass: yes
+  require_ci_to_pass: true
 
 coverage:
   precision: 2
   round: down
-  range: "50...100"
+  range: "75...100"
 
 parsers:
   gcov:
@@ -17,4 +21,4 @@ parsers:
 comment:
   layout: "reach,diff,flags,tree"
   behavior: default
-  require_changes: no
+  require_changes: false
