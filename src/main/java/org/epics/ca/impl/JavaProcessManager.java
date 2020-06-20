@@ -46,9 +46,8 @@ public class JavaProcessManager
     *
     * @param classWithMainMethod the Java class which contains the main method
     *   to be executed.
-    * @param systemProperties the system properties to be set for the spawned
-    *   process. As a minimum this must contain a definition for the class
-    *   path ("java.class.path").
+    * @param systemProperties the system properties to be added to the spawned
+    *   process over and above what is already provided by the platform.
     * @param programArgs the program arguments.
     *
     * @throws NullPointerException if any of the supplied arguments were null.
