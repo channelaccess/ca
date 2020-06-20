@@ -94,6 +94,10 @@ dependencies {
     implementation 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
     implementation 'com.github.stephenc.jcip:jcip-annotations:1.0-1:javadoc'
 
+    // Supports JCA-based test server
+    implementation 'org.epics:jca:2.4.4-j8'
+    implementation 'org.epics:jca:2.4.4-j8:javadoc'
+
     // Supports unit and integration tests.
     // Note the following are compile dependencies because they need to
     // be included in the fatJarWithTests jar file.
@@ -109,10 +113,6 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0:javadoc'
     testImplementation 'org.mockito:mockito-core:3.3.3:javadoc'
     testImplementation 'org.hamcrest:hamcrest:2.2:javadoc'
-
-    // Supports JCA-based test server
-    testImplementation 'org.epics:jca:2.4.4-j8'
-    testImplementation 'org.epics:jca:2.4.4-j8:javadoc'
 }
 
 test {
