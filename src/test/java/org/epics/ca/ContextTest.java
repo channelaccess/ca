@@ -228,6 +228,7 @@ class ContextTest
          Thread.sleep( 1500 );
          assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( false ) );
       }
+      System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), String.valueOf( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
    }
 
    @Test
@@ -254,12 +255,12 @@ class ContextTest
       }
       Thread.sleep( 1500 );
       assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( false ) );
+      System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), String.valueOf( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
    }
 
    @Test
    void integrationTestCreateMultipleContexts_repeaterShutsdownOnlyAfterLastContextIsClosed() throws InterruptedException
    {
-      //System.setProperty( LibraryConfiguration.PropertyNames.CA_LIBRARY_LOG_LEVEL.toString(), "ALL" );
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "false" );
       logger.info( "CREATING FIRST CONTEXT..." );
       final Context ignored1 = new Context();
@@ -291,13 +292,14 @@ class ContextTest
       logger.info( "CHECKING REPEATER IS NOW STOPPED..." );
       assertThat( CARepeaterStarter.isRepeaterRunning( 5065 ), is( false ) );
       logger.info( "OK" );
+      System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), String.valueOf( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
    }
 
    @Test
    void integrationTestCreateMultipleContexts_withMultipleRepeaters_runningOnMultiplePorts() throws InterruptedException
    {
       final Properties ctx1Props = new Properties();
-      ctx1Props.setProperty(ProtocolConfiguration.PropertyNames.EPICS_CA_REPEATER_PORT.toString(), "1111" );
+      ctx1Props.setProperty( ProtocolConfiguration.PropertyNames.EPICS_CA_REPEATER_PORT.toString(), "1111" );
       final Context ignored1 = new Context( ctx1Props );
       Thread.sleep( 1500 );
 
@@ -400,7 +402,6 @@ class ContextTest
       finally
       {
          System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), String.valueOf( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
-         System.setProperty(LibraryConfiguration.PropertyNames.CA_LIBRARY_LOG_LEVEL.toString(), LibraryConfiguration.CA_LIBRARY_LOG_LEVEL_DEFAULT.toString());
          EpicsChannelAccessTestServer.shutdown();
       }
 
