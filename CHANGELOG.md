@@ -87,7 +87,7 @@ This log describes the functionality of tagged versions within the repository.
   ###### Overview:
   This release was triggered mainly by the need to address problems when interoperating with EPICS 7 Channel Access (see Issue #58). 
   But several other changes have been implemented to bring the library to the state where we hope it will be easier to actively 
-  maintain it in the future. These chnages include:
+  maintain it in the future. These changes include:
   * The build tool has been upgraded to a later version of Gradle.
   * The library dependencies have been upgraded to later versions.
   * Lots of code has been refactored following IntelliJ code inspection recommendations. The intention here was to remove warning 
@@ -187,4 +187,6 @@ This log describes the functionality of tagged versions within the repository.
   See previous release.
   
   ###### Test Results: 
-  * Mac OSX: 512 tests successful / 0 tests failed / 0 tests skipped.    
+  * Mac OSX: XXX tests successful / 0 tests failed / 0 tests skipped.
+  * Linux RHEL7: YYY tests successful / 0 tests failed / 0 tests skipped.
+  * Windows 10: ZZZ tests successful / 0 tests failed / 0 tests skipped.
