@@ -342,7 +342,7 @@ class UdpSocketUtilitiesTest
    }
 
    @Test
-   void testIsSocketAvailable_fromSubProcess() throws IOException, InterruptedException
+   void testIsSocketAvailable_fromSubProcess1() throws IOException, InterruptedException
    {
       final int testPort = 2222;
 
@@ -370,6 +370,30 @@ class UdpSocketUtilitiesTest
       processManager.waitFor( 5000, TimeUnit.MILLISECONDS );
       assertThat( processManager.isAlive(), is( false ) );
       assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(true ) );
+   }
+
+   @Test
+   void testIsSocketAvailable_fromSubProcess2() throws IOException, InterruptedException
+   {
+      final int testPort = 9999;
+
+      // Create a broadcast-aware socket in the current JVM and check that it is correctly detected as unavailable.
+      final InetSocketAddress wildcardSocketAddress = new InetSocketAddress( testPort );
+      try( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
+      {
+         assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress), is(false ) );
+
+         // Spawn a process that will occupy the test socket for 3 seconds.
+         final String wildcardAddress = "0.0.0.0";
+         final int socketReserveTimeInMilliseconds = 10_000;
+         final JavaProcessManager processManager = UdpSocketReserver.start( wildcardAddress, testPort, socketReserveTimeInMilliseconds);
+
+         // Wait for the process to finish and check that the socket has become available again.
+         processManager.waitFor(5000, TimeUnit.MILLISECONDS);
+         assertThat( processManager.isAlive(), is(false ) );
+         assertThat( processManager.getExitValue(), is ( not( 0 ) ) );
+      }
+      assertThat(UdpSocketUtilities.isSocketAvailable(wildcardSocketAddress), is(true));
    }
 
    @ValueSource( booleans = { false, true } )
