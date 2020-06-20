@@ -462,7 +462,7 @@ try (Context context = new Context())
 }
 ```
 
-An extended usage example can be found at [src/test/java/org/epics/ca/test/Example.java](src/test/java/org/epics/ca/Example.java).
+An extended usage example can be found at [src/test/java/org/epics/ca/examples/Example.java](src/test/java/org/epics/ca/examples/Example.java).
 
 # Library API Documentation
 
