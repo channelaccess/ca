@@ -46,9 +46,8 @@ public class JavaProcessManager
     *
     * @param classWithMainMethod the Java class which contains the main method
     *   to be executed.
-    * @param systemProperties the system properties to be set for the spawned
-    *   process. As a minimum this must contain a definition for the class
-    *   path ("java.class.path").
+    * @param systemProperties the system properties to be added to the spawned
+    *   process over and above what is already provided by the platform.
     * @param programArgs the program arguments.
     *
     * @throws NullPointerException if any of the supplied arguments were null.
@@ -211,7 +210,7 @@ public class JavaProcessManager
    }
 
    /**
-    * Waits for the process associated witht his manager to terminate or for a
+    * Waits for the process associated with this manager to terminate or for a
     * timeout to occur, whichever comes soonest.
     *
     * @param timeout the maximum time to wait.
@@ -223,6 +222,20 @@ public class JavaProcessManager
    public boolean waitFor( long timeout, TimeUnit timeUnit ) throws InterruptedException
    {
       return process.waitFor( timeout, timeUnit );
+   }
+
+   /**
+    * Returns the exit value of the process associated with this manager.
+    *
+    * This method should only be called after the process has terminated.
+    *
+    * @return the exit value.
+    * @throws IllegalThreadStateException - if the process has not yet
+    * terminated.
+    */
+   public int getExitValue()
+   {
+      return process.exitValue();
    }
 
 /*- Package-level methods ----------------------------------------------------*/

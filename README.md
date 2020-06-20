@@ -1,9 +1,12 @@
-# Overview [![Build Status](https://travis-ci.com/channelaccess/ca.svg?branch=master)](https://travis-ci.com/channelaccess/ca)
+# Overview [![Build Status](https://travis-ci.com/channelaccess/ca.svg?branch=master)](https://travis-ci.com/channelaccess/ca) [![codecov](https://codecov.io/gh/channelaccess/ca/branch/master/graph/badge.svg)](https://codecov.io/gh/channelaccess/ca)
+
 The __ca__  library is a pure Java Channel Access client implementation. __ca__ strives to provide the _easiest_ 
 way of accessing EPICS Channel Access channels from Java.
 
-These notes are aimed to assist the __users__ of the library. Developers and __maintainers__ of the library are invited 
-to consult the [Developer](DEVELOPER.md) notes.
+These notes are aimed to assist the __users__ of the library. Developers and __maintainers__ of the library are 
+invited to consult the [Developer](DEVELOPER.md) notes.
+
+The version history and latest changes to the library are described in the [CHANGELOG](CHANGELOG.md). 
 
 ## Features
 * Simplicity.
@@ -460,7 +463,7 @@ try (Context context = new Context())
 }
 ```
 
-An extended usage example can be found at [src/test/java/org/epics/ca/test/Example.java](src/test/java/org/epics/ca/Example.java).
+An extended usage example can be found at [src/main/java/org/epics/ca/examples/Example.java](src/main/java/org/epics/ca/examples/Example.java).
 
 # Library API Documentation
 

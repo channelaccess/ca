@@ -30,7 +30,7 @@ public class ChannelSearchManager
 /*- Private attributes -------------------------------------------------------*/
 
    private static final int MIN_SEND_INTERVAL_MS_DEFAULT = 100;
-   private static final int MAX_SEND_INTERVAL_MS_DEFAULT = 30000;
+   private static final int MAX_SEND_INTERVAL_MS_DEFAULT = 30_000;
    private static final int INTERVAL_MULTIPLIER_DEFAULT = 2;
 
    private static final int MESSAGE_COALESCENCE_TIME_MS = 3;
@@ -114,8 +114,8 @@ public class ChannelSearchManager
          return false;
       }
 
-      final ChannelSearchTimerTask timerTask = new ChannelSearchTimerTask (channel);
-      channel.setTimerId (timerTask);
+      final ChannelSearchTimerTask timerTask = new ChannelSearchTimerTask( channel );
+      channel.setTimerId( timerTask );
 
       timer.executeAfterDelay( MESSAGE_COALESCENCE_TIME_MS, timerTask );
       channelCount.incrementAndGet();
@@ -134,13 +134,13 @@ public class ChannelSearchManager
          return;
       }
 
-      final Object timerTask = channel.getTimerId ();
+      final Object timerTask = channel.getTimerId();
       if ( timerTask != null )
       {
-         SearchTimer.cancel (timerTask);
-         channel.setTimerId (null);
+         SearchTimer.cancel( timerTask );
+         channel.setTimerId( null );
       }
-      channelCount.decrementAndGet ();
+      channelCount.decrementAndGet();
    }
 
    /**
@@ -200,11 +200,11 @@ public class ChannelSearchManager
     */
    private synchronized void flushSendBuffer()
    {
-      if ( immediatePacketCount.incrementAndGet () >= MAX_NUMBER_IMMEDIATE_PACKETS )
+      if ( immediatePacketCount.incrementAndGet() >= MAX_NUMBER_IMMEDIATE_PACKETS )
       {
          try
          {
-            Thread.sleep (IMMEDIATE_PACKETS_DELAY_MS);
+            Thread.sleep( IMMEDIATE_PACKETS_DELAY_MS );
          }
          catch ( InterruptedException ex )
          {
@@ -213,7 +213,7 @@ public class ChannelSearchManager
          immediatePacketCount.set( 0 );
       }
 
-      broadcastTransport.send (sendBuffer);
+      broadcastTransport.send( sendBuffer );
       initializeSendBuffer();
    }
 
@@ -266,12 +266,12 @@ public class ChannelSearchManager
       public long timeout()
       {
          // send search message
-         generateSearchRequestMessage(channel, true );
+         generateSearchRequestMessage( channel, true );
 
-         if ( !timer.hasNext(MESSAGE_COALESCENCE_TIME_MS) )
+         if ( !timer.hasNext( MESSAGE_COALESCENCE_TIME_MS ) )
          {
             flushSendBuffer();
-            immediatePacketCount.set(0);
+            immediatePacketCount.set( 0 );
          }
 
          // reschedule

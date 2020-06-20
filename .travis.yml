@@ -79,3 +79,6 @@ deploy:
 after_script:
   - echo -n "*** LIFECYCLE STARTED - 'after_script' *******************************************************************"
   - echo -n "*** LIFECYCLE COMPLETED - 'after_script' *****************************************************************"
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

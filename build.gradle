@@ -17,6 +17,7 @@ jacoco {
     toolVersion = '0.8.5'
 }
 
+
 // Explicitly describe the current build environment
 println "The Gradle version being used for this build is: ${gradle.gradleVersion}."
 println "The Java version being used for this gradle build is: ${JavaVersion.current()}."
@@ -93,6 +94,10 @@ dependencies {
     implementation 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
     implementation 'com.github.stephenc.jcip:jcip-annotations:1.0-1:javadoc'
 
+    // Supports JCA-based test server
+    implementation 'org.epics:jca:2.4.4-j8'
+    implementation 'org.epics:jca:2.4.4-j8:javadoc'
+
     // Supports unit and integration tests.
     // Note the following are compile dependencies because they need to
     // be included in the fatJarWithTests jar file.
@@ -108,10 +113,6 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0:javadoc'
     testImplementation 'org.mockito:mockito-core:3.3.3:javadoc'
     testImplementation 'org.hamcrest:hamcrest:2.2:javadoc'
-
-    // Supports JCA-based test server
-    testImplementation 'org.epics:jca:2.4.4-j8'
-    testImplementation 'org.epics:jca:2.4.4-j8:javadoc'
 }
 
 test {
@@ -139,6 +140,8 @@ test {
         outputs.upToDateWhen {false}
         showStandardStreams = false
     }
+
+    finalizedBy jacocoTestReport // report is always generated after tests run
 }
 
 javadoc {
@@ -278,9 +281,11 @@ artifacts {
 }
 
 jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
     reports {
-        xml.enabled( project.properties[ 'covxml' ] ? true : false )
-        html.enabled( project.properties[ 'covxml' ] ? false : true )
+        xml.enabled true
+        html.enabled true
+        csv.enabled false
     }
 }
 

@@ -40,7 +40,7 @@ class LibraryConfigurationTest
       assertThat( instance, is( notNullValue() ) );
       assertThat( ! instance.isRepeaterEnabled(), is( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
       assertThat( instance.isRepeaterOutputCaptureEnabled(), is( LibraryConfiguration.CA_REPEATER_OUTPUT_CAPTURE_DEFAULT ) );
-      assertThat( instance.getLibraryLogLevel(), is( LibraryConfiguration.CA_LIBRARY_LOG_LEVEL_LOG_LEVEL_DEFAULT ) );
+      assertThat( instance.getLibraryLogLevel(), is( LibraryConfiguration.CA_LIBRARY_LOG_LEVEL_DEFAULT) );
       assertThat( instance.getRepeaterLogLevel(), is( LibraryConfiguration.CA_REPEATER_LOG_LEVEL_DEFAULT ) );
       assertThat( instance.getMonitorNotifierImplementation(), is( LibraryConfiguration.CA_MONITOR_NOTIFIER_IMPL_DEFAULT ) );
    }

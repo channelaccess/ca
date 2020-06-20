@@ -1,10 +1,11 @@
-package org.epics.ca;
+package org.epics.ca.examples;
 
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 
+import org.epics.ca.*;
 import org.epics.ca.data.*;
 
 public class Example
@@ -215,6 +216,7 @@ public class Example
       catch( Exception ex )
       {
          System.out.println ( "\nThe example program FAILED, with the following exception: " + ex );
+         System.exit( -1 );
       }
       finally
       {
