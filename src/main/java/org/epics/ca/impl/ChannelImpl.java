@@ -52,7 +52,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    private final int INVALID_SID = 0xFFFFFFFF;
    private int sid = INVALID_SID;
 
-   private TCPTransport transport;
+   private TcpTransport tcpTransport;
 
    private final Map<String, Object> properties = new HashMap<> ();
 
@@ -129,20 +129,20 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       disconnectPendingIO( true );
 
       // release transport
-      if ( transport != null )
+      if ( tcpTransport != null )
       {
          try
          {
-            Messages.clearChannelMessage (transport, cid, sid);
-            transport.flush();
+            Messages.clearChannelMessage( tcpTransport, cid, sid );
+            tcpTransport.flush();
          }
          catch ( Throwable th )
          {
             // noop
          }
 
-         transport.release( this );
-         transport = null;
+         tcpTransport.release( this );
+         tcpTransport = null;
       }
    }
 
@@ -254,7 +254,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    @Override
    public void putNoWait( T value )
    {
-      final TCPTransport t = getTransportIfConnected();
+      final TcpTransport tcpTransport = getTcpTransportIfConnected();
 
       // check write access
       final AccessRights currentRights = getAccessRights();
@@ -268,14 +268,14 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
          count = Array.getLength( value );
       }
 
-      Messages.writeMessage( t, sid, cid, typeSupport, value, count );
-      transport.flush ();
+      Messages.writeMessage( tcpTransport, sid, cid, typeSupport, value, count );
+      tcpTransport.flush();
    }
 
    @Override
    public CompletableFuture<T> getAsync()
    {
-      final TCPTransport t = getTransportIfConnected();
+      final TcpTransport tcpTransport = getTcpTransportIfConnected();
 
       // check read access
       final AccessRights currentRights = getAccessRights();
@@ -283,13 +283,13 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
       Validate.validState( haveReadRights, "No read rights." );
 
-      return new ReadNotifyRequest<>(this, t, sid, typeSupport );
+      return new ReadNotifyRequest<>(this, tcpTransport, sid, typeSupport );
    }
 
    @Override
    public CompletableFuture<Status> putAsync( T value )
    {
-      final TCPTransport t = getTransportIfConnected();
+      final TcpTransport tcpTransport = getTcpTransportIfConnected();
 
       // check write access
       final AccessRights currentRights = getAccessRights();
@@ -303,7 +303,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
          count = Array.getLength( value );
       }
 
-      return new WriteNotifyRequest<>(this, t, sid, typeSupport, value, count);
+      return new WriteNotifyRequest<>(this, tcpTransport, sid, typeSupport, value, count);
    }
 
    @SuppressWarnings( "unchecked" )
@@ -324,7 +324,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    @Override
    public <MT extends Metadata<T>> CompletableFuture<MT> getAsync( Class<? extends Metadata> clazz )
    {
-      final TCPTransport t = getTransportIfConnected();
+      final TcpTransport tcpTransport = getTcpTransportIfConnected();
       final TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>) getTypeSupport (clazz, channelType);
 
       // check read access
@@ -333,7 +333,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
       Validate.validState( haveReadRights, "No read rights." );
 
-      return new ReadNotifyRequest<>(this, t, sid, metaTypeSupport );
+      return new ReadNotifyRequest<>(this, tcpTransport, sid, metaTypeSupport );
    }
 
 
@@ -342,12 +342,12 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    {
       Validate.isTrue( mask != 0, "The mask cannot be zero." );
 
-      final TCPTransport transport = getTransportIfConnected();
+      final TcpTransport tcpTransport = getTcpTransportIfConnected();
 
       final MonitorNotificationServiceFactory serviceFactory = context.getMonitorNotificationServiceFactory();
       final MonitorNotificationService<T> notifier = serviceFactory.getServiceForConsumer( handler );
 
-      return new MonitorRequest<>(this, transport, typeSupport, mask, notifier, handler );
+      return new MonitorRequest<>(this, tcpTransport, typeSupport, mask, notifier, handler );
    }
 
    @SuppressWarnings( "rawtypes" )
@@ -356,14 +356,14 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    {
       Validate.isTrue( mask != 0, "The mask cannot be zero." );
 
-      final TCPTransport transport = getTransportIfConnected();
+      final TcpTransport tcpTransport = getTcpTransportIfConnected();
 
       @SuppressWarnings( "unchecked" )
       final TypeSupport<MT> metaTypeSupport = (TypeSupport<MT>) getTypeSupport(clazz, channelType );
       final MonitorNotificationServiceFactory serviceFactory = context.getMonitorNotificationServiceFactory();
       final MonitorNotificationService<MT> notifier  = serviceFactory.getServiceForConsumer(handler );
 
-      return new MonitorRequest<>(this, transport, metaTypeSupport, mask, notifier, handler );
+      return new MonitorRequest<>(this, tcpTransport, metaTypeSupport, mask, notifier, handler );
    }
 
    @Override
@@ -390,9 +390,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       return Messages.generateSearchRequestMessage( transport, buffer, name, cid );
    }
 
-   public synchronized TCPTransport getTransport()
+   public synchronized TcpTransport getTcpTransport()
    {
-      return transport;
+      return tcpTransport;
    }
 
    public int getNativeElementCount()
@@ -466,7 +466,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
     * @param typeCode the CA DBR typecode.
     * @param elementCount the number of elements to be associated  with each CA get/put/monitor operation.
     */
-   public void createChannel( TCPTransport transport, int sid, short typeCode, int elementCount )
+   public void createChannel( TcpTransport transport, int sid, short typeCode, int elementCount )
    {
       synchronized ( this )
       {
@@ -478,19 +478,19 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
          allowCreation = false;
 
          // check existing transport
-         if ( this.transport != null && this.transport != transport )
+         if ( this.tcpTransport != null && this.tcpTransport != transport )
          {
             disconnectPendingIO(false );
-            this.transport.release(this );
+            this.tcpTransport.release(this );
          }
-         else if ( this.transport == transport )
+         else if ( this.tcpTransport == transport )
          {
             // request to sent create request to same transport, ignore
             // this happens when server is slower (processing search requests) than client generating it
             return;
          }
 
-         this.transport = transport;
+         this.tcpTransport = transport;
 
          // revision < v4.4 supply this info already now
          if ( transport.getMinorRevision () < 4 )
@@ -521,7 +521,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
 
    public synchronized void disconnect( boolean reconnect )
    {
-      if ( connectionState.get () != ConnectionState.CONNECTED && transport == null )
+      if ( connectionState.get () != ConnectionState.CONNECTED && tcpTransport == null )
       {
          return;
       }
@@ -533,10 +533,10 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       disconnectPendingIO (false);
 
       // release transport
-      if ( transport != null )
+      if ( tcpTransport != null )
       {
-         transport.release (this );
-         transport = null;
+         tcpTransport.release( this );
+         tcpTransport = null;
       }
 
       if ( reconnect )
@@ -582,13 +582,13 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       }
 
       // revision < v4.1 do not have access rights, grant all
-      if ( transport.getMinorRevision () < 1 )
+      if ( tcpTransport.getMinorRevision () < 1 )
       {
          setAccessRights( AccessRights.READ_WRITE );
       }
 
       // revision > v4.4 supply this info
-      if ( transport.getMinorRevision () >= 4 )
+      if ( tcpTransport.getMinorRevision () >= 4 )
       {
          this.sid = sid;
          this.nativeElementCount = elementCount;
@@ -621,7 +621,7 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       // user might create monitors in listeners, so this has to be done before this can happen
       // however, it would not be nice if events would come before connection event is fired
       // but this cannot happen since transport (TCP) is serving in this thread
-      resubscribeSubscriptions( transport );
+      resubscribeSubscriptions( tcpTransport);
       setConnectionState( ConnectionState.CONNECTED );
    }
 
@@ -699,9 +699,9 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
     * @return the transport object.
     * @throws IllegalStateException if the TCP transport object is not connected.
     */
-   private TCPTransport getTransportIfConnected()
+   private TcpTransport getTcpTransportIfConnected()
    {
-      final TCPTransport transport = getTransport();
+      final TcpTransport transport = getTcpTransport();
 
       final boolean isConnected = ( connectionState.get() == ConnectionState.CONNECTED ) && ( transport != null );
       Validate.validState( isConnected, "Channel not connected" );
