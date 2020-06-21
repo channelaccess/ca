@@ -218,7 +218,6 @@ public class BeaconHandler
       return networkChange;
    }
 
-
 /*- Nested classes -----------------------------------------------------------*/
 
 }
