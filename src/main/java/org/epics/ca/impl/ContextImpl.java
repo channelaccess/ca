@@ -644,9 +644,9 @@ public class ContextImpl implements AutoCloseable
          // set SO_BROADCAST
          channel.socket ().setBroadcast (true);
 
-         // explicitly bind first
-         channel.socket ().setReuseAddress (true);
-         channel.socket ().bind (new InetSocketAddress (0));
+         // clear SO_REUSEADDR then bind
+         channel.socket().setReuseAddress( false );
+         channel.socket().bind( new InetSocketAddress( 0 ) );
 
          // create transport
          BroadcastTransport transport = new BroadcastTransport (this, ResponseHandlers::handleResponse, channel,
