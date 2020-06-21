@@ -60,7 +60,7 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
       this.sid = sid;
       this.typeSupport = typeSupport;
 
-      final int minorRevision = channel.getTransport().getMinorRevision();
+      final int minorRevision = channel.getTcpTransport().getMinorRevision();
       final int forcedElementCount = typeSupport.getForcedElementCount();
       final int nativeElementCount = channel.getNativeElementCount();
 

@@ -144,7 +144,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
    {
       int dataCount = typeSupport.getForcedElementCount ();
 
-      if ( dataCount == 0 && channel.getTransport ().getMinorRevision () < 13 )
+      if ( dataCount == 0 && channel.getTcpTransport().getMinorRevision () < 13 )
       {
          dataCount = channel.getNativeElementCount();
       }
@@ -192,7 +192,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
 
       cancel ();
 
-      Transport transport = channel.getTransport ();
+      Transport transport = channel.getTcpTransport();
       if ( transport == null )
       {
          return;
@@ -200,7 +200,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
 
       int dataCount = typeSupport.getForcedElementCount();
 
-      if ( dataCount == 0 && channel.getTransport ().getMinorRevision () < 13 )
+      if ( dataCount == 0 && channel.getTcpTransport().getMinorRevision () < 13 )
       {
          dataCount = channel.getNativeElementCount();
       }
