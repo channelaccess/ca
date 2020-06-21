@@ -9,6 +9,7 @@ import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -341,25 +342,25 @@ class UdpSocketUtilitiesTest
       executorService.shutdown();
    }
 
-   @Test
-   void testIsSocketAvailable_fromSubProcess1() throws IOException, InterruptedException
+   @CsvSource( { "0.0.0.0,false", "0.0.0.0,true", "127.0.0.1,false", "127.0.0.1,true"  })
+   @ParameterizedTest
+   void testIsSocketAvailableReturnsFalse_whenSubProcessReservesSocket( String address, boolean socketIsShareable ) throws IOException, InterruptedException
    {
       final int testPort = 2222;
 
       // Create a broadcast-aware socket in the current JVM and check that it is correctly detected as unavailable.
       final InetSocketAddress wildcardSocketAddress = new InetSocketAddress( testPort );
-      try( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
+      try( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, socketIsShareable ) )
       {
-         assertThat( UdpSocketUtilities.isSocketAvailable(wildcardSocketAddress ), is(false ) );
+         assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is( false ) );
       }
 
       // Check that after the socket has autoclosed the socket is once again available
-      assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(true ) );
+      assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is( true ) );
 
       // Spawn a process that will occupy the test socket for 3 seconds.
-      final String wildcardAddress ="0.0.0.0";
       final int socketReserveTimeInMilliseconds = 3000;
-      final JavaProcessManager processManager = UdpSocketReserver.start( wildcardAddress, testPort, socketReserveTimeInMilliseconds );
+      final JavaProcessManager processManager = UdpSocketReserver.start( address, testPort, socketReserveTimeInMilliseconds );
 
        // Allow time for the process to reserve the socket and check that it is no longer available.
       Thread.sleep( 1500 );
@@ -372,21 +373,21 @@ class UdpSocketUtilitiesTest
       assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress ), is(true ) );
    }
 
-   @Test
-   void testIsSocketAvailable_fromSubProcess2() throws IOException, InterruptedException
+   @CsvSource( { "0.0.0.0,false", "0.0.0.0,true", "127.0.0.1,false", "127.0.0.1,true"  })
+   @ParameterizedTest
+   void testSubProcessFailsToReserveSocket_whenReservedByParentProcess( String address, boolean socketIsShareable ) throws IOException, InterruptedException
    {
       final int testPort = 9999;
 
       // Create a broadcast-aware socket in the current JVM and check that it is correctly detected as unavailable.
       final InetSocketAddress wildcardSocketAddress = new InetSocketAddress( testPort );
-      try( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
+      try( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, socketIsShareable ) )
       {
-         assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress), is(false ) );
+         assertThat( UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress), is( false ) );
 
          // Spawn a process that will occupy the test socket for 3 seconds.
-         final String wildcardAddress = "0.0.0.0";
          final int socketReserveTimeInMilliseconds = 10_000;
-         final JavaProcessManager processManager = UdpSocketReserver.start( wildcardAddress, testPort, socketReserveTimeInMilliseconds);
+         final JavaProcessManager processManager = UdpSocketReserver.start( address, testPort, socketReserveTimeInMilliseconds);
 
          // Wait for the process to finish and check that the socket has become available again.
          processManager.waitFor(5000, TimeUnit.MILLISECONDS);
