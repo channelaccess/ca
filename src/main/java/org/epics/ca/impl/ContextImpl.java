@@ -77,9 +77,10 @@ public class ContextImpl implements AutoCloseable
    private final TransportRegistry transportRegistry = new TransportRegistry();
 
    /**
-    * UDP broadcast transport - used for channel search requests.
+    * UDP broadcast transport - used for channel search requests and registration
+    * with the CA Repeater.
     */
-   private final AtomicReference<BroadcastTransport> broadcastTransport = new AtomicReference<>();
+   private final AtomicReference<UdpBroadcastTransport> udpBroadcastTransportRef = new AtomicReference<>();
 
    /**
     * Beacon handler map.
@@ -211,7 +212,7 @@ public class ContextImpl implements AutoCloseable
       leaderFollowersThreadPool.promoteLeader( reactor::process );
 
       // Initialise the UDP transport.
-      broadcastTransport.set( initializeUDPTransport() );
+      udpBroadcastTransportRef.set( getUdpBroadcastTransport() );
 
       // Start the CA Repeater for this context (when enabled and when not already running).
       try
@@ -234,7 +235,7 @@ public class ContextImpl implements AutoCloseable
                                                                  TimeUnit.MILLISECONDS );
 
       // Create the channel search manager.
-      channelSearchManager = new ChannelSearchManager( broadcastTransport.get() );
+      channelSearchManager = new ChannelSearchManager( udpBroadcastTransportRef.get() );
 
       // Create the monitor notification engine.
       final String monitorNotifierImpl = LibraryConfiguration.getInstance().getMonitorNotifierImplementation();
@@ -294,7 +295,7 @@ public class ContextImpl implements AutoCloseable
       CARepeaterStarter.stopRepeaterOnPort( getRepeaterPort() );
 
       channelSearchManager.cancel();
-      broadcastTransport.get().close();
+      udpBroadcastTransportRef.get().close();
 
       // this will also close all CA transports
       destroyAllChannels();
@@ -402,7 +403,7 @@ public class ContextImpl implements AutoCloseable
       //noinspection SynchronizationOnLocalVariableOrMethodParameter
       synchronized( channel )
       {
-         TCPTransport transport = channel.getTransport ();
+         TcpTransport transport = channel.getTcpTransport();
          if ( transport != null )
          {
             // multiple defined PV or reconnect request (same server address)
@@ -417,7 +418,7 @@ public class ContextImpl implements AutoCloseable
          // do not search anymore (also unregisters)
          channelSearchManager.searchResponse (channel);
 
-         transport = getTransport (channel, serverAddress, minorRevision, channel.getPriority ());
+         transport = getTcpTransport(channel, serverAddress, minorRevision, channel.getPriority ());
          if ( transport == null )
          {
             channel.createChannelFailed ();
@@ -537,9 +538,9 @@ public class ContextImpl implements AutoCloseable
       return channelSearchManager;
    }
 
-   BroadcastTransport getBroadcastTransport()
+   UdpBroadcastTransport getUdpBroadcastTransportHolder()
    {
-      return broadcastTransport.get ();
+      return udpBroadcastTransportRef.get ();
    }
 
    TransportRegistry getTransportRegistry()
@@ -589,7 +590,7 @@ public class ContextImpl implements AutoCloseable
 
 /*- Private methods ----------------------------------------------------------*/
 
-   private BroadcastTransport initializeUDPTransport()
+   private UdpBroadcastTransport getUdpBroadcastTransport()
    {
       final String addressList = this.protocolConfiguration.getAddressList();
       final boolean autoAddressList = this.protocolConfiguration.getAutoAddressList();
@@ -603,10 +604,10 @@ public class ContextImpl implements AutoCloseable
          InetSocketAddress[] appendList = null;
          if ( autoAddressList )
          {
-            appendList = InetAddressUtil.getBroadcastAddresses(serverPort);
+            appendList = InetAddressUtil.getBroadcastAddresses( serverPort );
          }
 
-         final InetSocketAddress[] list = InetAddressUtil.getSocketAddressList(addressList, serverPort, appendList);
+         final InetSocketAddress[] list = InetAddressUtil.getSocketAddressList( addressList, serverPort, appendList );
          if ( list.length > 0 )
          {
             broadcastAddressList = list;
@@ -614,64 +615,53 @@ public class ContextImpl implements AutoCloseable
       }
       else if ( !autoAddressList )
       {
-         logger.log(Level.WARNING, "Empty broadcast search address list, all connects will fail.");
+         logger.warning( "Empty broadcast search address list, all connects will fail.") ;
       }
       else
       {
          broadcastAddressList = InetAddressUtil.getBroadcastAddresses( serverPort );
       }
 
-      if ( logger.isLoggable(Level.CONFIG) && broadcastAddressList != null )
+      if ( logger.isLoggable( Level.CONFIG ) && broadcastAddressList != null )
       {
          for ( int i = 0; i < broadcastAddressList.length; i++ )
          {
-            logger.log(Level.CONFIG, "Broadcast address #" + i + ": " + broadcastAddressList[ i ] + '.');
+            logger.config( "Broadcast address #" + i + ": " + broadcastAddressList[ i ] + '.' );
          }
       }
 
       // any address
-      InetSocketAddress connectAddress = new InetSocketAddress (0);
-      logger.finer( "Creating datagram socket to: " + connectAddress);
+      final InetSocketAddress connectAddress = new InetSocketAddress( 0 );
+      logger.finer( "Creating datagram socket to: " + connectAddress );
 
-      DatagramChannel channel = null;
-      try
+      try( final DatagramChannel channel = DatagramChannel.open() )
       {
-         channel = DatagramChannel.open ();
-
          // use non-blocking channel (no need for soTimeout)
-         channel.configureBlocking (false);
+         channel.configureBlocking( false );
 
          // set SO_BROADCAST
-         channel.socket ().setBroadcast (true);
+         channel.socket().setBroadcast( true );
 
          // clear SO_REUSEADDR then bind
          channel.socket().setReuseAddress( false );
          channel.socket().bind( new InetSocketAddress( 0 ) );
 
          // create transport
-         BroadcastTransport transport = new BroadcastTransport (this, ResponseHandlers::handleResponse, channel,
-                                                                connectAddress, broadcastAddressList);
+         final UdpBroadcastTransport transport = new UdpBroadcastTransport(this,
+                                                                            ResponseHandlers::handleResponse,
+                                                                            channel,
+                                                                            connectAddress,
+                                                                            broadcastAddressList );
 
          // and register to the selector
-         ReactorHandler handler = new LeaderFollowersHandler (reactor, transport, leaderFollowersThreadPool);
-         reactor.register (channel, SelectionKey.OP_READ, handler);
+         final ReactorHandler handler = new LeaderFollowersHandler( reactor, transport, leaderFollowersThreadPool );
+         reactor.register( channel, SelectionKey.OP_READ, handler );
 
          return transport;
       }
       catch ( Throwable th )
       {
-         // close socket, if open
-         try
-         {
-            if ( channel != null )
-            {
-               channel.close();
-            }
-         }
-         catch ( Throwable t )
-         { /* noop */ }
-
-         throw new RuntimeException ("Failed to connect to '" + connectAddress + "'.", th);
+         throw new RuntimeException( "Failed to connect to '" + connectAddress + "'.", th );
       }
    }
 
@@ -731,12 +721,12 @@ public class ContextImpl implements AutoCloseable
     * @param priority process priority.
     * @return transport for given address
     */
-   private TCPTransport getTransport( TransportClient client, InetSocketAddress address, short minorRevision, int priority )
+   private TcpTransport getTcpTransport( TransportClient client, InetSocketAddress address, short minorRevision, int priority )
    {
       SocketChannel socket = null;
 
       // first try to check cache w/o named lock...
-      TCPTransport transport = (TCPTransport) transportRegistry.get( address, priority );
+      TcpTransport transport = (TcpTransport) transportRegistry.get(address, priority );
       if ( transport != null )
       {
          logger.log ( Level.FINER,"Reusing existing connection to CA server: " + address);
@@ -752,7 +742,7 @@ public class ContextImpl implements AutoCloseable
          try
          {
             // ... transport created during waiting in lock
-            transport = (TCPTransport) transportRegistry.get (address, priority);
+            transport = (TcpTransport) transportRegistry.get (address, priority);
             if ( transport != null )
             {
                logger.log ( Level.FINER,"Reusing existing connection to CA server: " + address);
@@ -776,7 +766,7 @@ public class ContextImpl implements AutoCloseable
             socket.socket().setKeepAlive( true );
 
             // create transport
-            transport = new TCPTransport( this, client, ResponseHandlers::handleResponse, socket, minorRevision, priority );
+            transport = new TcpTransport(this, client, ResponseHandlers::handleResponse, socket, minorRevision, priority );
 
             ReactorHandler handler = transport;
             if ( leaderFollowersThreadPool != null )
@@ -877,12 +867,11 @@ public class ContextImpl implements AutoCloseable
    private class RepeaterRegistrationTask implements Runnable
    {
       private final InetSocketAddress repeaterLocalAddress;
-      private final ByteBuffer buffer = ByteBuffer.allocate (Constants.CA_MESSAGE_HEADER_SIZE);
+      private final ByteBuffer buffer = ByteBuffer.allocate( Constants.CA_MESSAGE_HEADER_SIZE );
 
       RepeaterRegistrationTask( InetSocketAddress repeaterLocalAddress )
       {
          this.repeaterLocalAddress = repeaterLocalAddress;
-
          Messages.generateRepeaterRegistration( buffer );
       }
 
@@ -891,7 +880,7 @@ public class ContextImpl implements AutoCloseable
          try
          {
             logger.fine( "Attempting to register with repeater at address: '" + repeaterLocalAddress + "'." );
-            getBroadcastTransport ().send( buffer, repeaterLocalAddress );
+            getUdpBroadcastTransportHolder().send( buffer, repeaterLocalAddress );
             logger.fine( "Repeater registration message sent ok." );
          }
          catch ( Throwable th )
