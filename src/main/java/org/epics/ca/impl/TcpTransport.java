@@ -25,10 +25,10 @@ import org.epics.ca.util.logging.LibraryLogManager;
 /**
  * CA transport implementation.
  */
-public class TCPTransport implements Transport, ReactorHandler, Runnable
+public class TcpTransport implements Transport, ReactorHandler, Runnable
 {
 
-   private static final Logger logger = LibraryLogManager.getLogger( TCPTransport.class );
+   private static final Logger logger = LibraryLogManager.getLogger( TcpTransport.class );
 
    /**
     * Connection status.
@@ -122,7 +122,7 @@ public class TCPTransport implements Transport, ReactorHandler, Runnable
     * @param remoteTransportRevision the CA transport revision (a constant) to be used in communication.
     * @param priority the CA message priority.
     */
-   public TCPTransport( ContextImpl context, TransportClient client, ResponseHandler responseHandler,
+   public TcpTransport( ContextImpl context, TransportClient client, ResponseHandler responseHandler,
                         SocketChannel channel, short remoteTransportRevision, int priority )
    {
       this.context = context;
