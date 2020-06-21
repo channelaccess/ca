@@ -41,17 +41,17 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 /*- Class Declaration --------------------------------------------------------*/
 
 @SuppressWarnings( "SpellCheckingInspection" )
-class TCPTransportTest
+class TcpTransportTest
 {
 
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LibraryLogManager.getLogger( TCPTransportTest.class );
+   private static final Logger logger = LibraryLogManager.getLogger( TcpTransportTest.class );
 
    private ContextImpl context;
    private SocketChannel channel;
-   private TCPTransport transport;
+   private TcpTransport transport;
    private ResponseHandlers.ResponseHandler handler;
 
 
@@ -104,7 +104,7 @@ class TCPTransportTest
 
       // Ok, we now have everything in place to construct our TCPTransport that we will test/
       // Go and build the test object.
-      transport = new TCPTransport( context, client, handler, channel, minorRevision, priority );
+      transport = new TcpTransport(context, client, handler, channel, minorRevision, priority );
    }
 
    @AfterEach
