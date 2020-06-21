@@ -59,14 +59,14 @@ public class LeaderFollowersHandler implements ReactorHandler, Runnable
       {
          // promote a follower thread to become a leader
          threadPool.promoteLeader (this);
-//System.err.println("[processing] " + Thread.currentThread().getName());
+         //System.err.println("[processing] " + Thread.currentThread().getName());
          // dispatch application-specific event processing code
-         handler.handleEvent (key);
+         handler.handleEvent( key );
       }
       finally
       {
          // enable the handle in the reactor
-         reactor.enableSelectionKey (key);
+         reactor.enableSelectionKey(key);
       }
    }
 

@@ -32,7 +32,7 @@ public class InetAddressUtil
       Enumeration<NetworkInterface> nets;
       try
       {
-         nets = NetworkInterface.getNetworkInterfaces ();
+         nets = NetworkInterface.getNetworkInterfaces();
       }
       catch ( SocketException se )
       {
@@ -57,7 +57,7 @@ public class InetAddressUtil
                      if ( addr.getBroadcast() != null )
                      {
                         InetSocketAddress isa = new InetSocketAddress(addr.getBroadcast(), port);
-                        if ( !list.contains(isa) )
+                        if ( !list.contains( isa ) )
                         {
                            list.add(isa);
                         }
