@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import org.epics.ca.Constants;
-import org.epics.ca.impl.BroadcastTransport;
+import org.epics.ca.impl.UdpBroadcastTransport;
 import org.epics.ca.impl.ChannelImpl;
 import org.epics.ca.impl.Messages;
 import org.epics.ca.util.logging.LibraryLogManager;
@@ -64,7 +64,7 @@ public class ChannelSearchManager
    /**
     * Broadcast transport.
     */
-   private final BroadcastTransport broadcastTransport;
+   private final UdpBroadcastTransport udpBroadcastTransport;
 
    /**
     * Search (datagram) sequence number.
@@ -83,11 +83,11 @@ public class ChannelSearchManager
    /**
     * Constructor.
     *
-    * @param broadcastTransport transport
+    * @param udpBroadcastTransport transport
     */
-   public ChannelSearchManager( BroadcastTransport broadcastTransport )
+   public ChannelSearchManager( UdpBroadcastTransport udpBroadcastTransport )
    {
-      this.broadcastTransport = broadcastTransport;
+      this.udpBroadcastTransport = udpBroadcastTransport;
 
       minSendInterval = MIN_SEND_INTERVAL_MS_DEFAULT;
       maxSendInterval = MAX_SEND_INTERVAL_MS_DEFAULT;
@@ -192,7 +192,7 @@ public class ChannelSearchManager
 
       // put version message
       sequenceNumber.incrementAndGet();
-      Messages.generateVersionRequestMessage( broadcastTransport, sendBuffer, (short) 0, sequenceNumber.get(), true );
+      Messages.generateVersionRequestMessage( udpBroadcastTransport, sendBuffer, (short) 0, sequenceNumber.get(), true );
    }
 
    /**
@@ -213,7 +213,7 @@ public class ChannelSearchManager
          immediatePacketCount.set( 0 );
       }
 
-      broadcastTransport.send( sendBuffer );
+      udpBroadcastTransport.send( sendBuffer );
       initializeSendBuffer();
    }
 
@@ -226,14 +226,14 @@ public class ChannelSearchManager
     */
    private synchronized boolean generateSearchRequestMessage( ChannelImpl<?> channel, @SuppressWarnings( "SameParameterValue" ) boolean allowNewFrame )
    {
-      boolean success = channel.generateSearchRequestMessage (broadcastTransport, sendBuffer);
+      boolean success = channel.generateSearchRequestMessage (udpBroadcastTransport, sendBuffer);
       // buffer full, flush
       if ( !success )
       {
          flushSendBuffer();
          if ( allowNewFrame )
          {
-            channel.generateSearchRequestMessage( broadcastTransport, sendBuffer );
+            channel.generateSearchRequestMessage( udpBroadcastTransport, sendBuffer );
          }
          return true;
       }
