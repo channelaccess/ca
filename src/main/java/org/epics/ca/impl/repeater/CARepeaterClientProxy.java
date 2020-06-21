@@ -67,7 +67,7 @@ class CARepeaterClientProxy implements AutoCloseable
    {
       Validate.notNull( clientListeningSocketAddress, "The 'clientListeningSocketAddress' argument was null." );
       final InetAddress inetAddress = clientListeningSocketAddress.getAddress();
-      Validate.isTrue( NetworkUtilities.isThisMyIpAddress(inetAddress ), "The 'clientListeningSocketAddress' specified a socket which was not local ('" + inetAddress + "')."  );
+      Validate.isTrue( NetworkUtilities.isThisMyIpAddress( inetAddress ), "The 'clientListeningSocketAddress' specified a socket which was not local ('" + inetAddress + "')."  );
 
       logger.finest( "Creating new CA Repeater Client Proxy for client socket with listening address: '" + clientListeningSocketAddress + "'..." );
       this.clientListeningSocketAddress = clientListeningSocketAddress;
