@@ -174,6 +174,8 @@ This log describes the functionality of tagged versions within the repository.
   This release fixes a regression bug in the previous 1.3.0 release which forced users of the library to explicitly 
   define System properties "java.net.preferIPv4Stack" and "java.net.preferIPv6Stack".
   Improved library configuration options and documented them better.
+  Fixed broken CA Repeater registration on Windows.
+  Now validates Example program by testing.
   Other minor changes.
   
   ###### Change List: 
@@ -181,12 +183,17 @@ This log describes the functionality of tagged versions within the repository.
   * [Issue #95](https://github.com/channelaccess/ca/issues/95) Cleanup implementation of the user-configurable parameters.
   * [Issue #96](https://github.com/channelaccess/ca/issues/96) Extract Protocol Configuration and Library Configuration constants from Constants class.
   * [Issue #97](https://github.com/channelaccess/ca/issues/97) Update CHANGELIST with details of release 1.3.1
+  * [Issue #98](https://github.com/channelaccess/ca/issues/98) Add test to check that the Example program runs to successful completion. 
+  * [Issue #100](https://github.com/channelaccess/ca/issues/100) Set UdpBroadcastTransport to non-shareable mode bug. 
+  * [Issue #101](https://github.com/channelaccess/ca/issues/101) Rename BroadcastTransport to UdpBroadcastTransport.
+  * [Issue #102](https://github.com/channelaccess/ca/issues/102) Rename TCPTransport to TcpTransport.
+
     
   ###### Java Release Compatibility
   
   See previous release.
   
   ###### Test Results: 
-  * Mac OSX: 519 tests successful / 0 tests failed / 0 tests skipped.
-  * Linux RHEL7: 519 tests successful / 0 tests failed / 0 tests skipped.
-  * Windows 10: 518 tests successful / 0 tests failed / 1 tests skipped.
+  * Mac OSX: 526 tests successful / 0 tests failed / 0 tests skipped.
+  * Linux RHEL7: 526 tests successful / 0 tests failed / 0 tests skipped.
+  * Windows 10: 525 tests successful / 0 tests failed / 1 tests skipped.
