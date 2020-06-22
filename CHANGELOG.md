@@ -194,6 +194,6 @@ This log describes the functionality of tagged versions within the repository.
   See previous release.
   
   ###### Test Results: 
-  * Mac OSX: 526 tests successful / 0 tests failed / 0 tests skipped.
-  * Linux RHEL7: 526 tests successful / 0 tests failed / 0 tests skipped.
-  * Windows 10: 525 tests successful / 0 tests failed / 1 tests skipped.
+  * Mac OSX: 525 tests successful / 0 tests failed / 0 tests skipped.
+  * Linux RHEL7: 525 tests successful / 0 tests failed / 0 tests skipped.
+  * Windows 10: 525 tests successful / 0 tests failed / 2 tests skipped.
