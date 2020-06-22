@@ -334,7 +334,7 @@ class ContextTest
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_OUTPUT_CAPTURE.toString(), "true");
       try ( Context ignored = new Context() )
       {
-         // This needs to be longer than the CA_REPEATER_INITIAL_DELAY value of currently 500ms.
+         // This needs to be longer than the CA_REPEATER_INITIAL_REGISTRATION_DELAY value of currently 500ms.
          Thread.sleep( 600 );
       }
 
