@@ -168,7 +168,7 @@ This log describes the functionality of tagged versions within the repository.
   * Linux RHEL7: 505 tests successful / 0 tests failed / 0 tests skipped.
   * Windows 10: 505 tests successful / 0 tests failed / 0 tests skipped.
 
-* [1.3.1](https://github.com/channelaccess/ca/releases/tag/1.3.1) Released 2020-06-16.
+* [1.3.1](https://github.com/channelaccess/ca/releases/tag/1.3.1) Released 2020-06-22.
 
   ###### Overview:
   This release fixes a regression bug in the previous 1.3.0 release which forced users of the library to explicitly 
