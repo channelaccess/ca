@@ -634,34 +634,48 @@ public class ContextImpl implements AutoCloseable
       final InetSocketAddress connectAddress = new InetSocketAddress( 0 );
       logger.finer( "Creating datagram socket to: " + connectAddress );
 
-      try( final DatagramChannel channel = DatagramChannel.open() )
+      DatagramChannel channel = null;
+      try
       {
+         channel = DatagramChannel.open();
+
          // use non-blocking channel (no need for soTimeout)
-         channel.configureBlocking( false );
+         channel.configureBlocking (false);
 
          // set SO_BROADCAST
-         channel.socket().setBroadcast( true );
+         channel.socket ().setBroadcast (true);
 
          // clear SO_REUSEADDR then bind
          channel.socket().setReuseAddress( false );
-         channel.socket().bind( new InetSocketAddress( 0 ) );
+         channel.socket().bind( new InetSocketAddress( 0 ));
 
          // create transport
-         final UdpBroadcastTransport transport = new UdpBroadcastTransport(this,
-                                                                            ResponseHandlers::handleResponse,
-                                                                            channel,
-                                                                            connectAddress,
-                                                                            broadcastAddressList );
+         UdpBroadcastTransport transport = new UdpBroadcastTransport( this,
+                                                                      ResponseHandlers::handleResponse,
+                                                                      channel,
+                                                                      connectAddress,
+                                                                      broadcastAddressList);
 
          // and register to the selector
          final ReactorHandler handler = new LeaderFollowersHandler( reactor, transport, leaderFollowersThreadPool );
-         reactor.register( channel, SelectionKey.OP_READ, handler );
+         reactor.register (channel, SelectionKey.OP_READ, handler);
 
          return transport;
       }
       catch ( Throwable th )
       {
-         throw new RuntimeException( "Failed to connect to '" + connectAddress + "'.", th );
+         // close socket, if open
+         try
+         {
+            if ( channel != null )
+            {
+               channel.close();
+            }
+         }
+         catch ( Throwable t )
+         { /* noop */ }
+
+         throw new RuntimeException ("Failed to connect to '" + connectAddress + "'.", th);
       }
    }
 
