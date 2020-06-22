@@ -2,6 +2,7 @@ eu.javaspecialists.tjsn.concurrency.stripedexecutor
 org.epics.ca
 org.epics.ca.annotation
 org.epics.ca.data
+org.epics.ca.examples
 org.epics.ca.impl
 org.epics.ca.impl.monitor
 org.epics.ca.impl.monitor.blockingqueue
