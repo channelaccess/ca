@@ -52,16 +52,24 @@ class ChannelTest
 /*- Public methods -----------------------------------------------------------*/
 /*- Package-level methods ----------------------------------------------------*/
 
-   @BeforeEach
-   void beforeEach()
+   @BeforeAll
+   static void beforeAll()
    {
-      threadWatcher = ThreadWatcher.start();
+      // This is a guard condition. There is no point in running the tests
+      // if the network stack is not appropriately configured for channel access.
+      assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
 
       // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
       if ( NetworkUtilities.isVpnActive() )
       {
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
+   }
+
+   @BeforeEach
+   void beforeEach()
+   {
+      threadWatcher = ThreadWatcher.start();
 
       // One could consider tieing down more precisely the address to which the EPICS Test
       // Server will get bound. Currently (2020-06-01) this is not necessary.
