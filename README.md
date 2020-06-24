@@ -3,10 +3,15 @@
 The __ca__  library is a pure Java Channel Access client implementation. __ca__ strives to provide the _easiest_ 
 way of accessing EPICS Channel Access channels from Java.
 
-These notes are aimed to assist the __users__ of the library. Developers and __maintainers__ of the library are 
+The notes in theis README file are aimed to assist the __users__ of the library. Developers and __maintainers__ of the library are 
 invited to consult the [Developer](DEVELOPER.md) notes.
 
 The version history and latest changes to the library are described in the [CHANGELOG](CHANGELOG.md). 
+
+The results of the functional tests that have been performed on the latest release are available in the 
+[INTEGRATION_TESTS](INTEGRATION_TESTS.md) document.
+
+An extended usage [Example](src/main/java/org/epics/ca/examples/Example.java) is available.
 
 ## Features
 * Simplicity.
