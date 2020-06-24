@@ -46,6 +46,14 @@ public class ContextImpl implements AutoCloseable
 /*- Public attributes --------------------------------------------------------*/
 /*- Private static attributes ------------------------------------------------*/
 
+   // The CA protocol only works on IPV4 enabled network stacks.
+   // The definition below ensures that the external users of the library do not
+   // have to explicitly set these definitions when using the library.
+   static {
+      System.setProperty( "java.net.preferIPv4Stack", "true" );
+      System.setProperty( "java.net.preferIPv6Stack", "false" );
+   }
+
    private static final Logger logger = LibraryLogManager.getLogger( ContextImpl.class );
 
    /**
