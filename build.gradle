@@ -136,9 +136,12 @@ test {
     // Note: this configuration is automatically used for all gradle-triggered tests.
     useJUnitPlatform()
 
-    // Both these properties MUST be asserted when running the tests.
+    // -- START: Java Network Stack Configuration --
+    // Both these properties MUST be asserted unless the task is using the CA Library
+    // Context which initalises the network stack through a static definition.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
+    // -- END: Java Network Stack Configuration --
 
     systemProperty 'CA_LIBRARY_LOG_LEVEL', 'INFO'
     systemProperty 'CA_REPEATER_DISABLE', 'false'
@@ -165,9 +168,13 @@ task integrationTest(type: Test) {
 
     useJUnitPlatform()
 
-    // Both these properties MUST be asserted when running the tests.
+    // -- START: Java Network Stack Configuration --
+    // Both these properties MUST be asserted unless the task is using the CA Library
+    // Context which initalises the network stack through a static definition.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
+    // -- END: Java Network Stack Configuration --
+
     systemProperty 'CA_LIBRARY_LOG_LEVEL', 'FINE'
     systemProperty 'CA_REPEATER_DISABLE', 'false'
 
@@ -251,18 +258,26 @@ task epicsChannelAccessTestServer( type:JavaExec ) {
 
 task udpSocketTester( type:JavaExec ) {
     main = 'org.epics.ca.impl.repeater.UdpSocketTester'
-    // Both these properties MUST be asserted when running any of the programs or tests in this project
+    // -- START: Java Network Stack Configuration --
+    // Both these properties MUST be asserted unless the task is using the CA Library
+    // Context which initalises the network stack through a static definition.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
+    // -- END: Java Network Stack Configuration --
+
     classpath fatJarWithTests
     args '4444', '5'
 }
 
 task udpSocketReserver( type:JavaExec ) {
     main = 'org.epics.ca.impl.repeater.UdpSocketReserver'
-    // Both these properties MUST be asserted when running any of the programs or tests in this project
+    // -- START: Java Network Stack Configuration --
+    // Both these properties MUST be asserted unless the task is using the CA Library
+    // Context which initalises the network stack through a static definition.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
+    // -- END: Java Network Stack Configuration --
+
     classpath fatJarWithTests
     args '0.0.0.0', '9162', '500'
 }
@@ -278,9 +293,13 @@ task udpMessageSniffer( type:JavaExec ) {
 
 // Run the TargetPlatformTestRunner Program directly from Gradle.
 task targetPlatformTestRunner( type: JavaExec ) {
-    // Both these properties MUST be asserted when running the tests.
+    // -- START: Java Network Stack Configuration --
+    // Both these properties MUST be asserted unless the task is using the CA Library
+    // Context which initalises the network stack through a static definition.
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
+    // -- END: Java Network Stack Configuration --
+
     systemProperty 'CA_LIBRARY_LOG_LEVEL', 'INFO'
     systemProperty 'CA_REPEATER_DISABLE', 'false'
     systemProperty 'CA_REPEATER_LOG_LEVEL', 'INFO'
