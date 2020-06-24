@@ -163,33 +163,19 @@ public class ContextImpl implements AutoCloseable
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 
-   /**
-    * Create an instance whose channel-access protocol configuration is based on
-    * the values of operating system environmental variables, the values of the
-    * the Java system properties, or twhen not otherwise specified, the library
-    * defaults.
-    */
-   public ContextImpl()
-   {
-      this ( System.getProperties() );
-   }
-
-   /**
-    * Create an instance whose channel-access protocol configuration is based on
-    * the values of operating system environmental variables, the values of
-    * the supplied properties object, or when not otherwise specified, the
-    * library defaults.
+    /**
+    * Creates an instance based on the supplied EPICS channel-access protocol
+    * configuration.
     *
-    * @param properties an object whose definitions may override the
-    *   values set in the operating system environment.
+    * @param protocolConfiguration the configuration.
     * @throws NullPointerException if the properties argument was null.
     */
-   public ContextImpl( Properties properties )
+   public ContextImpl( ProtocolConfiguration protocolConfiguration )
    {
-      Validate.notNull( properties, "null properties" );
+      Validate.notNull( protocolConfiguration, "null properties" );
 
       // Instantiate the protocol configuration object.
-      this.protocolConfiguration = new ProtocolConfiguration( properties );
+      this.protocolConfiguration = protocolConfiguration;
 
       // Capture the hostname and username.
       hostName = InetAddressUtil.getHostName();
