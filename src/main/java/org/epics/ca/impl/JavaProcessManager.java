@@ -84,7 +84,7 @@ public class JavaProcessManager
     */
    public boolean start( boolean outputCaptureEnable )
    {
-      logger.info( "Starting a new JVM to run Java class: '" + classWithMainMethod.getSimpleName() + "' [output capture = '" + outputCaptureEnable + "']..." );
+      logger.fine( "Starting a new JVM to run Java class: '" + classWithMainMethod.getSimpleName() + "' [output capture = '" + outputCaptureEnable + "']..." );
       
       // Create initial command line.
       final List<String> commandLine = new ArrayList<>( Arrays.asList( "java", "-cp", classPath ) );
@@ -194,7 +194,7 @@ public class JavaProcessManager
          return false;
       }
 
-      logger.info( "The process shutdown sequence finished. Result " + (terminatedOk ? "OK." : "FAIL." ) );
+      logger.fine( "The process shutdown sequence finished. Result " + (terminatedOk ? "OK." : "FAIL." ) );
       return terminatedOk;
    }
 
