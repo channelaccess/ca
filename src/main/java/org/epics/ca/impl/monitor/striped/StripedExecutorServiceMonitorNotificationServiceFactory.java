@@ -50,7 +50,7 @@ public class StripedExecutorServiceMonitorNotificationServiceFactory implements 
 
       final int numberOfThreadsBaseline = Thread.getAllStackTraces().keySet().size();
       logger.finest( String.format( "The number of baseline threads in the system is: %d", numberOfThreadsBaseline ) );
-      logger.info( String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory is being created with %d threads and an unlimited notification entry buffer size...", numberOfThreads ) );
+      logger.fine( String.format( "A StripedExecutorServiceMonitorNotificationServiceFactory is being created with %d threads and an unlimited notification entry buffer size...", numberOfThreads ) );
       stripedExecutorService = new StripedExecutorService( numberOfThreads );
    }
 
