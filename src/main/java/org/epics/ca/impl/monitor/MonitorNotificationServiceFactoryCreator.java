@@ -213,7 +213,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
     */
    public static void shutdownExecutor( ExecutorService executorService )
    {
-      logger.info( "Starting executor shutdown sequence for executor " + executorService );
+      logger.fine( "Starting executor shutdown sequence for executor " + executorService );
 
       executorService.shutdown();
       try
@@ -237,7 +237,7 @@ public class MonitorNotificationServiceFactoryCreator implements AutoCloseable
          logger.warning( "Interrupted whilst waiting for tasks to finish. Propagating interrupt." );
          Thread.currentThread().interrupt();
       }
-      logger.info( "Executor shutdown sequence completed." );
+      logger.fine( "Executor shutdown sequence completed." );
    }
 
 /*- Private methods ----------------------------------------------------------*/
