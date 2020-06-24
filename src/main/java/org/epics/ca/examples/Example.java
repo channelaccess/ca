@@ -18,8 +18,7 @@ public class Example
 
       // Configure the CA library context and start it.
       final Properties properties = new Properties();
-      properties.setProperty( "EPICS_CA_ADDR_LIST", "127.0.0.1" );
-      properties.setProperty( "EPICS_CA_AUTO_ADDR_LIST", "NO" );
+      // Note: no properties need to be set if the SoftIOC and the library are running on the same network.
       try ( Context context = new Context( properties ) )
       {
          // 1.0 Create a Channel
