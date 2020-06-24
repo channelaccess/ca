@@ -105,19 +105,13 @@ public class CARepeaterStarter
    {
       synchronized( CARepeaterStarter.class )
       {
-         logger.info( "Processing request to start CA Repeater on port: '" + repeaterPort + "'." );
+         logger.fine( "Processing request to start CA Repeater on port: '" + repeaterPort + "'." );
 
          if ( ! LibraryConfiguration.getInstance().isRepeaterEnabled() )
          {
-            logger.info( "The CA Repeater lifecycle management is disabled => nothing to do." );
+            logger.fine( "The CA Repeater lifecycle management is disabled => nothing to do." );
             return;
          }
-
-//         if ( isRepeaterRunning( repeaterPort ) )
-//         {
-//            logger.warning( "The CA Repeater is already running on port: '" + repeaterPort + "' => nothing to do." );
-//            return;
-//         }
 
          if ( ! repeaterInterestMap.containsKey( repeaterPort ) )
          {
@@ -130,7 +124,7 @@ public class CARepeaterStarter
          }
 
          final int currentInterestLevel = repeaterInterestMap.get( repeaterPort );
-         logger.info( "Increasing interest level in the repeater running on port: '" + repeaterPort + "'." );
+         logger.finer( "Increasing interest level in the repeater running on port: '" + repeaterPort + "'." );
          repeaterInterestMap.put( repeaterPort, currentInterestLevel + 1 );
       }
    }
@@ -139,27 +133,15 @@ public class CARepeaterStarter
    {
       synchronized( CARepeaterStarter.class )
       {
-         logger.info("Processing request to stop CA Repeater on port: '" + repeaterPort + "'.");
+         logger.fine("Processing request to stop CA Repeater on port: '" + repeaterPort + "'.");
 
          if ( ! LibraryConfiguration.getInstance().isRepeaterEnabled() )
          {
-            logger.info("The CA Repeater lifecycle management is disabled => nothing to do.");
+            logger.fine( "The CA Repeater lifecycle management is disabled => nothing to do.");
             return;
          }
 
-//         if ( ! isRepeaterRunning( repeaterPort ) )
-//         {
-//            logger.info("The local repeater is NOT running on port: '" + repeaterPort + "' => nothing to do.");
-//            return;
-//         }
-
-//         if ( ! repeaterProcessMap.containsKey( repeaterPort ) )
-//         {
-//            logger.warning("There was no CA Repeater instance running on port: '" + repeaterPort + "' that was started by the current JVM instance => nothing to do.");
-//            return;
-//         }
-
-         if ( repeaterInterestMap.get( repeaterPort) == 0 )
+         if ( repeaterInterestMap.get( repeaterPort ) == 0 )
          {
             logger.warning("Attempt to shutdown a repeater on port '" + repeaterPort + " for which there was already no expressed interest => nothing to do.");
             return;
@@ -168,14 +150,14 @@ public class CARepeaterStarter
          final int currentInterestLevel = repeaterInterestMap.get( repeaterPort );
          if ( currentInterestLevel == 1 )
          {
-            logger.info("Shutting down the repeater running on port: '" + repeaterPort + "'.");
+            logger.fine("Shutting down the repeater running on port: '" + repeaterPort + "'.");
             final JavaProcessManager repeaterProcessManager = repeaterProcessMap.get( repeaterPort );
             stopRepeater( repeaterProcessManager );
             repeaterInterestMap.remove( repeaterPort );
             return;
          }
 
-         logger.info("Reducing interest level in the repeater running on port: '" + repeaterPort + "'.");
+         logger.finer("Reducing interest level in the repeater running on port: '" + repeaterPort + "'.");
          repeaterInterestMap.put( repeaterPort, currentInterestLevel - 1);
       }
    }
@@ -231,9 +213,9 @@ public class CARepeaterStarter
       logger.fine( "Starting the repeater in a separate process..." );
 
       // Make an entry in the log of all local IPV4 network addresses.
-      logger.info( "The following local interfaces have been discovered..." ) ;
+      logger.fine( "The following local interfaces have been discovered..." ) ;
       final List<Inet4Address> addrList = NetworkUtilities.getLocalNetworkInterfaceAddresses();
-      addrList.forEach( (ip) -> logger.info( ip.toString() ) );
+      addrList.forEach( (ip) -> logger.fine( ip.toString() ) );
       
       final Properties properties = new Properties();
       properties.put( "java.net.preferIPv4Stack", "true" );
