@@ -69,6 +69,14 @@ sourceSets {
             srcDirs 'src/test/java'
         }
     }
+
+    integrationTest {
+        java {
+            srcDirs 'src/integrationTest/java'
+        }
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
 }
 
 repositories {
@@ -113,6 +121,13 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0:javadoc'
     testImplementation 'org.mockito:mockito-core:3.3.3:javadoc'
     testImplementation 'org.hamcrest:hamcrest:2.2:javadoc'
+
+    integrationTestImplementation 'org.apache.commons:commons-lang3:3.9'
+    integrationTestImplementation 'org.hamcrest:hamcrest:2.2'
+    integrationTestImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+    integrationTestImplementation 'org.junit.platform:junit-platform-launcher:1.6.2'
+    integrationTestImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.0'
+    integrationTestImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
 }
 
 test {
@@ -142,6 +157,26 @@ test {
     }
 
     finalizedBy jacocoTestReport // report is always generated after tests run
+}
+
+task integrationTest(type: Test) {
+
+    description = 'Runs integration tests.'
+
+    useJUnitPlatform()
+
+    // Both these properties MUST be asserted when running the tests.
+    systemProperty 'java.net.preferIPv4Stack', 'true'
+    systemProperty 'java.net.preferIPv6Stack', 'false'
+    systemProperty 'CA_LIBRARY_LOG_LEVEL', 'FINE'
+    systemProperty 'CA_REPEATER_DISABLE', 'true'
+
+    group = 'verification'
+    include(['**/*.class'])
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    outputs.upToDateWhen { false }
+    shouldRunAfter test
 }
 
 javadoc {
