@@ -53,7 +53,7 @@ public class BlockingQueueMonitorNotificationServiceFactory implements MonitorNo
 
       final int numberOfThreadsBaseline = Thread.getAllStackTraces().keySet().size();
       logger.finest( String.format( "The number of baseline threads in the system was: %d", numberOfThreadsBaseline ) );
-      logger.info( String.format( "A BlockingQueueMonitorNotificationServiceFactory is being created with %d threads and a buffer size with %d notification entries...", numberOfThreads, bufferSize ) );
+      logger.fine( String.format( "A BlockingQueueMonitorNotificationServiceFactory is being created with %d threads and a buffer size with %d notification entries...", numberOfThreads, bufferSize ) );
 
       final BlockingQueue<Runnable> notificationTaskQueue = new LinkedBlockingQueue<>();
       threadPoolExecutor = new ThreadPoolExecutor( numberOfThreads, numberOfThreads, Long.MAX_VALUE, TimeUnit.DAYS, notificationTaskQueue, new MyThreadFactory("BlockingQueueMonitorNotificationServiceThread-" ) );
