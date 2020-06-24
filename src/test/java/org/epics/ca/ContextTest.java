@@ -25,6 +25,7 @@ import org.epics.ca.impl.ProtocolConfiguration;
 import org.epics.ca.impl.repeater.CARepeaterStarter;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -50,16 +51,24 @@ class ContextTest
 /*- Public methods -----------------------------------------------------------*/
 /*- Package-level access methods ---------------------------------------------*/
 
-   @BeforeEach()
-   void beforeEach()
+   @BeforeAll
+   static void beforeAll()
    {
-      threadWatcher = ThreadWatcher.start();
-      
+      // This is a guard condition. There is no point in running the tests
+      // if the network stack is not appropriately configured for channel access.
+      assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
+
       // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
       if ( NetworkUtilities.isVpnActive() )
       {
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
+   }
+
+   @BeforeEach()
+   void beforeEach()
+   {
+      threadWatcher = ThreadWatcher.start();
    }
    
    @AfterEach()
