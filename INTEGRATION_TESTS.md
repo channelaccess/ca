@@ -1,9 +1,9 @@
 # Performance Testing
 
-This document presents the results of integeration testing on the current and previous release. By comparing the 
+This document presents the results of integration testing on the current and previous release. By comparing the 
 results it is hoped we may spot perfromance regressions that might otherwise go unnoticed.
 
-Before running the tests an EPICS SoftIOC should be started based on the [epics_tests.db](src/it/resources/epics_tests.db).
+Before running the tests an EPICS SoftIOC should be started based on the [epics_tests.db](src/integrationTest/resources/epics_tests.db).
 
 ```
 softIoc -d epics_tests.db 
