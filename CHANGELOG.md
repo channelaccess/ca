@@ -176,6 +176,9 @@ This log describes the functionality of tagged versions within the repository.
   Improved library configuration options and documented them better.
   Fixed broken CA Repeater registration on Windows.
   Now validates Example program by testing.
+  Now includes integration tests that were run previously in external project.
+  Library log messages are now less verbose. The old chattier behaviour can be restored by setting the
+  system property "CA_LIUBRARY_LOG_LEVEL".
   Other minor changes.
   
   ###### Change List: 
@@ -187,6 +190,9 @@ This log describes the functionality of tagged versions within the repository.
   * [Issue #100](https://github.com/channelaccess/ca/issues/100) Set UdpBroadcastTransport to non-shareable mode bug. 
   * [Issue #101](https://github.com/channelaccess/ca/issues/101) Rename BroadcastTransport to UdpBroadcastTransport.
   * [Issue #102](https://github.com/channelaccess/ca/issues/102) Rename TCPTransport to TcpTransport.
+  * [Issue #103](https://github.com/channelaccess/ca/issues/103) Add integration tests.
+  * [Issue #104](https://github.com/channelaccess/ca/issues/104) Reduce log messages from INFO to FINE to make library less noisy at runtime.
+  * [Issue #105](https://github.com/channelaccess/ca/issues/105) Improve library configuration
 
     
   ###### Java Release Compatibility
