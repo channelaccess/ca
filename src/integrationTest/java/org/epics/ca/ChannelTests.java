@@ -64,9 +64,9 @@ class ChannelTests
       // Every test involves the use of at least one context so it is better to
       // set them up and close them down outside the test.
 
-      logger.fine("Creating CA context...");
+      logger.fine( "Creating CA context..." );
       context = new Context();
-      logger.fine("Done.");
+      logger.fine( "Done." );
 
       // Check the database is online
       try
@@ -75,18 +75,18 @@ class ChannelTests
       }
       catch ( TimeoutException ex )
       {
-         logger.warning("The EPICS test database 'epics_tests.db' was not discoverable on the local network.");
-         logger.warning("Please ensure that it is running and available on the network before restarting these tests. ");
-         throw new RuntimeException("EPICS Test Database Not Available - can't run tests !");
+         logger.warning( "The EPICS test database 'epics_tests.db' was not discoverable on the local network." );
+         logger.warning( "Please ensure that it is running and available on the network before restarting these tests. " );
+         throw new RuntimeException( "EPICS Test Database Not Available - can't run tests !" );
       }
    }
 
    @AfterEach
    void afterEach()
    {
-      logger.fine("Cleaning up context...");
+      logger.fine( "Cleaning up context..." );
       context.close();
-      logger.fine("Done.");
+      logger.fine( "Done." );
    }
 
    /**
@@ -97,9 +97,9 @@ class ChannelTests
    @Test
    void q10q11q12()
    {
-      logger.fine("Performing Q10/Q11/Q12 Tests: please wait...");
+      logger.fine( "Performing Q10/Q11/Q12 Tests: please wait...");
 
-      final List<Integer> samplePoint = Arrays.asList( 1, 10, 100, 1_000, 10_000, 50_000, 100_000, 200_000, 400_000 ); //, 1_000_000 );
+      final List<Integer> samplePoint = Arrays.asList( 1, 10, 100, 1_000, 10_000, 50_000, 100_000, 200_000, 400_000 );
       final Map<Integer, Long> resultMap = new LinkedHashMap<>();
       final LinkedHashMap<Integer, Channel<String>> channelObjectMap = new LinkedHashMap<>();
 
@@ -134,16 +134,16 @@ class ChannelTests
          }
       }
 
-      logger.fine("RESULTS:");
-      logger.info( String.format( "Q10: How many channels can be created ? Answer: **at least %d**", loopCounter) );
-      logger.info("Q11: What is the channel creation cost ? Answer: **See below.**");
+      logger.info( "RESULTS:" );
+      logger.info( String.format( "Q10: How many channels can be created ? Answer: **at least %d**.", loopCounter ) );
+      logger.info( "Q11: What is the channel creation cost ? Answer: **See below.**" );
       for ( int result : resultMap.keySet() )
       {
          logger.info( String.format( "- Creating %d channels took %d ms. Average: %.3f ms", result, resultMap.get(result), (float) resultMap.get(result) / result ) );
       }
 
-      logger.info( String.format("Q12: Do all channels connected to the same PV share the same returned object ? Answer: %s.", resultMap.size() == channelObjectMap.size() ? "**NO**" : "**YES**" ) );
-      logger.info("Channel object names were as follows:");
+      logger.info( String.format( "Q12: Do all channels connected to the same PV share the same returned object ? Answer: %s", resultMap.size() == channelObjectMap.size() ? "**NO**." : "**YES**." ) );
+      logger.info( "Channel object names were as follows:");
       logger.info("```");
       for ( int sampleNumber : channelObjectMap.keySet() )
       {
@@ -159,7 +159,7 @@ class ChannelTests
    @Test
    void q13q14()
    {
-      logger.fine("Performing Q13/Q14 Tests: please wait...");
+      logger.fine( "Performing Q13/Q14 Tests: please wait...");
 
       final List<Integer> samplePoints = Arrays.asList(1, 10, 100, 500, 1_000, 2_000 );
       final int maxChannels = samplePoints.get(samplePoints.size() - 1);
@@ -186,9 +186,9 @@ class ChannelTests
          }
       }
 
-      logger.info("RESULTS:");
-      logger.info("Q13: How many connected channels can the library simultaneously support ? Answer: **at least %d**" + loopCounter);
-      logger.info("Q14: What is the cost of synchronously connecting channels (using Channel class) ? Answer: **See below.**");
+      logger.info( "RESULTS:" );
+      logger.info( "Q13: How many connected channels can the library simultaneously support ? Answer: **at least %d**." + loopCounter);
+      logger.info( "Q14: What is the cost of synchronously connecting channels (using Channel class) ? Answer: **See below.**");
       logger.info("```");
       for ( int result : resultMap.keySet() )
       {
@@ -204,7 +204,7 @@ class ChannelTests
    @Test
    void q15q16() throws InterruptedException
    {
-      logger.fine("Performing Q15/Q16 Tests: please wait...");
+      logger.fine( "Performing Q15/Q16 Tests: please wait..." );
 
       final List<Integer> samplePoints = Arrays.asList(1, 10, 100, 1_000, 10_000, 50_000, 100_000, 150_000, 200_000);
       int maxChannels = samplePoints.get(samplePoints.size() - 1);
@@ -249,17 +249,17 @@ class ChannelTests
          Thread.sleep(100);
       }
 
-      logger.info("RESULTS:");
-      logger.info("Q15: What is the cost of creating channels which will asynchronously connect ? Answer: **See below.**");
-      logger.info("```");
+      logger.info( "RESULTS:" );
+      logger.info( "Q15: What is the cost of creating channels which will asynchronously connect ? Answer: **See below.**" );
+      logger.info( "```" );
       for ( int result : creationTimeResultMap.keySet() )
       {
          logger.info( String.format( "- Creating %d channels with asynchronous connect policy took %d ms. Average: %.3f ms", result, creationTimeResultMap.get(result), (float) creationTimeResultMap.get(result) / result ) );
       }
       logger.info("```");
 
-      logger.info("Q16: How long does it take for channels to connect asynchronously ? Answer: **See below.**");
-      logger.info("```");
+      logger.info( "Q16: How long does it take for channels to connect asynchronously ? Answer: **See below.**" );
+      logger.info( "```" );
       for ( int result : connectionTimeResultMap.keySet() )
       {
          logger.info( String.format( "- Connecting %d channels asynchronously took %d ms. Average: %.3f ms.", result, connectionTimeResultMap.get(result), (float) connectionTimeResultMap.get(result) / result ) );
@@ -273,7 +273,7 @@ class ChannelTests
    @Test
    void q17() throws InterruptedException
    {
-      logger.fine("Performing Q17 Test: please wait...");
+      logger.fine( "Performing Q17 Test: please wait..." );
       final List<Integer> samplePoints = Arrays.asList(1, 10, 100, 1_000, 10_000, 20_000, 40_000, 60_000, 80_000, 100_000);
       final int maxChannels = samplePoints.get(samplePoints.size() - 1);
 
@@ -298,14 +298,14 @@ class ChannelTests
             return;
          }
       }
-      logger.fine(  String.format( "%d channels created.", maxChannels ));
+      logger.fine( String.format( "%d channels created.", maxChannels ));
 
       while ( connectionCount.get() < maxChannels )
       {
          Thread.sleep(100);
       }
       logger.fine( String.format( "%d channels connected.",  maxChannels ) );
-      logger.fine("Performing synchronous get on all channels...");
+      logger.fine( "Performing synchronous get on all channels..." );
       final StopWatch stopWatch = StopWatch.createStarted();
       for ( int i = 0; i < maxChannels; i++ )
       {
@@ -325,9 +325,9 @@ class ChannelTests
          }
       }
 
-      logger.info("RESULTS:");
-      logger.info("Q17: What is the cost of performing a synchronous get on multiple channels (same PV) ? Answer: **See below.**");
-      logger.info("```");
+      logger.info( "RESULTS:" );
+      logger.info( "Q17: What is the cost of performing a synchronous get on multiple channels (same PV) ? Answer: **See below.**" );
+      logger.info( "```" );
       for ( int result : resultMap.keySet() )
       {
          logger.info( String.format( "- Synchronous Get from %d channels took %d ms. Average: %.3f ms", result, resultMap.get(result), (float) resultMap.get(result) / result ) );
@@ -341,7 +341,7 @@ class ChannelTests
    @Test
    void q18() throws InterruptedException
    {
-      logger.fine("Performing Q18 Test: please wait..." );
+      logger.fine( "Performing Q18 Test: please wait..." );
 
       final List<Integer> samplePoints = Arrays.asList(1, 10, 100, 1_000, 10_000, 20_000, 40_000, 60_000, 80_000, 100_000);
       final int maxChannels = samplePoints.get(samplePoints.size() - 1);
@@ -363,7 +363,7 @@ class ChannelTests
                }
                else
                {
-                  logger.warning("ConnectionListener indicated unexpected disconnect." );
+                  logger.warning( "ConnectionListener indicated unexpected disconnect." );
                }
             });
             caChannel.connectAsync();
@@ -382,7 +382,7 @@ class ChannelTests
          Thread.sleep(1000);
       }
       logger.fine( String.format( "%d channels connected.", maxChannels ) );
-      logger.fine("Performing asynchronous Get on all channels...");
+      logger.fine( "Performing asynchronous Get on all channels..." );
 
       final AtomicInteger getCompletionCount = new AtomicInteger(0);
       final StopWatch stopWatch = StopWatch.createStarted();
@@ -414,7 +414,7 @@ class ChannelTests
             break;
          }
       }
-      logger.fine("Asynchronous Get was requested on all channels.");
+      logger.fine( "Asynchronous Get was requested on all channels." );
 
       while ( getCompletionCount.get() < maxChannels )
       {
@@ -423,12 +423,12 @@ class ChannelTests
       }
       logger.fine( String.format( "%d channels delivered their get results.", maxChannels ) );
 
-      logger.info("RESULTS:");
-      logger.info("Q18: What is the cost of performing an asynchronous get on multiple channels (same PV) ? Answer: **See below.**");
+      logger.info( "RESULTS:" );
+      logger.info( "Q18: What is the cost of performing an asynchronous get on multiple channels (same PV) ? Answer: **See below.**" );
       logger.info("```");
       for ( int result : resultMap.keySet() )
       {
-         logger.info( String.format("- Asynchronous Get from %d channels took %d ms. Average: %.3f ms", result, resultMap.get(result), (float) resultMap.get(result) / result ) );
+         logger.info( String.format( "- Asynchronous Get from %d channels took %d ms. Average: %.3f ms", result, resultMap.get( result ), (float) resultMap.get( result ) / result ) );
       }
       logger.info("```");
    }
@@ -439,14 +439,14 @@ class ChannelTests
    @Test
    void q19() throws InterruptedException
    {
-      logger.fine("Performing Q19 Test: please wait...");
+      logger.fine( "Performing Q19 Test: please wait..." );
       final List<Integer> samplePoints = Arrays.asList( 1, 10, 100, 1_000, 10_000, 20_000, 40_000, 60_000, 80_000, 100_000 );
       final int maxChannels = samplePoints.get(samplePoints.size() - 1);
       final List<Channel<String>> channelList = new ArrayList<>();
 
       final AtomicInteger connectionCount = new AtomicInteger(0);
 
-      logger.fine( String.format("Creating and asynchronously connecting %d channels...", maxChannels ) );
+      logger.fine( String.format( "Creating and asynchronously connecting %d channels...", maxChannels ) );
       for ( int i = 0; i < maxChannels; i++ )
       {
          try
@@ -458,7 +458,7 @@ class ChannelTests
          }
          catch ( Throwable ex )
          {
-            logger.fine("Test terminated due to exception after creating and asynchronously connecting %d channels" + i);
+            logger.fine( "Test terminated due to exception after creating and asynchronously connecting %d channels" + i );
             return;
          }
       }
@@ -468,8 +468,8 @@ class ChannelTests
       {
          Thread.sleep(100 );
       }
-      logger.fine( String.format("%d channels connected.", maxChannels ) );
-      logger.fine("Performing asynchronous get on all channels...");
+      logger.fine( String.format( "%d channels connected.", maxChannels ) );
+      logger.fine( "Performing asynchronous get on all channels..." );
 
       Thread.sleep(1000 );
       final AtomicInteger getCompletionCount = new AtomicInteger(0);
@@ -482,7 +482,7 @@ class ChannelTests
             final Channel<String> channel = channelList.get( i );
             if ( channel.getConnectionState() != ConnectionState.CONNECTED )
             {
-               logger.warning("OOOOOOPPPS!!!!");
+               logger.warning( "OOOOOOPPPS!!!!" );
             }
             channel.getAsync()
                   .thenAccept(( v ) -> {
@@ -505,7 +505,7 @@ class ChannelTests
             break;
          }
       }
-      logger.fine("Asynchronous get was requested on all channels." );
+      logger.fine( "Asynchronous get was requested on all channels." );
 
       while ( getCompletionCount.get() < maxChannels )
       {
@@ -513,12 +513,12 @@ class ChannelTests
       }
       logger.fine( String.format( "%d channels delivered their get results.", maxChannels ) );
 
-      logger.info("RESULTS:");
-      logger.info("Q19: What is the cost of performing an asynchronous get on multiple channels (different PVs) ? Answer: **See below.**");
-      logger.info("```");
+      logger.info( "RESULTS:" );
+      logger.info( "Q19: What is the cost of performing an asynchronous get on multiple channels (different PVs) ? Answer: **See below.**" );
+      logger.info( "```" );
       for ( int result : resultMap.keySet() )
       {
-         logger.info( String.format("- Asynchronous Get from %d channels took %d ms. Average: %.3f ms", result, resultMap.get(result), (float) resultMap.get(result) / result ) );
+         logger.info( String.format( "- Asynchronous Get from %d channels took %d ms. Average: %.3f ms", result, resultMap.get( result ), (float) resultMap.get( result ) / result ) );
       }
       logger.info("```");
    }
@@ -533,7 +533,7 @@ class ChannelTests
 
    void q20( String serviceImpl ) throws InterruptedException
    {
-      logger.fine("Performing Q20 Test using Monitor Notification Service Impl {}: please wait..."  + serviceImpl );
+      logger.fine( "Performing Q20 Test using Monitor Notification Service Impl {}: please wait..." + serviceImpl );
 
       System.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
       final Context mySpecialContext = new Context();
@@ -571,8 +571,7 @@ class ChannelTests
       }
       logger.fine( String.format( "%d channels connected.", maxChannels ) );
 
-      logger.fine("Performing addValueMonitor on all channels...");
-
+      logger.fine( "Performing addValueMonitor on all channels..." );
       final AtomicInteger monitorUpdateCounter = new AtomicInteger(0);
       final StopWatch stopWatch = StopWatch.createStarted();
       final Map<Integer, Long> resultMap = new LinkedHashMap<>();
@@ -613,14 +612,15 @@ class ChannelTests
       }
       logger.fine( String.format( "%d channels delivered their addValueMonitor results.", maxChannels ) );
 
-      logger.info("RESULTS:");
-      logger.info("Q20: What is the cost of performing a monitor on multiple channels ? Answer: **See below.**");
-      logger.info("```");
+      logger.info( "RESULTS:" );
+      logger.info( "Implementation: " + serviceImpl );
+      logger.info( "Q20: What is the cost of performing a monitor on multiple channels ? Answer: **See below.**" );
+      logger.info( "```" );
       for ( int result : resultMap.keySet() )
       {
-         logger.info( String.format("- Asynchronous Monitor from %d channels took %d ms. Average: %.3f ms", result, resultMap.get(result), (float) resultMap.get(result) / result ) );
+         logger.info( String.format( "- Asynchronous Monitor from %d channels took %d ms. Average: %.3f ms", result, resultMap.get( result ), (float) resultMap.get( result ) / result ) );
       }
-      logger.info("```");
+      logger.info( "```" );
    }
 
    /**
@@ -643,16 +643,12 @@ class ChannelTests
                                                                             100_000, 200_000, 500_000,
                                                                             1_000_000, 2_000_000, 5_000_000, 10_000_000);
 
-      // Set up a context which allocates enough room for the data to be transferred
-      // Alternatively CA claims that it is ok to leave the value undefined
-      final Properties properties = new Properties();
-      //properties.setProperty( "CA_DEBUG", "1" );
-      properties.setProperty( "EPICS_CA_MAX_ARRAY_BYTES", "0" );
-      //final Context ctx = new Context( properties );
-
+      // One could consider setting up a context here which allocates enough room for the data to be transferred.
+      // But the CA library claims that it is ok to leave the value undefined so we don't do this. It IS important
+      // to enable large data transfer on the test SoftIOC though. Before running the IOC the following definition
+      // should be specified: export EPICS_CA_MAX_ARRAY_BYTES=1000000000
       final Map<Integer, Long> resultMap = new LinkedHashMap<>();
-
-      try ( final Context ctx = new Context( properties ) )
+      try ( final Context ctx = new Context() )
       {
          logger.fine("Creating channel...");
          final Channel<int[]> caChannel = ctx.createChannel("ca:test:rawdata", int[].class);
@@ -689,15 +685,16 @@ class ChannelTests
          return;
       }
 
-      logger.info("RESULTS:");
-      logger.info("Q21: What is the cost/performance when using CA to transfer large arrays ? Answer: **See below.**");
-      logger.info("```");
+      logger.info( "RESULTS:" );
+      logger.info( "Implementation: " + serviceImpl );
+      logger.info( "Q21: What is the cost/performance when using CA to transfer large arrays ? Answer: **See below.**" );
+      logger.info( "```" );
       for ( int result : resultMap.keySet() )
       {
          final float transferRate = ((float) 1000 * SIZE_OF_ELEMENT_IN_BYTES * result) / (((float) resultMap.get(result)) * 1024 * 1024);
          logger.info( String.format( "- Transfer time for integer array of %d elements took %d ms. Transfer rate: %.3f MB/s", result, resultMap.get(result), transferRate ) ) ;
       }
-      logger.info("```");
+      logger.info( "```" );
    }
 
 /*- Private methods ----------------------------------------------------------*/

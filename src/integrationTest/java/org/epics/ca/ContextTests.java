@@ -69,8 +69,8 @@ public class ContextTests
          caContext.close();
          Assertions.assertEquals(ConnectionState.CLOSED, caChannel.getConnectionState());
 
-         logger.info("RESULTS:");
-         logger.info("Q1: Can the context manual close feature be relied on to cleanup the created channels ? Answer: **YES**" );
+         logger.info( "RESULTS:" );
+         logger.info( "Q1: Can the context manual close feature be relied on to cleanup the created channels ? Answer: **YES**." );
       } );
    }
 
@@ -90,7 +90,7 @@ public class ContextTests
          {
             caContextCopy = caContext;
 
-            caChannel = caContext.createChannel("ca:test:counter01", String.class);
+            caChannel = caContext.createChannel( "ca:test:counter01", String.class );
             caChannel.connect();
             Assertions.assertEquals(ConnectionState.CONNECTED, caChannel.getConnectionState());
          }
@@ -108,8 +108,8 @@ public class ContextTests
          {
             Assertions.assertTrue(t instanceof RuntimeException);
          }
-         logger.info( "RESULTS:");
-         logger.info( "Q2: Can the context autoclose feature be relied on to cleanup the created channels ? Answer: **YES**");
+         logger.info( "RESULTS:" );
+         logger.info( "Q2: Can the context autoclose feature be relied on to cleanup the created channels ? Answer: **YES**." );
       } );
    }
 
@@ -160,7 +160,7 @@ public class ContextTests
       }
 
       logger.info( "RESULTS:" );
-      logger.info( String.format( "Q3: How many contexts can be created ? Answer: **at least %d **", loopCounter ) );
+      logger.info( String.format( "Q3: How many contexts can be created ? Answer: **at least %d**.", loopCounter ) );
       logger.info( "Q4: What is the context creation cost ? Answer: **See below.**" );
       logger.info("```");
       for ( int result : resultMap.keySet() )
@@ -169,10 +169,10 @@ public class ContextTests
       }
       logger.info("```");
 
-      final String result = resultMap.size() == contextObjectMap.size() ? "**NO**" : "**YES**";
-      logger.info( "Q5: Do all contexts share the same returned object ? Answer: {}."  + result );
-      logger.info ("Context object names were as follows:" );
-      logger.info("```");
+      final String result = resultMap.size() == contextObjectMap.size() ? "**NO**" : "**YES**.";
+      logger.info( String.format( "Q5: Do all contexts share the same returned object ? Answer: %s.", result ) );
+      logger.info( "Context object names were as follows:" );
+      logger.info( "```" );
       for ( int sampleNumber : contextObjectMap.keySet() )
       {
          logger.info( String.format( "- Context object %d had name: %s", sampleNumber, contextObjectMap.get( sampleNumber ) ) );
