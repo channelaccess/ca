@@ -66,7 +66,7 @@ public class NetworkUtilities
             // VPN's are typically implemented using Point-to-Point links.
             if ( nif.isUp() && nif.isPointToPoint() )
             {
-               logger.info( "An active VPN has been detected." );
+               logger.warning( "An active VPN has been detected wth name: '"  + nif.getName() + "'." );
                return true;
             }
          }
