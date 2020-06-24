@@ -1,6 +1,7 @@
  # Developer Notes   
     
-This file contains random notes intended to assist software developers.
+This file contains random notes intended to assist software developers. They are currently (2020-06-22) in a very 
+basic state. With future releases we hope to improve them.
 
 ## Java Network Configuration for CA Library
     
@@ -32,9 +33,10 @@ for example: 192.168.1.1. Then, set this property to true to change the preferen
 where possible."
 
 
-#
+# Building the library
 
 The project can be build via *gradle* by executing the provided wrapper scripts as follows:
+ * Mac OSX: `./gradlew build`
  * Linux: `./gradlew build`
  * Windows: `gradlew.bat build`
 
@@ -42,13 +44,9 @@ There is no need to have *gradle* installed on your machine, the only prerequisi
 
 __Note:__ The first time you execute this command the required jars for the build system will be automatically downloaded and the build will start afterwards. The next time you execute the command the build should be faster.
 
-## Maven Central
-To push the latest version to Maven Central (via the OSS Sonatype Nexus Repository) use
+## Distribution
+To push the latest version to JFrog JCenter central repository use
 
 ```bash
-./gradlew uploadArchives
+./gradlew publish
 ```
-
-To be able to do so you need to have your ~/.gradle/gradle.properties file in place with your Sonatype username/password as well you need to be part of the group *org.epics*
-
-For further information on using gradle to upload binary releases to the Sonatype OSS Nexus Repository please see the document [here.](https://central.sonatype.org/pages/gradle.html)
