@@ -297,7 +297,6 @@ task targetPlatformTestRunner( type: JavaExec ) {
     args '-package', 'org.epics.ca'
     // args '-class', 'org.epics.ca.ChannelTest'
     // args '-method', 'org.epics.ca.ChannelTest#testMonitorDisconnectionBehaviour'
-
 }
 
 // Run the Example Program directly from Gradle.
@@ -305,7 +304,7 @@ task example( type: JavaExec ) {
     // systemProperty 'CA_LIBRARY_LOG_LEVEL', 'ALL'
     // systemProperty 'CA_REPEATER_LOG_LEVEL', 'ALL'
     // systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
-    main = 'org.epics.ca.Example'
+    main = 'org.epics.ca.examples.Example'
     classpath fatJarWithTests
     args ''
 }
