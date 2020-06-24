@@ -176,7 +176,7 @@ class ChannelTests
             caChannel.connect();
             if ( samplePoints.contains(loopCounter) )
             {
-               resultMap.put(loopCounter, stopWatch.getTime());
+               resultMap.put( loopCounter, stopWatch.getTime());
                logger.fine( String.format( "Synchronously connected %d channels.", loopCounter ));
             }
          }
