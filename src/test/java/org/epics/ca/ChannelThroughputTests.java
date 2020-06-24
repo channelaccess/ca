@@ -9,6 +9,7 @@ import org.epics.ca.impl.monitor.MonitorNotificationServiceFactoryCreator;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -20,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -40,17 +43,24 @@ class ChannelThroughputTests
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
 
-   @BeforeEach
-   void beforeEach()
+   @BeforeAll
+   static void beforeAll()
    {
-      threadWatcher = ThreadWatcher.start();
-      
+      // This is a guard condition. There is no point in running the tests
+      // if the network stack is not appropriately configured for channel access.
+      assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
+
       // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
       if ( NetworkUtilities.isVpnActive() )
       {
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
+   }
 
+   @BeforeEach
+   void beforeEach()
+   {
+      threadWatcher = ThreadWatcher.start();
       EpicsChannelAccessTestServer.start();
    }
 
