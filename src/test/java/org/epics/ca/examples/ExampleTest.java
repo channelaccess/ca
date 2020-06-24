@@ -37,8 +37,8 @@ public class ExampleTest
    @Test
    void runExample() throws InterruptedException
    {
-      Properties properties = new Properties();
-      JavaProcessManager exampleRunner = new JavaProcessManager( Example.class, properties, new String[] {} );
+      final Properties properties = new Properties();
+      final JavaProcessManager exampleRunner = new JavaProcessManager( Example.class, properties, new String[] {} );
       final boolean startedOk = exampleRunner.start( true );
       assertThat( startedOk, is( true ) );
       final boolean completedOK = exampleRunner.waitFor(10, TimeUnit.SECONDS );
