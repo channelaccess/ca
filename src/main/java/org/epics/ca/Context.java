@@ -8,6 +8,7 @@ import java.util.Properties;
 
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.impl.ContextImpl;
+import org.epics.ca.impl.ProtocolConfiguration;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -47,7 +48,8 @@ public class Context implements AutoCloseable
    public Context( Properties properties )
    {
       Validate.notNull( properties, "null properties" );
-      delegate = new ContextImpl( properties );
+      final ProtocolConfiguration protocolConfiguration = new ProtocolConfiguration( properties );
+      delegate = new ContextImpl( protocolConfiguration );
    }
 
 /*- Public methods -----------------------------------------------------------*/
@@ -117,5 +119,4 @@ public class Context implements AutoCloseable
    {
       delegate.close ();
    }
-
 }
