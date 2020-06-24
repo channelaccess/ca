@@ -89,12 +89,10 @@ public class EpicsChannelAccessTestServerTest
       properties.setProperty( "CA_LIBRARY_LOG_LEVEL", Level.ALL.toString() );
       properties.setProperty( "CA_REPEATER_LOG_LEVEL", Level.ALL.toString() );
       properties.setProperty( "CA_REPEATER_OUTPUT_CAPTURE", "true" );
-      properties.setProperty( "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE", "true");
 
       // Create a new Context. This will cause a CA Repeater instance to be spawned.
-      // If the system property "CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE" is asserted
-      // then the spawned CA Repeater will be automatically killed when the context
-      // goes out of scope.
+      // The CA Repeater will be automatically killed when the context goes out of
+      // scope.
       try ( Context ignored = new Context( properties ) )
       {
          // Allow a couple of seconds for the CA library to start a repeater and
