@@ -116,8 +116,8 @@ public class EpicsChannelAccessTestServer
 
       final Properties properties = new Properties();
       properties.setProperty( "com.cosylab.epics.caj.cas.CAJServerContext.max_array_bytes", String.valueOf( 4 * 1024 * 1024 + 1024 + 32 ) );
-      properties.setProperty( "com.cosylab.epics.caj.cas.CAJServerContext.beacon_addr_list", "127.0.0.1" );
-      properties.setProperty( "com.cosylab.epics.caj.cas.CAJServerContext.auto_beacon_addr_list", "false" );
+      //properties.setProperty( "com.cosylab.epics.caj.cas.CAJServerContext.beacon_addr_list", "127.0.0.1" );
+      //properties.setProperty( "com.cosylab.epics.caj.cas.CAJServerContext.auto_beacon_addr_list", "false" );
       final String[] noProgramArgs = new String[] {};
       final JavaProcessManager processManager = new JavaProcessManager( EpicsChannelAccessTestServer.class, properties, noProgramArgs );
       processManager.start(true );
