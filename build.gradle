@@ -141,13 +141,13 @@ test {
     systemProperty 'java.net.preferIPv6Stack', 'false'
 
     systemProperty 'CA_LIBRARY_LOG_LEVEL', 'INFO'
+    systemProperty 'CA_REPEATER_DISABLE', 'false'
     systemProperty 'CA_REPEATER_LOG_LEVEL', 'INFO'
     systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
-    systemProperty 'CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE', 'true'
 
     // Avoid warning about multiple responses when running on PSI machine gfa-app-09
-    //systemProperty 'EPICS_CA_ADDR_LIST', '127.0.0.1'
-    //systemProperty 'EPICS_CA_AUTO_ADDR_LIST', 'NO'
+    // systemProperty 'EPICS_CA_ADDR_LIST', '127.0.0.1'
+    // systemProperty 'EPICS_CA_AUTO_ADDR_LIST', 'NO'
 
     testLogging {
         events 'passed', 'skipped', 'failed'
@@ -169,7 +169,7 @@ task integrationTest(type: Test) {
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
     systemProperty 'CA_LIBRARY_LOG_LEVEL', 'FINE'
-    systemProperty 'CA_REPEATER_DISABLE', 'true'
+    systemProperty 'CA_REPEATER_DISABLE', 'false'
 
     group = 'verification'
     include(['**/*.class'])
@@ -224,7 +224,7 @@ task fatJar(type: Jar) {
                        'Implementation-Version': getArchiveVersion()
         }
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree( it ) }
     }
     with jar
 }
@@ -282,9 +282,9 @@ task targetPlatformTestRunner( type: JavaExec ) {
     systemProperty 'java.net.preferIPv4Stack', 'true'
     systemProperty 'java.net.preferIPv6Stack', 'false'
     systemProperty 'CA_LIBRARY_LOG_LEVEL', 'INFO'
+    systemProperty 'CA_REPEATER_DISABLE', 'false'
     systemProperty 'CA_REPEATER_LOG_LEVEL', 'INFO'
     systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
-    systemProperty 'CA_REPEATER_SHUTDOWN_ON_CONTEXT_CLOSE', 'true'
 
     main = 'org.epics.ca.TargetPlatformTestRunner'
     classpath fatJarWithTests
