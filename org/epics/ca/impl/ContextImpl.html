@@ -132,19 +132,9 @@ implements java.lang.AutoCloseable</pre>
 <th class="colOne" scope="col">Constructor and Description</th>
 </tr>
 <tr class="altColor">
-<td class="colOne"><code><span class="memberNameLink"><a href="../../../../org/epics/ca/impl/ContextImpl.html#ContextImpl--">ContextImpl</a></span>()</code>
-<div class="block">Create an instance whose channel-access protocol configuration is based on
- the values of operating system environmental variables, the values of the
- the Java system properties, or twhen not otherwise specified, the library
- defaults.</div>
-</td>
-</tr>
-<tr class="rowColor">
-<td class="colOne"><code><span class="memberNameLink"><a href="../../../../org/epics/ca/impl/ContextImpl.html#ContextImpl-java.util.Properties-">ContextImpl</a></span>(java.util.Properties&nbsp;properties)</code>
-<div class="block">Create an instance whose channel-access protocol configuration is based on
- the values of operating system environmental variables, the values of
- the supplied properties object, or when not otherwise specified, the
- library defaults.</div>
+<td class="colOne"><code><span class="memberNameLink"><a href="../../../../org/epics/ca/impl/ContextImpl.html#ContextImpl-org.epics.ca.impl.ProtocolConfiguration-">ContextImpl</a></span>(<a href="../../../../org/epics/ca/impl/ProtocolConfiguration.html" title="class in org.epics.ca.impl">ProtocolConfiguration</a>&nbsp;protocolConfiguration)</code>
+<div class="block">Creates an instance based on the supplied EPICS channel-access protocol
+ configuration.</div>
 </td>
 </tr>
 </table>
@@ -210,34 +200,18 @@ implements java.lang.AutoCloseable</pre>
 <!--   -->
 </a>
 <h3>Constructor Detail</h3>
-<a name="ContextImpl--">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>ContextImpl</h4>
-<pre>public&nbsp;ContextImpl()</pre>
-<div class="block">Create an instance whose channel-access protocol configuration is based on
- the values of operating system environmental variables, the values of the
- the Java system properties, or twhen not otherwise specified, the library
- defaults.</div>
-</li>
-</ul>
-<a name="ContextImpl-java.util.Properties-">
+<a name="ContextImpl-org.epics.ca.impl.ProtocolConfiguration-">
 <!--   -->
 </a>
 <ul class="blockListLast">
 <li class="blockList">
 <h4>ContextImpl</h4>
-<pre>public&nbsp;ContextImpl(java.util.Properties&nbsp;properties)</pre>
-<div class="block">Create an instance whose channel-access protocol configuration is based on
- the values of operating system environmental variables, the values of
- the supplied properties object, or when not otherwise specified, the
- library defaults.</div>
+<pre>public&nbsp;ContextImpl(<a href="../../../../org/epics/ca/impl/ProtocolConfiguration.html" title="class in org.epics.ca.impl">ProtocolConfiguration</a>&nbsp;protocolConfiguration)</pre>
+<div class="block">Creates an instance based on the supplied EPICS channel-access protocol
+ configuration.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>properties</code> - an object whose definitions may override the
-   values set in the operating system environment.</dd>
+<dd><code>protocolConfiguration</code> - the configuration.</dd>
 <dt><span class="throwsLabel">Throws:</span></dt>
 <dd><code>java.lang.NullPointerException</code> - if the properties argument was null.</dd>
 </dl>
