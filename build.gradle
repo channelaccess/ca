@@ -349,7 +349,8 @@ jacocoTestReport {
 // Set up the bintray publishing
 publishing {
     publications {
-        MyPublication( MavenPublication ) {
+        MyPublication(MavenPublication) {
+            from components.java
             artifact sourcesJar
             artifact javadocJar
             artifact testJar
@@ -358,7 +359,28 @@ publishing {
             groupId group
             artifactId project.name
             version project.version
-            from components.java
+            pom {
+                name = "org.epics:ca"
+                description = "EPICS Channel-Access Java Client Library"
+                url = "https://github.com/channelaccess/ca"
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+                developers {
+                    developer {
+                        name = "Simon Rees"
+                        email = "simon.rees@psi.ch"
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/channelaccess/ca/'
+                    developerConnection = 'scm:git:ssh://github.com/channelaccess/ca.git/'
+                    url = 'https://github.com/channelaccess/ca/'
+                }
+            }
         }
     }
 }
@@ -372,10 +394,17 @@ bintray {
         repo = 'hltools'
         name = 'org.epics:ca'
         userOrg = 'paulscherrerinstitute'
-        vcsUrl = 'https://github.com/channelaccess/ca'
-        licenses = ['GPL-3.0']
+        desc = 'EPICS Channel-Access Java Client Library'
+        websiteUrl = 'https://github.com/channelaccess/ca'
+        issueTrackerUrl = 'https://github.com/channelaccess/ca/issues'
+        vcsUrl = 'https://github.com/channelaccess/ca.git'
+        licenses = [ 'GPL-3.0' ]
+        githubReleaseNotesFile = 'README.md'
         version {
             name = project.version
+            released  = new Date()
+            vcsTag = project.version
+            desc = 'EPICS Channel-Access Java Client Library'
         }
     }
 }
