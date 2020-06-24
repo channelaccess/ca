@@ -42,6 +42,12 @@ public class ExampleTest
       final boolean startedOk = exampleRunner.start( true );
       assertThat( startedOk, is( true ) );
       final boolean completedOK = exampleRunner.waitFor(10, TimeUnit.SECONDS );
+
+      // If a timeout occurs ensure that the example runner gets shutdown.
+      if (! completedOK )
+      {
+         exampleRunner.shutdown();
+      }
       assertThat( completedOK, is( true ) );
       assertThat( exampleRunner.getExitValue(), is( 0 ) );
    }
