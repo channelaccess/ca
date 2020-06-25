@@ -49,7 +49,7 @@ public class ThreadWatcher
       final Set<Thread> threadsAtEndTry1 = getStableThreadSnapshot();
       logger.finest( "Threads at end: try 1: '" + threadsAtEndTry1 + "'" );
       
-      if ( userThreadsEqual( threadsAtStart, threadsAtEndTry1, jvmManagedThreads ) )
+      if ( userThreadsEqual( threadsAtStart, threadsAtEndTry1 ) )
       {
          return;
       }
@@ -60,7 +60,7 @@ public class ThreadWatcher
       
       final Set<Thread> threadsAtEndTry2 = getStableThreadSnapshot();
       logger.finest( "Threads at end: try 2: '" + threadsAtEndTry2 + "'" );
-      if ( userThreadsEqual( threadsAtStart, threadsAtEndTry2, jvmManagedThreads ) )
+      if ( userThreadsEqual( threadsAtStart, threadsAtEndTry2 ) )
       {
          return;
       }
@@ -71,27 +71,30 @@ public class ThreadWatcher
 
       final Set<Thread> threadsAtEndTry3 = getStableThreadSnapshot();
       logger.finest( "Threads at end: try 3: '" + threadsAtEndTry2 + "'" );
-      if ( userThreadsEqual( threadsAtStart, threadsAtEndTry3, jvmManagedThreads ) )
+      if ( userThreadsEqual( threadsAtStart, threadsAtEndTry3 ) )
       {
          return;
       }
 
-      logger.warning( "-- THREAD CHANGES ------------------------------" );
+      logger.info( "-- THREAD CHANGE REPORT ---------------------------" );
       logger.info( "-- BEFORE -----------------------------------------" );
       showThreads( threadsAtStart );
       logger.info( "-- NOW --------------------------------------------" );
       showThreads( threadsAtEndTry3 );
-      throw new RuntimeException( "Threads have changed !" );
+      logger.info( "---------------------------------------------------" );
+      final String message = "There have been unexpected thread changes - there is probably a resource leak !";
+      logger.warning( message );
+      throw new RuntimeException( message );
    }
 
    
 /*- Package-level methods ----------------------------------------------------*/
 /*- Private methods ----------------------------------------------------------*/
 
-   private static boolean userThreadsEqual( Set<Thread> before, Set<Thread> after, Set<String> jvmThreadNames )
+   private static boolean userThreadsEqual( Set<Thread> before, Set<Thread> after )
    {
-      final Set<Thread> filteredBefore = before.stream().filter( x -> ! jvmThreadNames.contains( x.getName().trim() ) ).collect(Collectors.toSet() );
-      final Set<Thread> filteredAfter = after.stream().filter( x -> ! jvmThreadNames.contains( x.getName().trim() ) ).collect(Collectors.toSet() );
+      final Set<Thread> filteredBefore = before.stream().filter( x -> ! ThreadWatcher.jvmManagedThreads.contains( x.getName().trim() ) ).collect( Collectors.toSet() );
+      final Set<Thread> filteredAfter = after.stream().filter( x -> ! ThreadWatcher.jvmManagedThreads.contains( x.getName().trim() ) ).collect( Collectors.toSet() );
       return filteredBefore.equals( filteredAfter );
    }
 
