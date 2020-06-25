@@ -27,7 +27,7 @@ import org.epics.ca.impl.reactor.Reactor;
 import org.epics.ca.impl.reactor.ReactorHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersHandler;
 import org.epics.ca.impl.reactor.lf.LeaderFollowersThreadPool;
-import org.epics.ca.impl.repeater.CARepeaterStarter;
+import org.epics.ca.impl.repeater.CARepeaterServiceManager;
 import org.epics.ca.impl.search.ChannelSearchManager;
 import org.epics.ca.util.IntHashMap;
 import org.epics.ca.util.logging.LibraryLogManager;
@@ -208,15 +208,8 @@ public class ContextImpl implements AutoCloseable
       // Initialise the UDP transport.
       udpBroadcastTransportRef.set( getUdpBroadcastTransport() );
 
-      // Start the CA Repeater for this context (when enabled and when not already running).
-      try
-      {
-          CARepeaterStarter.startRepeaterOnPort( getRepeaterPort() );
-      }
-      catch ( RuntimeException ex )
-      {
-         logger.log(Level.WARNING, "Failed to start CA Repeater on port " + protocolConfiguration.getRepeaterPort(), ex);
-      }
+      // Request the CA Repeater Service for the port configured for this context.
+      CARepeaterServiceManager.requestServiceOnPort( getRepeaterPort() );
 
       // Start the task to register with CA Repeater (even if the lifecycle is not managed by this library).
       final InetSocketAddress repeaterLocalAddress = new InetSocketAddress( InetAddress.getLoopbackAddress(),
@@ -285,8 +278,8 @@ public class ContextImpl implements AutoCloseable
          return;
       }
 
-      // Stop the CA Repeater for this context (when enabled and when no other context needs it)
-      CARepeaterStarter.stopRepeaterOnPort( getRepeaterPort() );
+      // Cancel the CA Repeater Service for the port configured for this context.
+      CARepeaterServiceManager.cancelServiceRequestOnPort( getRepeaterPort() );
 
       channelSearchManager.cancel();
       udpBroadcastTransportRef.get().close();
