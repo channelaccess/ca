@@ -12,9 +12,9 @@ public class Example
 {
    public static void main( String[] args )
    {
-      // Start the Channel Access Test Server that is used to demonstrate capabilities
-      // of the EPICS CA client library.
-      EpicsChannelAccessTestServer.start();
+      // Note:
+      // To run these tests the EpicsChannelAccessTestServer should be started and running
+      // in the local network environment.
 
       // Configure the CA library context and start it.
       final Properties properties = new Properties();
@@ -216,11 +216,6 @@ public class Example
       {
          System.out.println ( "\nThe example program FAILED, with the following exception: " + ex );
          System.exit( -1 );
-      }
-      finally
-      {
-         System.out.println();
-         EpicsChannelAccessTestServer.shutdown();
       }
       System.out.println( "\nThe example program SUCCEEDED, and ran to completion." );
    }

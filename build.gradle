@@ -101,10 +101,6 @@ dependencies {
     implementation 'com.github.stephenc.jcip:jcip-annotations:1.0-1'
     implementation 'com.github.stephenc.jcip:jcip-annotations:1.0-1:javadoc'
 
-    // Supports JCA-based test server
-    implementation 'org.epics:jca:2.4.4-j8'
-    implementation 'org.epics:jca:2.4.4-j8:javadoc'
-
     // Supports unit and integration tests.
     // Note the following are compile dependencies because they need to
     // be included in the fatJarWithTests jar file.
@@ -114,12 +110,15 @@ dependencies {
     testImplementation 'org.junit.platform:junit-platform-commons:1.6.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'org.hamcrest:hamcrest:2.2'
+    testImplementation 'org.epics:jca:2.4.4-j8'
+
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0:javadoc'
     testImplementation 'org.junit.platform:junit-platform-launcher:1.6.2:javadoc'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.0:javadoc'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0:javadoc'
     testImplementation 'org.mockito:mockito-core:3.3.3:javadoc'
     testImplementation 'org.hamcrest:hamcrest:2.2:javadoc'
+    testImplementation 'org.epics:jca:2.4.4-j8:javadoc'
 
     integrationTestImplementation 'org.apache.commons:commons-lang3:3.9'
     integrationTestImplementation 'org.hamcrest:hamcrest:2.2'
@@ -127,6 +126,7 @@ dependencies {
     integrationTestImplementation 'org.junit.platform:junit-platform-launcher:1.6.2'
     integrationTestImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.0'
     integrationTestImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testImplementation 'org.epics:jca:2.4.4-j8'
 }
 
 test {
@@ -160,7 +160,6 @@ test {
 task integrationTest(type: Test) {
 
     description = 'Runs integration tests.'
-
     useJUnitPlatform()
 
     // -- START: Java Network Stack Configuration --
@@ -322,16 +321,6 @@ task targetPlatformTestRunner( type: JavaExec ) {
     // args '-method', 'org.epics.ca.ChannelTest#testMonitorDisconnectionBehaviour'
 }
 
-// Run the Example Program directly from Gradle.
-task example( type: JavaExec ) {
-    // systemProperty 'CA_LIBRARY_LOG_LEVEL', 'ALL'
-    // systemProperty 'CA_REPEATER_LOG_LEVEL', 'ALL'
-    // systemProperty 'CA_REPEATER_OUTPUT_CAPTURE', 'false'
-    main = 'org.epics.ca.examples.Example'
-    classpath fatJarWithTests
-    args ''
-}
-
 // Define what will get published
 artifacts {
     archives jar, fatJar, fatJarWithTests, sourcesJar, javadocJar, testJar
@@ -349,8 +338,7 @@ jacocoTestReport {
 // Set up the bintray publishing
 publishing {
     publications {
-        MyPublication(MavenPublication) {
-            from components.java
+        MyPublication( MavenPublication ) {
             artifact sourcesJar
             artifact javadocJar
             artifact testJar
@@ -359,28 +347,7 @@ publishing {
             groupId group
             artifactId project.name
             version project.version
-            pom {
-                name = "org.epics:ca"
-                description = "EPICS Channel-Access Java Client Library"
-                url = "https://github.com/channelaccess/ca"
-                licenses {
-                    license {
-                        name = "The Apache License, Version 2.0"
-                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-                    }
-                }
-                developers {
-                    developer {
-                        name = "Simon Rees"
-                        email = "simon.rees@psi.ch"
-                    }
-                }
-                scm {
-                    connection = 'scm:git:https://github.com/channelaccess/ca/'
-                    developerConnection = 'scm:git:ssh://github.com/channelaccess/ca.git/'
-                    url = 'https://github.com/channelaccess/ca/'
-                }
-            }
+            from components.java
         }
     }
 }
@@ -394,17 +361,10 @@ bintray {
         repo = 'hltools'
         name = 'org.epics:ca'
         userOrg = 'paulscherrerinstitute'
-        desc = 'EPICS Channel-Access Java Client Library'
-        websiteUrl = 'https://github.com/channelaccess/ca'
-        issueTrackerUrl = 'https://github.com/channelaccess/ca/issues'
-        vcsUrl = 'https://github.com/channelaccess/ca.git'
-        licenses = [ 'GPL-3.0' ]
-        githubReleaseNotesFile = 'README.md'
+        vcsUrl = 'https://github.com/channelaccess/ca'
+        licenses = ['GPL-3.0']
         version {
             name = project.version
-            released  = new Date()
-            vcsTag = project.version
-            desc = 'EPICS Channel-Access Java Client Library'
         }
     }
 }

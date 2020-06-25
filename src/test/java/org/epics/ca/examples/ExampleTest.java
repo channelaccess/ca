@@ -5,8 +5,11 @@ package org.epics.ca.examples;
 /*- Imported packages --------------------------------------------------------*/
 
 import net.jcip.annotations.ThreadSafe;
+import org.epics.ca.EpicsChannelAccessTestServer;
 import org.epics.ca.impl.JavaProcessManager;
 import org.epics.ca.util.logging.LibraryLogManager;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
@@ -33,6 +36,18 @@ public class ExampleTest
 /*- Constructor --------------------------------------------------------------*/
 /*- Public methods -----------------------------------------------------------*/
 /*- Package-level methods ----------------------------------------------------*/
+
+   @BeforeEach
+   void beforeEach()
+   {
+      EpicsChannelAccessTestServer.start();
+   }
+
+   @AfterEach
+   void afterEach()
+   {
+      EpicsChannelAccessTestServer.shutdown();
+   }
 
    @Test
    void runExample() throws InterruptedException
