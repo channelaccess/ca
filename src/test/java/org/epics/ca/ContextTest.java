@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.impl.LibraryConfiguration;
 import org.epics.ca.impl.ProtocolConfiguration;
-import org.epics.ca.impl.repeater.CARepeaterStarter;
+import org.epics.ca.impl.repeater.CARepeaterServiceManager;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.BeforeAll;
