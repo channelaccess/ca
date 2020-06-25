@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.Constants;
+import org.epics.ca.impl.ProtocolConfiguration;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.epics.ca.util.net.InetAddressUtil;
 
@@ -212,6 +213,8 @@ class CARepeater
          {
             // Wait for a Datagram Packet to arrive.
             logger.finest( "Waiting for next datagram." );
+
+            // Exception -->
             final DatagramPacket inputPacket = waitForDatagram();
             if ( shutdownRequest.get() )
             {
@@ -228,6 +231,8 @@ class CARepeater
             {
                logger.finest( "Consuming next message in UDP datagram packet." );
                logger.finest( "The length of the UDP datagram is: " + packetToProcess.getLength() + " bytes."  );
+
+               // IllegalArgumentException -->
                final DatagramPacket residualMessagePacket = processOneMessage( packetToProcess,
                                                                                // Zero Length message consumer
                                                                                this::handleClientRegistrationRequest,
@@ -245,7 +250,7 @@ class CARepeater
          }
          catch( Exception ex)
          {
-            logger.log( Level.WARNING, "An exception was thrown whilst waiting for a datagram.", ex );
+            logger.log( Level.WARNING, "An exception was thrown whilst waiting for, or processing, a datagram.", ex );
          }
       }
    }
@@ -339,6 +344,8 @@ class CARepeater
     * Processes an incoming CA Repeater Client Registration Request Message.
     *
     * @param packet the datagram packet containing the messsage.
+    * @throws NullPointerException if the packet argument was null.
+    * @throws IllegalArgumentException if the packet length was of an unexpected length.
     */
    private void handleClientRegistrationRequest( DatagramPacket packet )
    {
@@ -388,6 +395,8 @@ class CARepeater
     * possible exception of the client that originated the message.
     *
     * @param packet the datagram packet containing the message sender socket and payload.
+    * @throws NullPointerException if the packet argument was null.
+    * @throws IllegalArgumentException if the packet length was of an unexpected length.
     */
    private void handleBeaconMessage( DatagramPacket packet )
    {
@@ -514,7 +523,7 @@ class CARepeater
     * @param messageToRemoveLength the number of bytes in the message to be removed.
     * @return the output datagram packet whose data payload have been reduced by the specified length.
     */
-   static DatagramPacket removeProcessedMessage( DatagramPacket inputPacket, int messageToRemoveLength )
+   private static DatagramPacket removeProcessedMessage( DatagramPacket inputPacket, int messageToRemoveLength )
    {
       Validate.notNull( inputPacket );
       Validate.isTrue( messageToRemoveLength <= inputPacket.getLength() );
