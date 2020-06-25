@@ -45,6 +45,69 @@ class CARepeater
 
 
 /*- Main ---------------------------------------------------------------------*/
+
+   /**
+    * Starts the CA Repeater from the command line.
+    *
+    * If at least two arguments are provided and the first argument is "-p"
+    * or "--port" then an attempt will be made to parse the second argument
+    * as the port number to use when starting the repeater.
+    *
+    * If the second argument is a valid port number (positive integer) then
+    * the repeater will be started on that port. If it isn't then the
+    * repeater will be started on the fallback repeater port.
+    *
+    * The fallback repeater port is the EPICS default repeater port (which
+    * depends on the CA Protocol Version) or the value specified by the
+    * system property 'EPICS_CA_REPEATER_PORT'.
+    *
+    * The default repeater port depends on the CA Protocol Version.
+    * For the version currently supported by this library CA Version 4.13
+    * the default repeater port is 5065.
+    *
+    * @param argv arguments.
+    */
+   public static void main( String[] argv )
+   {
+      if( ! NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible() )
+      {
+         System.exit( 128 );
+      }
+
+      logger.info( "The CA Repeater main method has been invoked with " + argv.length + " arguments." );
+      logger.info( "The arguments were: " + Arrays.toString( argv ) );
+
+      final boolean portArgumentSupplied = ( argv.length >= 2 && ( argv[ 0 ].equals ("-p") || argv[ 0 ].equals ("--port") ) );
+      final int fallbackRepeaterPort = new ProtocolConfiguration().getRepeaterPort();
+      final int port = portArgumentSupplied ? parseToInt( argv[ 1 ], fallbackRepeaterPort ) : fallbackRepeaterPort;
+
+      // Nothing to do, if a repeater instance is already running
+      if ( CARepeaterServiceManager.isRepeaterRunning( port ) )
+      {
+         logger.info( "The repeater is already running and a new instance will not be started." );
+         logger.info( "This process will now terminate." );
+         System.exit( 129 );
+      }
+
+      final CARepeater repeater;
+      try
+      {
+         logger.info( "Creating CA Repeater instance which will run on port " + port + "." );
+         repeater = new CARepeater( port );
+      }
+      catch( CARepeater.CaRepeaterStartupException ex )
+      {
+         logger.warning( "An exception occurred when attempting to start the repeater." );
+         logger.warning( "The exception message was: " + ex.getMessage() );
+         System.exit( 130 );
+         return;
+      }
+
+      // Run, run, run...
+      repeater.start();
+   }
+
+
 /*- Constructor --------------------------------------------------------------*/
 
    /**
