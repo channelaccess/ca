@@ -530,6 +530,31 @@ class CARepeater
       return outputPacket;
    }
 
+   /**
+    * Attempts to interpret the supplied string as an integer, returning
+    * the result if successful or otherwise some default value.
+    *
+    * @param stringToParse the input string.
+    * @param defaultValue the value to be returned if the  input string cannot
+    *    be parsed.
+    *
+    * @return the result
+    */
+   private static int parseToInt( String stringToParse, int defaultValue )
+   {
+      int ret;
+      try
+      {
+         ret = Integer.parseInt( stringToParse );
+      }
+      catch( NumberFormatException ex)
+      {
+         ret = defaultValue; //Use default value if parsing failed
+      }
+      return ret;
+   }
+
+
 /*- Nested Classes -----------------------------------------------------------*/
 
    public static class CaRepeaterStartupException extends Exception
