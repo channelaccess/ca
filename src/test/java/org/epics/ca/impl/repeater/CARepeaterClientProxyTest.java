@@ -2,7 +2,6 @@
 
 package org.epics.ca.impl.repeater;
 
-
 /*- Imported packages --------------------------------------------------------*/
 
 import org.epics.ca.ThreadWatcher;
