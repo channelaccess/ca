@@ -293,6 +293,20 @@ task runUdpMessageSniffer( type:JavaExec ) {
     args '5065'
 }
 
+task runCARepeater( type:JavaExec ) {
+    main = 'org.epics.ca.impl.repeater.CARepeater'
+
+    // -- START: Java Network Stack Configuration --
+    // Both these properties MUST be asserted unless the task is using the CA Library
+    // Context which initialises the network stack through a static definition.
+    systemProperty 'java.net.preferIPv4Stack', 'true'
+    systemProperty 'java.net.preferIPv6Stack', 'false'
+    // -- END: Java Network Stack Configuration --
+
+    classpath fatJarWithTests
+    args '5065'
+}
+
 // Run the TargetPlatformTestRunner Program directly from Gradle.
 task runTargetPlatformTestRunner( type: JavaExec ) {
 
