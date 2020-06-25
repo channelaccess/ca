@@ -248,12 +248,12 @@ task fatJarWithTests(type: Jar) {
     with testJar
 }
 
-task epicsChannelAccessTestServer( type:JavaExec ) {
+task runEpicsChannelAccessTestServer( type:JavaExec ) {
     main = 'org.epics.ca.EpicsChannelAccessTestServer'
     classpath fatJarWithTests
 }
 
-task udpSocketTester( type:JavaExec ) {
+task runUdpSocketTester( type:JavaExec ) {
     main = 'org.epics.ca.impl.repeater.UdpSocketTester'
     // -- START: Java Network Stack Configuration --
     // Both these properties MUST be asserted unless the task is using the CA Library
@@ -266,7 +266,7 @@ task udpSocketTester( type:JavaExec ) {
     args '4444', '5'
 }
 
-task udpSocketReserver( type:JavaExec ) {
+task runUdpSocketReserver( type:JavaExec ) {
     main = 'org.epics.ca.impl.repeater.UdpSocketReserver'
     // -- START: Java Network Stack Configuration --
     // Both these properties MUST be asserted unless the task is using the CA Library
@@ -279,7 +279,7 @@ task udpSocketReserver( type:JavaExec ) {
     args '0.0.0.0', '9162', '500'
 }
 
-task udpMessageSniffer( type:JavaExec ) {
+task runUdpMessageSniffer( type:JavaExec ) {
     main = 'org.epics.ca.impl.repeater.UdpMessageSniffer'
 
     // -- START: Java Network Stack Configuration --
@@ -294,7 +294,7 @@ task udpMessageSniffer( type:JavaExec ) {
 }
 
 // Run the TargetPlatformTestRunner Program directly from Gradle.
-task targetPlatformTestRunner( type: JavaExec ) {
+task runTargetPlatformTestRunner( type: JavaExec ) {
 
     // -- START: Java Network Stack Configuration --
     // Both these properties MUST be asserted unless the task is using the CA Library
