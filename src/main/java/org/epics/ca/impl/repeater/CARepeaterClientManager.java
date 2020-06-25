@@ -159,7 +159,8 @@ class CARepeaterClientManager
     *
     * Subsequent to the above, deregisters any clients who are no longer active.
     *
-    * @param packet the datagram.
+    * @param packet the datagram whose destination socket address may or may
+    *     not be configured.
     * @param excluded the socket address of any client who should be excluded from notification.
     *    This parameter can be used to prevent CA repeater clients who originate datagrams
     *    from having those datagrams reflected back to themselves.
@@ -173,7 +174,6 @@ class CARepeaterClientManager
    {
       Validate.notNull( packet );
       Validate.notNull( excluded );
-      Validate.isTrue( packet.getSocketAddress() instanceof InetSocketAddress );
 
       logger.finest( "Forwarding datagram packet to " + clientMap.size() + " CA Repeater clients." );
       logger.finest( "Any CA Repeater client with socket address to " + excluded + " will be excluded from notification." );
