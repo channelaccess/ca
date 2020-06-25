@@ -101,7 +101,7 @@ class CARepeaterClientManager
          // If the confirmation could not be sent then free up the resources
          // and escalate the unexpected condition.
          proxy.close();
-         logger.log( Level.WARNING, "Failed to send repeater registration confirm message." );
+         logger.warning(  "Failed to send repeater registration confirm message." );
          return;
       }
 
@@ -163,10 +163,16 @@ class CARepeaterClientManager
     * @param excluded the socket address of any client who should be excluded from notification.
     *    This parameter can be used to prevent CA repeater clients who originate datagrams
     *    from having those datagrams reflected back to themselves.
+    *
+    * @throws NullPointerException if the packet argument was null.
+    * @throws NullPointerException if the excluded argument was null.
+    * @throws IllegalArgumentException if the socket address associated with the supplied
+    *    packet is not of type InetSocketAddress.
     */
    void forwardDatagram( DatagramPacket packet, InetSocketAddress excluded  )
    {
       Validate.notNull( packet );
+      Validate.notNull( excluded );
       Validate.isTrue( packet.getSocketAddress() instanceof InetSocketAddress );
 
       logger.finest( "Forwarding datagram packet to " + clientMap.size() + " CA Repeater clients." );
@@ -175,7 +181,7 @@ class CARepeaterClientManager
       // Create a datagram packet using the same data but which does not specify the datagram
       // destination address.
       final DatagramPacket sendPacket = new DatagramPacket( packet.getData(), packet.getLength() );
-      final List<CARepeaterClientProxy> failedNotifications = sendDatagramToRegisteredClients(sendPacket, excluded );
+      final List<CARepeaterClientProxy> failedNotifications = sendDatagramToRegisteredClients( sendPacket, excluded );
       logger.finest( "There were " + failedNotifications.size() + " send failures." );
 
       // Every time a datagram is sent perform housekeeping on the
@@ -190,7 +196,7 @@ class CARepeaterClientManager
     *
     * @param listeningPort the listening port to test.
     *
-    * @return the result, set true if a lcient is already listening on the specified port.
+    * @return the result, set true if a client is already listening on the specified port.
     */
    boolean isListeningPortAlreadyAssigned( int listeningPort )
    {
