@@ -377,6 +377,14 @@ publishing {
                         name = "Simon Rees"
                         email = "simon.rees@psi.ch"
                     }
+                    developer {
+                        name = "Simon Ebner"
+                        email = "simon.ebner@psi.ch"
+                    }
+                    developer {
+                        name = "Matej Sekoranja"
+                        email = "matej.sekoranja@cosylab.com"
+                    }
                 }
                 scm {
                     connection = 'scm:git:https://github.com/channelaccess/ca/'
