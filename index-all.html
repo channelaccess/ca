@@ -313,16 +313,20 @@
 <dd>
 <div class="block">Cancel a scheduled task that has not yet been run.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="org/epics/ca/impl/repeater/CARepeaterServiceManager.html#cancelServiceRequestOnPort-int-">cancelServiceRequestOnPort(int)</a></span> - Static method in class org.epics.ca.impl.repeater.<a href="org/epics/ca/impl/repeater/CARepeaterServiceManager.html" title="class in org.epics.ca.impl.repeater">CARepeaterServiceManager</a></dt>
+<dd>
+<div class="block">Cancels request for the CA Repeater Service on the specified port.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="org/epics/ca/impl/Messages.html#cancelSubscriptionMessage-org.epics.ca.impl.Transport-int-int-int-int-">cancelSubscriptionMessage(Transport, int, int, int, int)</a></span> - Static method in class org.epics.ca.impl.<a href="org/epics/ca/impl/Messages.html" title="class in org.epics.ca.impl">Messages</a></dt>
 <dd>
 <div class="block">Cancel subscription (aka event add) message.</div>
 </dd>
-<dt><a href="org/epics/ca/impl/repeater/CARepeaterStarter.html" title="class in org.epics.ca.impl.repeater"><span class="typeNameLink">CARepeaterStarter</span></a> - Class in <a href="org/epics/ca/impl/repeater/package-summary.html">org.epics.ca.impl.repeater</a></dt>
+<dt><a href="org/epics/ca/impl/repeater/CARepeaterServiceManager.html" title="class in org.epics.ca.impl.repeater"><span class="typeNameLink">CARepeaterServiceManager</span></a> - Class in <a href="org/epics/ca/impl/repeater/package-summary.html">org.epics.ca.impl.repeater</a></dt>
 <dd>
-<div class="block">Provides mechanisms for starting the CA Repeater either directly from
- the command-line or in a separate JVM process via a library call.</div>
+<div class="block">Provides a service for handling requests to start or shutdown CA Repeater
+ instances on multiple ports.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="org/epics/ca/impl/repeater/CARepeaterStarter.html#CARepeaterStarter--">CARepeaterStarter()</a></span> - Constructor for class org.epics.ca.impl.repeater.<a href="org/epics/ca/impl/repeater/CARepeaterStarter.html" title="class in org.epics.ca.impl.repeater">CARepeaterStarter</a></dt>
+<dt><span class="memberNameLink"><a href="org/epics/ca/impl/repeater/CARepeaterServiceManager.html#CARepeaterServiceManager--">CARepeaterServiceManager()</a></span> - Constructor for class org.epics.ca.impl.repeater.<a href="org/epics/ca/impl/repeater/CARepeaterServiceManager.html" title="class in org.epics.ca.impl.repeater">CARepeaterServiceManager</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="org/epics/ca/Channel.html" title="interface in org.epics.ca"><span class="typeNameLink">Channel</span></a>&lt;<a href="org/epics/ca/Channel.html" title="type parameter in Channel">T</a>&gt; - Interface in <a href="org/epics/ca/package-summary.html">org.epics.ca</a></dt>
 <dd>&nbsp;</dd>
@@ -1309,7 +1313,7 @@
 <dd>
 <div class="block">Indicates whether the output of the CA Repeater should be captured in the CA library log.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="org/epics/ca/impl/repeater/CARepeaterStarter.html#isRepeaterRunning-int-">isRepeaterRunning(int)</a></span> - Static method in class org.epics.ca.impl.repeater.<a href="org/epics/ca/impl/repeater/CARepeaterStarter.html" title="class in org.epics.ca.impl.repeater">CARepeaterStarter</a></dt>
+<dt><span class="memberNameLink"><a href="org/epics/ca/impl/repeater/CARepeaterServiceManager.html#isRepeaterRunning-int-">isRepeaterRunning(int)</a></span> - Static method in class org.epics.ca.impl.repeater.<a href="org/epics/ca/impl/repeater/CARepeaterServiceManager.html" title="class in org.epics.ca.impl.repeater">CARepeaterServiceManager</a></dt>
 <dd>
 <div class="block">Check if a repeater is running bound to any of the addresses associated
  with the local machine.</div>
@@ -1428,10 +1432,6 @@
 </dd>
 <dt><span class="memberNameLink"><a href="org/epics/ca/examples/Example.html#main-java.lang.String:A-">main(String[])</a></span> - Static method in class org.epics.ca.examples.<a href="org/epics/ca/examples/Example.html" title="class in org.epics.ca.examples">Example</a></dt>
 <dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="org/epics/ca/impl/repeater/CARepeaterStarter.html#main-java.lang.String:A-">main(String[])</a></span> - Static method in class org.epics.ca.impl.repeater.<a href="org/epics/ca/impl/repeater/CARepeaterStarter.html" title="class in org.epics.ca.impl.repeater">CARepeaterStarter</a></dt>
-<dd>
-<div class="block">Starts the CA Repeater from the command line.</div>
-</dd>
 <dt><span class="memberNameLink"><a href="org/epics/ca/impl/repeater/UdpMessageSniffer.html#main-java.lang.String:A-">main(String[])</a></span> - Static method in class org.epics.ca.impl.repeater.<a href="org/epics/ca/impl/repeater/UdpMessageSniffer.html" title="class in org.epics.ca.impl.repeater">UdpMessageSniffer</a></dt>
 <dd>
 <div class="block">Starts the UDP Message Sniffer from the command line.</div>
@@ -1836,6 +1836,10 @@
 </dd>
 <dt><span class="memberNameLink"><a href="org/epics/ca/impl/ResponseHandlers.html#repeaterConfirmResponse-java.net.InetSocketAddress-org.epics.ca.impl.Transport-org.epics.ca.impl.Header-java.nio.ByteBuffer-">repeaterConfirmResponse(InetSocketAddress, Transport, Header, ByteBuffer)</a></span> - Static method in class org.epics.ca.impl.<a href="org/epics/ca/impl/ResponseHandlers.html" title="class in org.epics.ca.impl">ResponseHandlers</a></dt>
 <dd>&nbsp;</dd>
+<dt><span class="memberNameLink"><a href="org/epics/ca/impl/repeater/CARepeaterServiceManager.html#requestServiceOnPort-int-">requestServiceOnPort(int)</a></span> - Static method in class org.epics.ca.impl.repeater.<a href="org/epics/ca/impl/repeater/CARepeaterServiceManager.html" title="class in org.epics.ca.impl.repeater">CARepeaterServiceManager</a></dt>
+<dd>
+<div class="block">Handles a request for the CA Repeater Service on the specified port.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="org/epics/ca/impl/search/SearchTimer.html#rescheduleAllAfterDelay-long-">rescheduleAllAfterDelay(long)</a></span> - Method in class org.epics.ca.impl.search.<a href="org/epics/ca/impl/search/SearchTimer.html" title="class in org.epics.ca.impl.search">SearchTimer</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="org/epics/ca/util/ResettableLatch.html#reset-int-">reset(int)</a></span> - Method in class org.epics.ca.util.<a href="org/epics/ca/util/ResettableLatch.html" title="class in org.epics.ca.util">ResettableLatch</a></dt>
@@ -2056,15 +2060,11 @@
 <dd>
 <div class="block">Start CA message.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="org/epics/ca/impl/repeater/CARepeaterStarter.html#startRepeaterOnPort-int-">startRepeaterOnPort(int)</a></span> - Static method in class org.epics.ca.impl.repeater.<a href="org/epics/ca/impl/repeater/CARepeaterStarter.html" title="class in org.epics.ca.impl.repeater">CARepeaterStarter</a></dt>
-<dd>&nbsp;</dd>
 <dt><a href="org/epics/ca/impl/StatefullEventSource.html" title="class in org.epics.ca.impl"><span class="typeNameLink">StatefullEventSource</span></a> - Class in <a href="org/epics/ca/impl/package-summary.html">org.epics.ca.impl</a></dt>
 <dd>&nbsp;</dd>
 <dt><span class="memberNameLink"><a href="org/epics/ca/impl/StatefullEventSource.html#StatefullEventSource--">StatefullEventSource()</a></span> - Constructor for class org.epics.ca.impl.<a href="org/epics/ca/impl/StatefullEventSource.html" title="class in org.epics.ca.impl">StatefullEventSource</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="org/epics/ca/Status.html" title="enum in org.epics.ca"><span class="typeNameLink">Status</span></a> - Enum in <a href="org/epics/ca/package-summary.html">org.epics.ca</a></dt>
-<dd>&nbsp;</dd>
-<dt><span class="memberNameLink"><a href="org/epics/ca/impl/repeater/CARepeaterStarter.html#stopRepeaterOnPort-int-">stopRepeaterOnPort(int)</a></span> - Static method in class org.epics.ca.impl.repeater.<a href="org/epics/ca/impl/repeater/CARepeaterStarter.html" title="class in org.epics.ca.impl.repeater">CARepeaterStarter</a></dt>
 <dd>&nbsp;</dd>
 <dt><a href="eu/javaspecialists/tjsn/concurrency/stripedexecutor/StripedCallable.html" title="interface in eu.javaspecialists.tjsn.concurrency.stripedexecutor"><span class="typeNameLink">StripedCallable</span></a>&lt;<a href="eu/javaspecialists/tjsn/concurrency/stripedexecutor/StripedCallable.html" title="type parameter in StripedCallable">V</a>&gt; - Interface in <a href="eu/javaspecialists/tjsn/concurrency/stripedexecutor/package-summary.html">eu.javaspecialists.tjsn.concurrency.stripedexecutor</a></dt>
 <dd>
