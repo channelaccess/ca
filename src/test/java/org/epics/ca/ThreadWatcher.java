@@ -70,7 +70,7 @@ public class ThreadWatcher
       safeSleep( longStabilisationDelayInMillis );
 
       final Set<Thread> threadsAtEndTry3 = getStableThreadSnapshot();
-      logger.finest( "Threads at end: try 3: '" + threadsAtEndTry2 + "'" );
+      logger.finest( "Threads at end: try 3: '" + threadsAtEndTry3 + "'" );
       if ( userThreadsEqual( threadsAtStart, threadsAtEndTry3 ) )
       {
          return;
