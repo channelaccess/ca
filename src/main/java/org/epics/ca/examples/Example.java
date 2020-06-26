@@ -142,25 +142,34 @@ public class Example
 
          // 10.2 Monitor a DOUBLE with ALARM information.
          System.out.print( "Monitoring DOUBLE, requesting ALARM information, waiting for notifications... " );
-         final Monitor<Alarm<Double>> mon3 = dblCh.addMonitor ( Alarm.class, value -> {
+         try ( final Monitor<Alarm<Double>> ignored = dblCh.addMonitor( Alarm.class, value -> {
                if ( value != null )
                {
                   System.out.println( "OK. Data returned: '" + value.getAlarmStatus() + ", " + value.getAlarmSeverity() + ", " + value.getValue () + "'."  );
                }
-            }
-         );
+         } ) )
+         {
+            // Sleep here to allow monitor information to be posted before moving on to other examples.
+            Thread.sleep(100);
+         }
+
          // Sleep here to allow monitor information to be posted before moving on to other examples.
          Thread.sleep(100);
 
          // 10.3 Monitor a DOUBLE with TIMESTAMP information.
          System.out.print( "Monitoring DOUBLE, requesting TIMESTAMP information, waiting for notifications... " );
-         final Monitor<Timestamped<Double>> mon2 = dblCh.addMonitor ( Timestamped.class, value -> {
+         try ( final Monitor<Timestamped<Double>> ignored = dblCh.addMonitor( Timestamped.class, value -> {
                if ( value != null )
                {
                   System.out.println( "OK. Data returned: '" + value.getAlarmStatus() + ", " + value.getAlarmSeverity() + ", " + new Date (value.getMillis ()) + ", " + value.getValue () + "'."  );
                }
             }
-         );
+         ) )
+         {
+            // Sleep here to allow monitor information to be posted before moving on to other examples.
+            Thread.sleep(100);
+         }
+
          // Sleep here to allow monitor information to be posted before moving on to other examples.
          Thread.sleep(100);
 
@@ -201,14 +210,15 @@ public class Example
          final Timestamped<Double> dvts = dblCh.get( Timestamped.class );
          System.out.println( "OK. Data returned: '" + dvts.getValue() + ", " + dvts.getAlarmStatus() + ", " + dvts.getAlarmSeverity() + ", " + new Date( dvts.getMillis ()) + "'." );
 
-         // 14.0 Monnitor a DOUBLE using try-with-resourced
+         // 14.0 Monnitor a DOUBLE using try-with-resourced``
          System.out.print( "Monitoring DOUBLE using try-with-resources... "  );
-         try ( final Monitor<Double> monitor = dblCh.addValueMonitor( v -> System.out.println( "OK. Data returned: '" + v + "'." ) ) )
+         try ( final Monitor<Double> ignored = dblCh.addValueMonitor( v -> System.out.println( "OK. Data returned: '" + v + "'." ) ) )
          {
             // Sleep here to allow monitor information to be posted before moving on to other examples.
             Thread.sleep(100);
          }
-
+         System.out.println( "OK." );
+         // TODO
          // In the future the library should probably introduce some way of checking that the
          // monitor is closed, but currently the interface has nothing to support this.
       }
