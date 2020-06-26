@@ -45,7 +45,7 @@ class CARepeaterClientManager
     */
    public CARepeaterClientManager( InetSocketAddress repeaterListeningSocketAddress )
    {
-      this.repeaterListeningSocketAddress = Validate.notNull( repeaterListeningSocketAddress );
+      this.repeaterListeningSocketAddress = Validate.notNull( repeaterListeningSocketAddress,"The 'repeaterListeningAddress' argument was null." );
    }
 
 
@@ -147,6 +147,11 @@ class CARepeaterClientManager
       logger.finest( "Any CA Repeater client with socket address to " + excluded + " will be excluded from notification." );
       final List<CARepeaterClientProxy> failedNotifications = sendBeaconMessageToRegisteredClients( serverProtocolMinorVersion, serverListeningPort, serverBeaconId, serverAddress, excluded );
 
+      // Provide some visibility of notification failures in the log.
+      if ( failedNotifications.size() > 0 )
+      {
+         logger.warning( "Failed to send beacon message to one or more registered clients." );
+      }
       // Every time a new client is created perform housekeeping on the
       // list of registered clients to remove any dead ones.
       logger.finest( "Performing housekeeping on registered clients..." );
@@ -356,13 +361,5 @@ class CARepeaterClientManager
    }
 
 /*- Nested Classes -----------------------------------------------------------*/
-
-   public static class CaRepeaterClientManagerException extends Exception
-   {
-      public CaRepeaterClientManagerException( String message, Exception ex )
-      {
-         super( message, ex );
-      }
-   }
 
 }
