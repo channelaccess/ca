@@ -6,21 +6,20 @@ package org.epics.ca.impl.repeater;
 /*- Imported packages --------------------------------------------------------*/
 
 import org.epics.ca.ThreadWatcher;
-import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.DatagramPacket;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.logging.Logger;
+import java.time.Duration;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /*- Interface Declaration ----------------------------------------------------*/
 /*- Class Declaration --------------------------------------------------------*/
@@ -31,7 +30,6 @@ public class CARepeaterClientManagerTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LibraryLogManager.getLogger( CARepeaterClientManagerTest.class );
    private ThreadWatcher threadWatcher;
 
 /*- Main ---------------------------------------------------------------------*/
@@ -67,9 +65,17 @@ public class CARepeaterClientManagerTest
    }
 
    @Test
-   void testForwardDatagram()
+   void testConstructor()
    {
-      final CARepeaterClientManager manager = new CARepeaterClientManager( new InetSocketAddress(  999 ) );
+      final Throwable throwable = assertThrows( NullPointerException.class, () -> new CARepeaterClientManager( null ) );
+      assertThat( throwable.getMessage(), is( "The 'repeaterListeningAddress' argument was null." ) );
+   }
+
+   @Test
+   void testForwardDatagram_doesNotThrowExceptions()
+   {
+      final InetSocketAddress repeaterListeningAddress = new InetSocketAddress(1999 );
+      final CARepeaterClientManager manager = new CARepeaterClientManager( repeaterListeningAddress );
       final DatagramPacket datagramPacket = new DatagramPacket( new byte[] { (byte) 0xAA, (byte) 0xBB }, 0, 2  );
       final InetSocketAddress excluded = new InetSocketAddress( 333 );
       assertDoesNotThrow( () -> manager.forwardDatagram( datagramPacket, excluded ) );
@@ -78,18 +84,20 @@ public class CARepeaterClientManagerTest
    @Test
    void testRegister()
    {
-      final InetSocketAddress repeaterListeningAddress = new InetSocketAddress( 222 );
-      final CARepeaterClientManager manager = new CARepeaterClientManager( repeaterListeningAddress );
+      assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () -> {
+         final InetSocketAddress repeaterListeningAddress = new InetSocketAddress(2322 );
 
-      final DatagramPacket rxPacket;
-      try( UdpSocketReceiver receiver = UdpSocketReceiver.startListening( 888 ) )
-      {
-         manager.registerNewClient( new InetSocketAddress( 888 ) );
-         rxPacket = receiver.getDatagram();
-      }
-      assertThat( rxPacket.getLength(), is( 16 ) );
-      final ByteBuffer byteBuffer = ByteBuffer.wrap(  rxPacket.getData() );
-      assertThat( byteBuffer.getShort(CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value ), is( CARepeaterMessage.CaCommandCodes.CA_REPEATER_CONFIRM.value ) );
+         final CARepeaterClientManager manager = new CARepeaterClientManager( repeaterListeningAddress );
+         final DatagramPacket rxPacket;
+         try ( UdpSocketReceiver receiver = UdpSocketReceiver.startListening( 54213 ) )
+         {
+            manager.registerNewClient( new InetSocketAddress( InetAddress.getLocalHost(), 54213 ) );
+            rxPacket = receiver.getDatagram();
+         }
+         assertThat(rxPacket.getLength(), is(16));
+         final ByteBuffer byteBuffer = ByteBuffer.wrap( rxPacket.getData() );
+         assertThat(byteBuffer.getShort(CARepeaterMessage.CaHeaderOffsets.CA_HDR_SHORT_COMMAND_OFFSET.value), is(CARepeaterMessage.CaCommandCodes.CA_REPEATER_CONFIRM.value));
+      } );
    }
 
 /*- Private methods ----------------------------------------------------------*/
