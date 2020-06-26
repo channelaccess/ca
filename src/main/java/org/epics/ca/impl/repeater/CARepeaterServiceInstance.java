@@ -11,6 +11,7 @@ import org.epics.ca.util.logging.LibraryLogManager;
 import java.net.*;
 import java.util.*;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,9 +29,11 @@ class CARepeaterServiceInstance
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterServiceInstance.class );
-   private final int port;
-   private JavaProcessManager processManager;
 
+   private final int port;
+   private final JavaProcessManager processManager;
+   private final AtomicBoolean activated;
+   private final AtomicBoolean shutdown;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -42,6 +45,10 @@ class CARepeaterServiceInstance
    CARepeaterServiceInstance( int port )
    {
       this.port = port;
+      final Level logLevel = LibraryConfiguration.getInstance().getRepeaterLogLevel();
+      this.processManager = createProcessManager( port, logLevel );
+      this.activated = new AtomicBoolean( false );
+      this.shutdown = new AtomicBoolean( false );
    }
 
 /*- Public methods -----------------------------------------------------------*/
@@ -74,7 +81,8 @@ class CARepeaterServiceInstance
 /*- Package-level access methods ---------------------------------------------*/
 
    /**
-    * Returns the port on which this service instance is running.
+    * Returns the port associated with this service instance.
+    *
     * @return the port.
     */
    int getPort()
@@ -83,36 +91,36 @@ class CARepeaterServiceInstance
    }
 
    /**
-    * Attempts to start this service instance, handling any conditions that
-    * prevent startup internally, but sending this information to the log.
+    * Activates this service instance, initiating the necessary steps to determine whether
+    * a new CA Repeater process should be spawned and logging any situations that might
+    * prevent that from happening.
+    *
+    * Note: activation is a one-off event. Attempts to activate a service instance
+    * which is already activated will result in an exception.
+    *
+    * @throws IllegalStateException if the service instance was already activated.
     */
-   void start()
+   void activate()
    {
+      Validate.validState( ! activated.getAndSet( true ), "This service instance was already activated." );
+
       if( ! LibraryConfiguration.getInstance().isRepeaterEnabled() )
       {
-         logger.warning( "The CA Repeater Service configuration is set to disabled." );
+         logger.info( "The CA Repeater Service configuration is set to disabled." );
          return;
       }
 
       if ( CARepeaterServiceManager.isRepeaterRunning( port ) )
       {
-         logger.warning( "The CA Repeater is already running on port." + port );
-         logger.warning( "Possibly it was started previously by another process." );
-         return;
-      }
-
-      if ( processManager != null )
-      {
-         logger.severe( "The CA Repeater is already running on port." + port );
-         logger.severe( "This is an unexpected condition which suggests a programming error." );
+         logger.info( "The CA Repeater is already running on port " + port + "." );
+         logger.info( "Possibly it was started previously by another operating system process." );
          return;
       }
 
       try
       {
-         final Level logLevel = LibraryConfiguration.getInstance().getRepeaterLogLevel();
          final boolean outputCaptureEnable = LibraryConfiguration.getInstance().isRepeaterOutputCaptureEnabled();
-         processManager = startRepeater( port, logLevel, outputCaptureEnable );
+         start( outputCaptureEnable );
       }
       catch ( RuntimeException ex )
       {
@@ -121,39 +129,47 @@ class CARepeaterServiceInstance
    }
 
    /**
-    * Attempts to shutdown this service instance, handling any conditions that
-    * prevent shutdown internally, but sending this information to the log.
+    * Shuts down this service instance, initiating the necessary steps to determine
+    * whether any existing CA Repeater process should be killed and logging any
+    * situations that might prevent that from happening.
+    *
+    * Note: shutdown is a one-off event. Attempts to shutdown a service instance
+    * which is already shutdown will result in an exception.
+    *
+    * @throws IllegalStateException if the service instance was already shutdown.
     */
    void shutdown()
    {
+      Validate.validState( activated.get(), "This service instance was not previously activated." );
+      Validate.validState( ! shutdown.getAndSet( true ), "This service instance was already shut down." );
+
       if ( ! LibraryConfiguration.getInstance().isRepeaterEnabled() )
       {
-         logger.warning( "The CA Repeater Service configuration is set to disabled." );
+         logger.info( "The CA Repeater Service configuration is set to disabled." );
          return;
       }
 
       if ( ! CARepeaterServiceManager.isRepeaterRunning( port ) )
       {
-         logger.warning( "The CA Repeater is NOT already running on port." + port );
-      }
-
-      if ( processManager == null )
-      {
-         logger.severe( "The CA Repeater was never started on port." + port );
-         logger.severe( "This is an unexpected condition which suggests a programming error." );
+         logger.info( "The CA Repeater is not running on port " + port + "." );
          return;
       }
 
       if ( ! processManager.isAlive() )
       {
-         logger.warning( "The CA Repeater on port " + port + " has already died." );
+         logger.info( "The CA Repeater that is running on port " + port + " was not started by this service instance." );
+         logger.info( "Possibly it was started previously by another operating system process." );
+         return;
       }
 
-      if( ! processManager.shutdown() )
+      try
       {
-         logger.warning( "The CA Repeater on port " + port + " failed to shutdown." );
+         stopRepeater(  processManager );
       }
-      processManager = null;
+      catch ( RuntimeException ex )
+      {
+         logger.warning( "The CA Repeater on port " + port + " failed to shut down." );
+      }
    }
 
    /**
@@ -164,43 +180,28 @@ class CARepeaterServiceInstance
     */
    boolean isProcessAlive()
    {
-      if ( processManager == null )
-      {
-         return false;
-      }
-      else
-      {
-         return processManager.isAlive();
-      }
+      return processManager.isAlive();
    }
-
 
 /*- Private methods ----------------------------------------------------------*/
 
    /**
-    * Starts the CA Repeater, which should not already be running, in a separate
-    * JVM process. Returns the process handle which can subsequently be used
-    * to monitor the lifecycle of the process.
+    * Returns a process manager which can be used to spawn a CA Repeater process
+    * and to monitor and manage its subsequent lifecycle.
     *
-    * @param repeaterPort        specifies the port that the CA Repeater will listen on
-    *                            in the range 1-65535.
-    * @param logLevel            the logging level to be used for the spawned process.
-    * @param outputCaptureEnable whether the standard output and standard error of
-    *                            the spawned subprocess should be captured and sent to the logging system in
-    *                            the owning process.
-    * @return process handle which can subsequently be used to monitor the process
-    * and/or shut it down.
+    * @param repeaterPort specifies the port that the CA Repeater will listen on
+    *    in the range 1-65535.
+    * @param logLevel the logging level to be used for the spawned process.
+
+    * @return process handle which can subsequently be used to monitor the
+    *    process and/or shut it down.
     * @throws IllegalArgumentException if the repeater port is out of range.
-    * @throws NullPointerException     if the logLevel argument was null.
-    * @throws IllegalStateException    if the repeater was already running.
-    * @throws RuntimeException         if some other unexpected condition prevents
-    *                                  repeater from being started.
+    * @throws NullPointerException if the logLevel argument was null.
     */
-   private static JavaProcessManager startRepeater( int repeaterPort, Level logLevel, boolean outputCaptureEnable )
+   private JavaProcessManager createProcessManager( int repeaterPort, Level logLevel )
    {
       Validate.notNull( logLevel );
       Validate.inclusiveBetween( 1, 65535, repeaterPort, "The port must be in the inclusive range 1-65535." );
-      Validate.validState( ! CARepeaterServiceManager.isRepeaterRunning( repeaterPort ), "The repeater is already running on port " + repeaterPort );
 
       logger.fine( "Starting the repeater in a separate process..." );
 
@@ -215,10 +216,45 @@ class CARepeaterServiceInstance
       properties.put( "CA_LIBRARY_LOG_LEVEL", logLevel.toString() );
       final String repeaterPortAsString = Integer.toString( repeaterPort );
       final String[] programArgs = new String[] { "-p", repeaterPortAsString };
-      final JavaProcessManager processManager = new JavaProcessManager( CARepeater.class, properties, programArgs );
-      processManager.start( outputCaptureEnable );
-      return processManager;
+
+      return new JavaProcessManager( CARepeater.class, properties, programArgs );
    }
+
+   /**
+    * Starts the CA Repeater process and waits a predefined delay before
+    * verifying that the repeater is now running.
+    *
+    * @param outputCaptureEnable whether the standard output and standard error of
+    *    the spawned process should be captured and sent to the logging system in
+    *    the owning process.
+    *
+    * @throws RuntimeException if some unexpected condition prevented the
+    *    repeater from being started.
+    */
+   private void start( boolean outputCaptureEnable )
+   {
+      processManager.start( outputCaptureEnable );
+
+      try
+      {
+         Thread.sleep( REPEATER_STARTUP_DELAY );
+      }
+      catch ( InterruptedException e )
+      {
+         logger.warning( "Interrupted whilst waiting for CA Repeater to start running." );
+         Thread.currentThread().interrupt();
+      }
+
+      if ( CARepeaterServiceManager.isRepeaterRunning( port ) )
+      {
+         logger.info( "The CA Repeater started ok." );
+      }
+      else
+      {
+         logger.warning( "The CA Repeater failed to start." );
+      }
+   }
+
 
    /**
     * Shuts down the CA Repeater which was previously started by the supplied Java
@@ -227,7 +263,7 @@ class CARepeaterServiceInstance
     * @param repeaterProcessManager the process manager.
     * @throws NullPointerException if the repeaterProcessManager argument was null.
     */
-   private static void stopRepeater( JavaProcessManager repeaterProcessManager )
+   private void stopRepeater( JavaProcessManager repeaterProcessManager )
    {
       Validate.notNull( repeaterProcessManager );
       if ( repeaterProcessManager.isAlive() )
@@ -239,6 +275,26 @@ class CARepeaterServiceInstance
       else
       {
          logger.fine( "The CA Repeater process was no longer alive => nothing to do." );
+         return;
+      }
+
+      try
+      {
+         Thread.sleep( REPEATER_SHUTDOWN_DELAY );
+      }
+      catch ( InterruptedException e )
+      {
+         logger.warning( "Interrupted whilst waiting for CA Repeater to start running." );
+         Thread.currentThread().interrupt();
+      }
+
+      if ( CARepeaterServiceManager.isRepeaterRunning( port ) )
+      {
+         logger.warning( "The CA Repeater failed to shutdown." );
+      }
+      else
+      {
+         logger.info( "The CA Repeater was shutdown ok." );
       }
    }
 

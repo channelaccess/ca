@@ -11,18 +11,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.provider.Arguments;
 
-import java.net.Inet4Address;
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -89,66 +85,70 @@ public class CARepeaterServiceInstanceTest
 
 
    @Test
-   void testStartRepeater() throws Throwable
+   void testActivateAndShutdown() throws Throwable
    {
       logger.info("Starting CA Repeater in separate process.");
 
       final CARepeaterServiceInstance instance = new CARepeaterServiceInstance( testPort );
-      instance.start();
+      instance.activate();
 
-      logger.info("The CA Repeater process was created.");
+      logger.info("The CA Repeater service instance was activated.");
       logger.info("Verifying that the CA Repeater process is reported as being alive...");
       try
       {
          assertThat( instance.isProcessAlive(), is(true ) );
          logger.info("OK");
          logger.info("Waiting a moment to allow the spawned process time to reserve the listening port...");
-         Thread.sleep(1500);
+         Thread.sleep(1);
          logger.info("Waiting completed.");
          logger.info("Verifying that the CA Repeater is detected as running...");
-         assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort), is( true));
-         logger.info("OK");
-         logger.info("Shutting down the CA Repeater process...");
-         instance.shutdown();
-
-         logger.info("Verifying that the CA Repeater process is no longer reported as being alive...");
-         assertThat( instance.isProcessAlive(), is(false));
-         logger.info("OK");
-         logger.info("Waiting a moment to allow the OS to release the listening port...");
-         Thread.sleep(1500);
-         logger.info("Verifying that the CA Repeater is no longer detected as running...");
-         assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort ), is( false));
+         assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort), is( true) );
          logger.info("OK");
       }
       finally
       {
+         logger.info("Shutting down the CA Repeater process...");
          instance.shutdown();
+         logger.info("Verifying that the CA Repeater process is no longer reported as being alive...");
+         assertThat( instance.isProcessAlive(), is(false));
+         logger.info("OK");
+         logger.info("Waiting a moment to allow the OS to release the listening port...");
+         Thread.sleep(1);
+         logger.info("Verifying that the CA Repeater is no longer detected as running...");
+         assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort ), is( false));
+         logger.info("OK");
       }
    }
 
    @Test
-   void testIsRepeaterRunning_startRepeaterInCurrentJvmProcess() throws Throwable
+   void testShutdownWithoutPreviousActivateThrowsException()
    {
-      final CARepeater repeater = new CARepeater( testPort );
-      repeater.start();
-      Thread.sleep( 1500 );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort ), is( true ) );
-      repeater.shutdown();
-      Thread.sleep( 1500 );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort ), is( false ) );
+      final CARepeaterServiceInstance instance = new CARepeaterServiceInstance( testPort );
+      final Throwable throwable = assertThrows( IllegalStateException.class, instance::shutdown );
+      assertThat( throwable.getMessage(), is( "This service instance was not previously activated." ) );
    }
 
-
-   /*- Private methods ----------------------------------------------------------*/
-   
-   private static Stream<Arguments> getArgumentsForTestIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddresses()
+   @Test
+   void testActivateTwiceThrowsException()
    {
-      final List<Inet4Address> localAddressList = NetworkUtilities.getLocalNetworkInterfaceAddresses();
-      final List<String> localAddresses = localAddressList.stream().map( Inet4Address::getHostAddress).collect(Collectors.toList());
-      return localAddresses.stream().map( Arguments::of );
+      final CARepeaterServiceInstance instance = new CARepeaterServiceInstance( testPort );
+      instance.activate();
+      final Throwable throwable = assertThrows( IllegalStateException.class, instance::activate );
+      assertThat( throwable.getMessage(), is( "This service instance was already activated." ) );
+      instance.shutdown();
    }
 
+   @Test
+   void testShutdownTwiceThrowsException()
+   {
+      final CARepeaterServiceInstance instance = new CARepeaterServiceInstance( testPort );
+      instance.activate();
+      instance.shutdown();
+      final Throwable throwable = assertThrows( IllegalStateException.class, instance::shutdown );
+      assertThat( throwable.getMessage(), is( "This service instance was already shut down." ) );
+   }
 
+/*- Private methods ----------------------------------------------------------*/
 /*- Nested Classes -----------------------------------------------------------*/
 
 }

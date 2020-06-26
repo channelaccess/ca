@@ -67,9 +67,9 @@ public class CARepeaterServiceManager
          if ( getServiceInterestLevelForPort( repeaterPort ) == 0 )
          {
             logger.fine( "Starting the port " + repeaterPort + " CA Repeater Service instance." );
-            final CARepeaterServiceInstance newInstance =  new CARepeaterServiceInstance( repeaterPort );
-            serviceInterestMap.put( newInstance, 1 );
-            newInstance.start();
+            final CARepeaterServiceInstance serviceInstance = new CARepeaterServiceInstance( repeaterPort );
+            serviceInterestMap.put( serviceInstance, 1 );
+            serviceInstance.activate();
          }
          else
          {
