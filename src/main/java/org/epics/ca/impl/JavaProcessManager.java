@@ -206,7 +206,14 @@ public class JavaProcessManager
     */
    public boolean isAlive()
    {
-      return process.isAlive();
+      if ( process == null )
+      {
+         return false;
+      }
+      else
+      {
+         return process.isAlive();
+      }
    }
 
    /**
