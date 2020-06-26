@@ -25,7 +25,7 @@ class UdpSocketReceiver implements AutoCloseable
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final Logger logger = LibraryLogManager.getLogger(UdpSocketReceiver.class);
+   private static final Logger logger = LibraryLogManager.getLogger( UdpSocketReceiver.class );
 
    // The size of the receive buffer needs to be larger than the maximum size of
    // any message that this receiver is intended to capture. The CA Repeater is
@@ -49,7 +49,7 @@ class UdpSocketReceiver implements AutoCloseable
    {
       try
       {
-         listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket(listeningPort, true);
+         listeningSocket = UdpSocketUtilities.createBroadcastAwareListeningSocket( listeningPort, true );
       }
       catch ( SocketException ex )
       {
@@ -70,7 +70,7 @@ class UdpSocketReceiver implements AutoCloseable
     */
    public static UdpSocketReceiver startListening( int listeningPort )
    {
-      return new UdpSocketReceiver(listeningPort);
+      return new UdpSocketReceiver( listeningPort );
    }
 
    /**
