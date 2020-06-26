@@ -31,7 +31,6 @@ public class ChannelsTests
    private static final Logger logger = LibraryLogManager.getLogger( ChannelsTests.class );
    private Context context;
 
-
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
 /*- Class methods ------------------------------------------------------------*/
@@ -63,12 +62,11 @@ public class ChannelsTests
       // Every test involves the use of at least one context so it is better to
       // set them up and close them down outside the test.
 
-      logger.info( "Creating CA context...");
+      logger.fine( "Creating CA context...");
       final Properties properties = new Properties();
       properties.setProperty( ProtocolConfiguration.PropertyNames.EPICS_CA_MAX_ARRAY_BYTES.toString(), "1000000" );
-      //properties.setProperty( "CA_DEBUG", "1" );
       context = new Context( properties );
-      logger.info( "Done.");
+      logger.fine( "Done.");
 
       // Check the database is online
       try
