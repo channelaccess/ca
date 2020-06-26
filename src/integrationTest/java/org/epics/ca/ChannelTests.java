@@ -137,6 +137,7 @@ class ChannelTests
       logger.info( "RESULTS:" );
       logger.info( String.format( "Q10: How many channels can be created ? Answer: **at least %d**.", loopCounter ) );
       logger.info( "Q11: What is the channel creation cost ? Answer: **See below.**" );
+      logger.info("```");
       for ( int result : resultMap.keySet() )
       {
          logger.info( String.format( "- Creating %d channels took %d ms. Average: %.3f ms", result, resultMap.get(result), (float) resultMap.get(result) / result ) );
@@ -537,7 +538,6 @@ class ChannelTests
 
       System.setProperty( "CA_MONITOR_NOTIFIER_IMPL", serviceImpl );
       final Context mySpecialContext = new Context();
-
       final List<Integer> samplePoints = Arrays.asList( 1, 100, 200, 500, 1000 );
       final int maxChannels = samplePoints.get(samplePoints.size() - 1);
 
@@ -612,10 +612,12 @@ class ChannelTests
       }
       logger.fine( String.format( "%d channels delivered their addValueMonitor results.", maxChannels ) );
 
+      mySpecialContext.close();
+
       logger.info( "RESULTS:" );
-      logger.info( "Implementation: " + serviceImpl );
       logger.info( "Q20: What is the cost of performing a monitor on multiple channels ? Answer: **See below.**" );
       logger.info( "```" );
+      logger.info( "Implementation: " + serviceImpl );
       for ( int result : resultMap.keySet() )
       {
          logger.info( String.format( "- Asynchronous Monitor from %d channels took %d ms. Average: %.3f ms", result, resultMap.get( result ), (float) resultMap.get( result ) / result ) );
@@ -686,9 +688,9 @@ class ChannelTests
       }
 
       logger.info( "RESULTS:" );
-      logger.info( "Implementation: " + serviceImpl );
       logger.info( "Q21: What is the cost/performance when using CA to transfer large arrays ? Answer: **See below.**" );
       logger.info( "```" );
+      logger.info( "Implementation: " + serviceImpl );
       for ( int result : resultMap.keySet() )
       {
          final float transferRate = ((float) 1000 * SIZE_OF_ELEMENT_IN_BYTES * result) / (((float) resultMap.get(result)) * 1024 * 1024);
