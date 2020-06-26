@@ -195,6 +195,19 @@ public class CARepeaterServiceManagerTest
      logger.info( "The test PASSED." );
    }
 
+   @Test
+   void testIsRepeaterRunning_startRepeaterInCurrentJvmProcess() throws Throwable
+   {
+      final CARepeater repeater = new CARepeater( testPort );
+      repeater.start();
+      Thread.sleep( 1500 );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort ), is( true ) );
+      repeater.shutdown();
+      Thread.sleep( 1500 );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort ), is( false ) );
+   }
+
+
 /*- Private methods ----------------------------------------------------------*/
    
    private static Stream<Arguments> getArgumentsForTestIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddresses()
