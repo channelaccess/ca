@@ -28,7 +28,7 @@ public class ChannelsTests
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private final Logger logger = LibraryLogManager.getLogger( ChannelsTests.class );
+   private static final Logger logger = LibraryLogManager.getLogger( ChannelsTests.class );
    private Context context;
 
 

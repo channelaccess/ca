@@ -30,7 +30,7 @@ class ChannelTests
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private final Logger logger = LibraryLogManager.getLogger( ChannelTests.class );
+   private static final Logger logger = LibraryLogManager.getLogger( ChannelTests.class );
    private Context context;
 
 /*- Main ---------------------------------------------------------------------*/

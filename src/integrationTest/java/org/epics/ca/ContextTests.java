@@ -28,7 +28,7 @@ public class ContextTests
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private final Logger logger = LibraryLogManager.getLogger( ContextTests.class );
+   private static final Logger logger = LibraryLogManager.getLogger( ContextTests.class );
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
