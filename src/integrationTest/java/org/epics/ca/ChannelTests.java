@@ -187,7 +187,7 @@ class ChannelTests
       }
 
       logger.info( "RESULTS:" );
-      logger.info( "Q13: How many connected channels can the library simultaneously support ? Answer: **at least %d**." + loopCounter);
+      logger.info( String.format( "Q13: How many connected channels can the library simultaneously support ? Answer: **at least %d**.", loopCounter ) );
       logger.info( "Q14: What is the cost of synchronously connecting channels (using Channel class) ? Answer: **See below.**");
       logger.info("```");
       for ( int result : resultMap.keySet() )
