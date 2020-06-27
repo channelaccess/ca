@@ -23,6 +23,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.epics.ca.impl.LibraryConfiguration;
 import org.epics.ca.impl.ProtocolConfiguration;
 import org.epics.ca.impl.repeater.CARepeaterServiceManager;
+import org.epics.ca.impl.repeater.CARepeaterStatusChecker;
 import org.epics.ca.impl.repeater.NetworkUtilities;
 import org.epics.ca.util.logging.LibraryLogManager;
 import org.junit.jupiter.api.BeforeAll;
@@ -69,13 +70,13 @@ class ContextTest
    void beforeEach()
    {
       threadWatcher = ThreadWatcher.start();
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( TEST_PORT ), is( false ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT ), is( false ) );
    }
 
    @AfterEach
    void afterEach()
    {
-      assertThat( CARepeaterServiceManager.verifyRepeaterStops( TEST_PORT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT ), is( true ) );
       assertDoesNotThrow( () -> threadWatcher.verify(), "Thread leak detected !" );
    }
    
@@ -236,7 +237,7 @@ class ContextTest
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "true" );
       try ( final Context ignored = new Context() )
       {
-         assertThat( CARepeaterServiceManager.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( false ) );
+         assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( false ) );
       }
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), String.valueOf( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
    }
@@ -247,9 +248,9 @@ class ContextTest
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "false" );
       try ( final Context ignored = new Context() )
       {
-         assertThat( CARepeaterServiceManager.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
+         assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
       }
-      assertThat( CARepeaterServiceManager.verifyRepeaterStops( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), String.valueOf( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
    }
 
@@ -258,9 +259,9 @@ class ContextTest
    {
       try ( final Context ignored = new Context() )
       {
-         assertThat( CARepeaterServiceManager.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
+         assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
       }
-      assertThat( CARepeaterServiceManager.verifyRepeaterStops( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
    }
 
    @Test
@@ -268,14 +269,14 @@ class ContextTest
    {
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "false" );
       final Context ignored1 = new Context();
-      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
       try ( final Context ignored2 = new Context() )
       {
-         assertThat( CARepeaterServiceManager.isRepeaterRunning( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT  ), is( true ) );
+         assertThat( CARepeaterStatusChecker.isRepeaterRunning( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT  ), is( true ) );
       }
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT  ), is( true ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT  ), is( true ) );
       ignored1.close();
-      assertThat( CARepeaterServiceManager.verifyRepeaterStops( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), String.valueOf( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
    }
 
@@ -285,16 +286,16 @@ class ContextTest
       final Properties ctx1Props = new Properties();
       ctx1Props.setProperty( ProtocolConfiguration.PropertyNames.EPICS_CA_REPEATER_PORT.toString(), "1111" );
       final Context ignored1 = new Context( ctx1Props );
-      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( 1111 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( 1111 ), is( true ) );
       final Properties ctx2Props = new Properties();
       ctx2Props.setProperty( ProtocolConfiguration.PropertyNames.EPICS_CA_REPEATER_PORT.toString(), "2222" );
       try ( final Context ignored2 = new Context( ctx2Props ) )
       {
-         assertThat( CARepeaterServiceManager.verifyRepeaterStarts( 2222 ), is( true ) );
+         assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( 2222 ), is( true ) );
       }
-      assertThat( CARepeaterServiceManager.verifyRepeaterStops( 2222 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( 2222 ), is( true ) );
       ignored1.close();
-      assertThat( CARepeaterServiceManager.verifyRepeaterStops( 1111 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( 1111 ), is( true ) );
    }
 
    @Test

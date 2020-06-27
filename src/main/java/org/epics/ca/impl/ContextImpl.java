@@ -61,6 +61,10 @@ public class ContextImpl implements AutoCloseable
     */
    private static final int LOCK_TIMEOUT = 20 * 1000;   // 20s
 
+   /**
+    * CA Repeater Service manager.
+    */
+   private static final CARepeaterServiceManager caRepeaterServiceManager = new CARepeaterServiceManager();
 
 /*- Private final attributes (initialised immediately) -----------------------*/
 
@@ -209,7 +213,7 @@ public class ContextImpl implements AutoCloseable
       udpBroadcastTransportRef.set( getUdpBroadcastTransport() );
 
       // Request the CA Repeater Service for the port configured for this context.
-      CARepeaterServiceManager.requestServiceOnPort( getRepeaterPort() );
+      caRepeaterServiceManager.requestServiceOnPort( getRepeaterPort() );
 
       // Start the task to register with CA Repeater (even if the lifecycle is not managed by this library).
       final InetSocketAddress repeaterLocalAddress = new InetSocketAddress( InetAddress.getLoopbackAddress(),
@@ -279,7 +283,7 @@ public class ContextImpl implements AutoCloseable
       }
 
       // Cancel the CA Repeater Service for the port configured for this context.
-      CARepeaterServiceManager.cancelServiceRequestOnPort( getRepeaterPort() );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( getRepeaterPort() );
 
       channelSearchManager.cancel();
       udpBroadcastTransportRef.get().close();

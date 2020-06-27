@@ -110,7 +110,7 @@ class CARepeaterServiceInstance
          return;
       }
 
-      if ( CARepeaterServiceManager.isRepeaterRunning( port ) )
+      if ( CARepeaterStatusChecker.isRepeaterRunning( port ) )
       {
          logger.info( "The CA Repeater is already running on port " + port + "." );
          logger.info( "Possibly it was started previously by another operating system process." );

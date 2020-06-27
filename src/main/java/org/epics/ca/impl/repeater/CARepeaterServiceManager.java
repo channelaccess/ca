@@ -5,8 +5,6 @@ package org.epics.ca.impl.repeater;
 
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.util.logging.LibraryLogManager;
-import java.io.File;
-import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -24,13 +22,12 @@ public class CARepeaterServiceManager
 /*- Private attributes -------------------------------------------------------*/
 
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterServiceManager.class );
-   private static final File NULL_FILE = new File( (System.getProperty( "os.name" ).startsWith( "Windows" ) ? "NUL" : "/dev/null") );
 
    /**
     * Map of service instances (= CA Repeaters running on particular port) and
     * the number of times the services has been requested or cancelled.
     */
-   private static final Map<CARepeaterServiceInstance, Integer> serviceInterestMap = new HashMap<>();
+   private final Map<CARepeaterServiceInstance, Integer> serviceInterestMap = new HashMap<>();
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -57,7 +54,7 @@ public class CARepeaterServiceManager
     *
     * @param repeaterPort the port on which the service is requested.
     */
-   public static void requestServiceOnPort( int repeaterPort )
+   public void requestServiceOnPort( int repeaterPort )
    {
       synchronized ( CARepeaterServiceManager.class )
       {
@@ -98,7 +95,7 @@ public class CARepeaterServiceManager
     *
     * @param repeaterPort the port on which the service is requested.
     */
-   public static void cancelServiceRequestOnPort( int repeaterPort )
+   public void cancelServiceRequestOnPort( int repeaterPort )
    {
       synchronized ( CARepeaterServiceManager.class )
       {
@@ -127,26 +124,6 @@ public class CARepeaterServiceManager
       }
    }
 
-   /**
-    * Check if a repeater is running bound to any of the addresses associated
-    * with the local machine.
-    *
-    * @param repeaterPort repeater port.
-    * @return <code>true</code> if repeater is already running, <code>false</code> otherwise
-    */
-   public static boolean isRepeaterRunning( int repeaterPort )
-   {
-      logger.finest( "Checking whether repeater is running on port " + repeaterPort );
-
-      // The idea here is that binding to a port on thewildcard addreess we check all
-      // possible network interfaces on which the CA Repeater may be already running.
-      final InetSocketAddress wildcardSocketAddress = new InetSocketAddress( repeaterPort );
-      logger.finest( "Checking socket address " + wildcardSocketAddress );
-      final boolean repeaterIsRunning = !UdpSocketUtilities.isSocketAvailable( wildcardSocketAddress );
-      final String runningOrNot = repeaterIsRunning ? " IS " : " IS NOT ";
-      logger.finest( "The repeater on port " + repeaterPort + runningOrNot + "running." );
-      return repeaterIsRunning;
-   }
 
 /*- Package-level access methods ---------------------------------------------*/
 
@@ -155,7 +132,7 @@ public class CARepeaterServiceManager
     *
     * @return the number of unique service instances that are currently active.
     */
-   static int getServiceInstances()
+   int getServiceInstances()
    {
       return serviceInterestMap.size();
    }
@@ -172,7 +149,7 @@ public class CARepeaterServiceManager
     * @param port the port of interest.
     * @return the result.
     */
-   private static int getServiceInterestLevelForPort( int port )
+   private int getServiceInterestLevelForPort( int port )
    {
       Validate.inclusiveBetween( 0, 65535, port );
 
@@ -186,7 +163,7 @@ public class CARepeaterServiceManager
     * @param port the port of interest.
     * @return the result.
     */
-   private static Optional<CARepeaterServiceInstance> getServiceInstanceFor( int port )
+   private Optional<CARepeaterServiceInstance> getServiceInstanceFor( int port )
    {
       Validate.inclusiveBetween( 0, 65535, port );
       return serviceInterestMap.keySet().stream().filter( integer -> integer.getPort() == port ).findFirst();
@@ -202,7 +179,7 @@ public class CARepeaterServiceManager
     * @throws IllegalStateException if the service instance on this port was never requested.
     * @throws IllegalStateException if the current interest level wasn't at least 1.
     */
-   private static void increaseServiceInterestLevelForPort( int port )
+   private void increaseServiceInterestLevelForPort( int port )
    {
       Validate.inclusiveBetween( 0, 65535, port );
 
@@ -227,7 +204,7 @@ public class CARepeaterServiceManager
     * @throws IllegalStateException if the current interest level wasn't at least 1.
     */
 
-   private static void reduceServiceInterestlevelForPort( int port )
+   private void reduceServiceInterestlevelForPort( int port )
    {
       Validate.inclusiveBetween( 0, 65535, port );
 

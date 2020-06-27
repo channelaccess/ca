@@ -36,8 +36,8 @@ public class CARepeaterServiceInstanceTest
    static void beforeAll()
    {
       // This is a guard condition. There is no point in checking the behaviour
-      // of the CARepeaterStarterTest class if the network stack is not appropriately
-      // configured for channel access.
+      // of this class if the network stack is not appropriately configured for
+      // channel access.
       assertThat( NetworkUtilities.verifyTargetPlatformNetworkStackIsChannelAccessCompatible(), is( true ) );
 
       // Currently (2020-05-22) this test is not supported when the VPN connection is active on the local machine.
@@ -51,13 +51,13 @@ public class CARepeaterServiceInstanceTest
    void beforeEach()
    {
       threadWatcher = ThreadWatcher.start();
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( TEST_PORT ), is( false ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT ), is( false ) );
    }
 
    @AfterEach
    void afterEach()
    {
-      assertThat( CARepeaterServiceManager.verifyRepeaterStops( TEST_PORT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT ), is( true ) );
       assertDoesNotThrow( () -> threadWatcher.verify(), "Thread leak detected !" );
    }
 
@@ -75,7 +75,7 @@ public class CARepeaterServiceInstanceTest
       assertThat( instance.isProcessAlive(), is(true ) );
       logger.info("OK");
       logger.info("Verifying that the CA Repeater starts running...");
-      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( TEST_PORT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( TEST_PORT ), is( true ) );
       logger.info("OK");
       logger.info("Shutting down the CA Repeater process...");
       instance.shutdown();
@@ -84,7 +84,7 @@ public class CARepeaterServiceInstanceTest
       assertThat( instance.isProcessAlive(), is(false ) );
       logger.info("OK");
       logger.info("Verifying that the CA Repeater shuts down...");
-      assertThat( CARepeaterServiceManager.verifyRepeaterStops( TEST_PORT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT ), is( true ) );
       logger.info("OK");
    }
 
@@ -101,11 +101,11 @@ public class CARepeaterServiceInstanceTest
    {
       final CARepeaterServiceInstance instance = new CARepeaterServiceInstance( TEST_PORT );
       instance.activate();
-      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( TEST_PORT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( TEST_PORT ), is( true ) );
       final Throwable throwable = assertThrows( IllegalStateException.class, instance::activate );
       assertThat( throwable.getMessage(), is( "This service instance was already activated." ) );
       instance.shutdown();
-      assertThat( CARepeaterServiceManager.verifyRepeaterStops( TEST_PORT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT ), is( true ) );
    }
 
    @Test
@@ -113,9 +113,9 @@ public class CARepeaterServiceInstanceTest
    {
       final CARepeaterServiceInstance instance = new CARepeaterServiceInstance( TEST_PORT );
       instance.activate();
-      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( TEST_PORT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( TEST_PORT ), is( true ) );
       instance.shutdown();
-      assertThat( CARepeaterServiceManager.verifyRepeaterStops( TEST_PORT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT ), is( true ) );
       final Throwable throwable = assertThrows( IllegalStateException.class, instance::shutdown );
       assertThat( throwable.getMessage(), is( "This service instance was already shut down." ) );
    }

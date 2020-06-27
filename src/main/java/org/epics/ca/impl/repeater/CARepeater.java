@@ -83,7 +83,7 @@ class CARepeater
       final int port = portArgumentSupplied ? parseToInt( argv[ 1 ], fallbackRepeaterPort ) : fallbackRepeaterPort;
 
       // Nothing to do, if a repeater instance is already running
-      if ( CARepeaterServiceManager.isRepeaterRunning( port ) )
+      if ( CARepeaterStatusChecker.isRepeaterRunning( port ) )
       {
          logger.info( "The repeater is already running and a new instance will not be started." );
          logger.info( "This process will now terminate." );
