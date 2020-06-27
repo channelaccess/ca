@@ -12,7 +12,7 @@ The results of the functional tests that have been performed on the latest relea
 
 An extended usage [Example](src/main/java/org/epics/ca/examples/Example.java) is available.
 
-We warmly invite and appreciate __contributions__, __improvement suggestions__ and/or __feedback__ from the EPICS community on your experiences with this library. Please use the GitHub [issue tracker](https://github.com/channelaccess/ca/issues), or the [contact information](#Contact).
+We warmly invite and appreciate __contributions__, __improvement suggestions__ and/or __feedback__ on your experiences with this library. Please use the GitHub [issue tracker](https://github.com/channelaccess/ca/issues), or the [contact information](#Contact).
 
 ## Features
 * Simplicity.
