@@ -76,13 +76,13 @@ public class CARepeaterServiceManagerTest
    void testCARepeaterServiceManager_requestAndCancelService()
    {
       final CARepeaterServiceManager caRepeaterServiceManager = new CARepeaterServiceManager();
-      caRepeaterServiceManager.requestServiceOnPort( 2 );
+      caRepeaterServiceManager.requestServiceOnPort( TEST_PORT_1 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
-      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( 2 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( TEST_PORT_1 ), is( true ) );
 
-      caRepeaterServiceManager.cancelServiceRequestOnPort( 2 );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( TEST_PORT_1 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 0 ) );
-      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( 2 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT_1 ), is( true ) );
    }
 
    @Test
