@@ -123,8 +123,6 @@ public class ContextTests
    {
       logger.fine( "Performing Q3/Q4/Q5 Tests: please wait...");
 
-      System.setProperty( "CA_LIBRARY_LOG_LEVEL", "WARNING" );
-
       // With default behaviour of ca-1.1.0 release we can only createNext ~200 contexts (as
       // each context starts 10 threads)
       // With default behaviour of ca-1.2.0 release we can only createNext ~100 contexts (as
