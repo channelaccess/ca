@@ -27,7 +27,10 @@ public class CARepeaterServiceManagerTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
-   private static final int TEST_PORT = 45783;
+   private static final int TEST_PORT_1 = 45783;
+   private static final int TEST_PORT_2 = 45787;
+   private static final int TEST_PORT_3 = 45789;
+
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterServiceManagerTest.class );
    private ThreadWatcher threadWatcher;
 
@@ -55,13 +58,17 @@ public class CARepeaterServiceManagerTest
    void beforeEach()
    {
       threadWatcher = ThreadWatcher.start();
-      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT ), is( false ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT_1 ), is( false ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT_2 ), is( false ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT_3 ), is( false ) );
    }
 
    @AfterEach
    void afterEach()
    {
-      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT_1 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT_2 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT_3 ), is( true ) );
       assertDoesNotThrow( () -> threadWatcher.verify(), "Thread leak detected !" );
    }
 
@@ -84,21 +91,21 @@ public class CARepeaterServiceManagerTest
       final CARepeaterServiceManager caRepeaterServiceManager = new CARepeaterServiceManager();
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 0 ) );
 
-      caRepeaterServiceManager.requestServiceOnPort( 2 );
+      caRepeaterServiceManager.requestServiceOnPort( TEST_PORT_1 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
-      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( 2 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( TEST_PORT_1 ), is( true ) );
 
-      caRepeaterServiceManager.requestServiceOnPort( 2 );
+      caRepeaterServiceManager.requestServiceOnPort( TEST_PORT_1 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
-      assertThat( CARepeaterStatusChecker.isRepeaterRunning( 2 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT_1 ), is( true ) );
 
-      caRepeaterServiceManager.cancelServiceRequestOnPort( 2 );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( TEST_PORT_1 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
-      assertThat( CARepeaterStatusChecker.isRepeaterRunning( 2 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT_1 ), is( true ) );
 
-      caRepeaterServiceManager.cancelServiceRequestOnPort( 2 );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( TEST_PORT_1 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 0 ) );
-      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( 2 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT_1 ), is( true ) );
    }
 
    @Test
@@ -107,28 +114,28 @@ public class CARepeaterServiceManagerTest
       final CARepeaterServiceManager caRepeaterServiceManager = new CARepeaterServiceManager();
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 0 ) );
 
-      caRepeaterServiceManager.requestServiceOnPort( 22 );
+      caRepeaterServiceManager.requestServiceOnPort( TEST_PORT_1 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
-      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( 22 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( TEST_PORT_1 ), is( true ) );
 
-      caRepeaterServiceManager.requestServiceOnPort( 33 );
+      caRepeaterServiceManager.requestServiceOnPort( TEST_PORT_2 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 2 ) );
-      assertThat( CARepeaterStatusChecker.isRepeaterRunning( 22 ), is( true ) );
-      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( 33 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT_1 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( TEST_PORT_2 ), is( true ) );
 
-      caRepeaterServiceManager.cancelServiceRequestOnPort( 999 );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( TEST_PORT_3 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 2 ) );
-      assertThat( CARepeaterStatusChecker.isRepeaterRunning( 22 ), is( true ) );
-      assertThat( CARepeaterStatusChecker.isRepeaterRunning( 33 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT_1 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT_2 ), is( true ) );
 
-      caRepeaterServiceManager.cancelServiceRequestOnPort( 22 );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( TEST_PORT_1 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
-      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( 22 ), is( true ) );
-      assertThat( CARepeaterStatusChecker.isRepeaterRunning( 33 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT_1 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.isRepeaterRunning( TEST_PORT_2 ), is( true ) );
 
-      caRepeaterServiceManager.cancelServiceRequestOnPort( 33 );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( TEST_PORT_2 );
       assertThat( caRepeaterServiceManager.getServiceInstances(), is( 0 ) );
-      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( 33 ), is( true ) );
+      assertThat( CARepeaterStatusChecker.verifyRepeaterStops( TEST_PORT_2 ), is( true ) );
    }
 
 /*- Private methods ----------------------------------------------------------*/
