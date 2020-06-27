@@ -12,6 +12,8 @@ The results of the functional tests that have been performed on the latest relea
 
 An extended usage [Example](src/main/java/org/epics/ca/examples/Example.java) is available.
 
+We warmly invite and appreciate contributions, improvement suggestions and/or any feedback from the EPICS community on your experiences with this library. Please raise them on the GitHub [issue tracker](https://github.com/channelaccess/ca/issues), and/or be using the [contact information](#Contact).
+
 ## Features
 * Simplicity.
 * Use of Java type system.
