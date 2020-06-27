@@ -43,7 +43,7 @@ as their build system.
  
 The current distribution home of the library is [JCenter](https://bintray.com/paulscherrerinstitute/hltools/org.epics%3Aca).
 Here you can find the most recent library builds. Earlier versions (up to 1.2.2) were available at 
-[Maven Central](https://search.maven.org/artifact/org.epics/ca).
+[Maven Central](https://search.maven.org/artifact/org.epics/ca) and for a while longer we will continue this practice
 
 #### Maven Project Usage
 
