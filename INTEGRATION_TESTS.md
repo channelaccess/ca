@@ -1,7 +1,9 @@
 # Performance Testing
 
 This document presents the results of integration testing on the current and previous release. By comparing the 
-results it is hoped we may spot perfromance regressions that might otherwise go unnoticed.
+results with previous releases it is hoped we may optimse the performance of the library and/or spot performance regressions that might otherwise go unnoticed.
+
+The performance tests were written from the persoective of a developer who is first starting to use the __ca__. Each test presents the answer to a genuine question that a new maintainer of the library once had.
 
 Before running the tests an EPICS SoftIOC should be started based on the [epics_tests.db](src/integrationTest/resources/epics_tests.db).
 
@@ -23,7 +25,7 @@ Q1: Can the context manual close feature be relied on to cleanup the created cha
 
 Q2: Can the context autoclose feature be relied on to cleanup the created channels ? Answer: **YES**.  
 
-Q3: How many contexts can be created ? Answer: **at least 150**.  
+Q3: How many contexts can be created ? Answer: **at least 150**.  ,
 
 Q4: What is the context creation cost ? Answer: **See below.**  
 ```  
