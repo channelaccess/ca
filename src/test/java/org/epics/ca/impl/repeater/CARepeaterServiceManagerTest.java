@@ -2,7 +2,6 @@
 
 package org.epics.ca.impl.repeater;
 
-
 /*- Imported packages --------------------------------------------------------*/
 
 import org.apache.commons.lang3.Validate;
@@ -20,13 +19,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.net.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /*- Interface Declaration ----------------------------------------------------*/
@@ -38,12 +37,9 @@ public class CARepeaterServiceManagerTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
+   private static final int TEST_PORT = 45783;
    private static final Logger logger = LibraryLogManager.getLogger( CARepeaterServiceManagerTest.class );
    private ThreadWatcher threadWatcher;
-   
-   private static final int testPort = 5065;
-   private static final Level caRepeaterDebugLevel = Level.ALL;
-   private static final boolean caRepeaterOutputCaptureEnable = false;
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -64,31 +60,19 @@ public class CARepeaterServiceManagerTest
          fail( "This test is not supported when a VPN connection is active on the local network interface." );
       }
    }
-   
+
    @BeforeEach
    void beforeEach()
    {
       threadWatcher = ThreadWatcher.start();
-      
-      final InetSocketAddress wildcardAddress = new InetSocketAddress( 5065 );
-      logger.info( "Checking Test Precondition: CA Repeater should NOT be running... on: " + wildcardAddress );
-
-      if ( CARepeaterServiceManager.isRepeaterRunning( testPort ) )
-      {
-         logger.info( "Test Precondition FAILED: the CA Repeater was detected to be already running." );
-         fail();
-      }
-      else
-      {
-         logger.info( "Test Precondition OK: the CA Repeater was not detected to be already running." );
-      }
-      logger.info( "Starting Test." );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( TEST_PORT ), is( false ) );
    }
 
    @AfterEach
    void afterEach()
    {
-      threadWatcher.verify();
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( TEST_PORT ), is( true ) );
+      assertDoesNotThrow( () -> threadWatcher.verify(), "Thread leak detected !" );
    }
 
    @Test
@@ -102,9 +86,11 @@ public class CARepeaterServiceManagerTest
    {
       CARepeaterServiceManager.requestServiceOnPort( 2 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 1 ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( 2 ), is( true ) );
 
       CARepeaterServiceManager.cancelServiceRequestOnPort( 2 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 0 ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( 2 ), is( true ) );
    }
 
    @Test
@@ -114,15 +100,19 @@ public class CARepeaterServiceManagerTest
 
       CARepeaterServiceManager.requestServiceOnPort( 2 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 1 ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( 2 ), is( true ) );
 
       CARepeaterServiceManager.requestServiceOnPort( 2 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 1 ) );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( 2 ), is( true ) );
 
       CARepeaterServiceManager.cancelServiceRequestOnPort( 2 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 1 ) );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( 2 ), is( true ) );
 
       CARepeaterServiceManager.cancelServiceRequestOnPort( 2 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 0 ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( 2 ), is( true ) );
    }
 
    @Test
@@ -132,38 +122,46 @@ public class CARepeaterServiceManagerTest
 
       CARepeaterServiceManager.requestServiceOnPort( 22 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 1 ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( 22 ), is( true ) );
 
       CARepeaterServiceManager.requestServiceOnPort( 33 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 2 ) );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( 22 ), is( true ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( 33 ), is( true ) );
 
       CARepeaterServiceManager.cancelServiceRequestOnPort( 999 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 2 ) );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( 22 ), is( true ) );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( 33 ), is( true ) );
 
       CARepeaterServiceManager.cancelServiceRequestOnPort( 22 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 1 ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( 22 ), is( true ) );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( 33 ), is( true ) );
 
       CARepeaterServiceManager.cancelServiceRequestOnPort( 33 );
       assertThat( CARepeaterServiceManager.getServiceInstances(), is( 0 ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( 33 ), is( true ) );
    }
 
    @Test
    void testIsRepeaterRunning_detectsShareableSocketWhenReservedInSameJvm() throws Throwable
    {
-      try ( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( testPort, true ) )
+      try ( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( TEST_PORT, true ) )
       {
-         assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort), is( true  ) );
+         assertThat( CARepeaterServiceManager.isRepeaterRunning( TEST_PORT), is( true  ) );
       }
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort), is( false ) );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( TEST_PORT), is( false ) );
    }
 
    @Test
    void testIsRepeaterRunning_detectsNonShareableSocketWhenReservedInSameJvm() throws Throwable
    {
-      try ( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket(testPort, false ) )
+      try ( DatagramSocket ignored = UdpSocketUtilities.createBroadcastAwareListeningSocket( TEST_PORT, true ) )
       {
-         assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort), is( true  ) );
+         assertThat( CARepeaterServiceManager.isRepeaterRunning( TEST_PORT ), is( true  ) );
       }
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort), is( false ) );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( TEST_PORT), is( false ) );
    }
 
    @MethodSource( "getArgumentsForTestIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddresses" )
@@ -171,7 +169,6 @@ public class CARepeaterServiceManagerTest
    void testIsRepeaterRunning_detectsSocketReservedInDifferentJvmOnDifferentLocalAddress( String localAddress ) throws Throwable
    {
       Validate.notNull( localAddress, "The localAddress was not provided." );
-      
       logger.info( "Checking whether repeater instance detected on local address: '" + localAddress + "'" );
 
       // Spawn an external process to reserve a socket on port 5065 for 3000 milliseconds
@@ -183,30 +180,23 @@ public class CARepeaterServiceManagerTest
       // method detects that the port is no longer available.
       Thread.sleep( 1500 );
       assertThat( processManager.isAlive(), is( true ) );
-      assertThat( "The isRepeaterRunning method failed to detect that the socket was reserved.",
-                  CARepeaterServiceManager.isRepeaterRunning( testPort ), is( true ) );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( true ) );
 
       // Wait for the process to finish and check that the socket has become available again.
       processManager.waitFor( 5000, TimeUnit.MILLISECONDS );
       assertThat( processManager.isAlive(), is( false ) );
-      assertThat( "The isRepeaterRunning method failed to detect that the socket is now available.",
-                  CARepeaterServiceManager.isRepeaterRunning( testPort ), is( false ) );
-
-     logger.info( "The test PASSED." );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( false ) );
    }
 
    @Test
    void testIsRepeaterRunning_startRepeaterInCurrentJvmProcess() throws Throwable
    {
-      final CARepeater repeater = new CARepeater( testPort );
+      final CARepeater repeater = new CARepeater( TEST_PORT );
       repeater.start();
-      Thread.sleep( 1500 );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort ), is( true ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( TEST_PORT ), is( true ) );
       repeater.shutdown();
-      Thread.sleep( 1500 );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( testPort ), is( false ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( TEST_PORT ), is( true ) );
    }
-
 
 /*- Private methods ----------------------------------------------------------*/
    

@@ -41,10 +41,10 @@ class ContextTest
 /*- Public attributes --------------------------------------------------------*/
 /*- Private attributes -------------------------------------------------------*/
 
+   private static final int TEST_PORT = ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT;
+   private static final String TEST_CHANNEL_NAME = "test01";
    private static final Logger logger = LibraryLogManager.getLogger( ContextTest.class );
    private ThreadWatcher threadWatcher;
-   
-   private static final String TEST_CHANNEL_NAME = "test01";
 
 /*- Main ---------------------------------------------------------------------*/
 /*- Constructor --------------------------------------------------------------*/
@@ -65,16 +65,18 @@ class ContextTest
       }
    }
 
-   @BeforeEach()
+   @BeforeEach
    void beforeEach()
    {
       threadWatcher = ThreadWatcher.start();
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( TEST_PORT ), is( false ) );
    }
-   
-   @AfterEach()
+
+   @AfterEach
    void afterEach()
    {
-      threadWatcher.verify();
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( TEST_PORT ), is( true ) );
+      assertDoesNotThrow( () -> threadWatcher.verify(), "Thread leak detected !" );
    }
    
    @Test
@@ -229,106 +231,70 @@ class ContextTest
    }
 
    @Test
-   void integrationTestCreateContext_doesNotStartRepeater_whenDisabled() throws InterruptedException
+   void integrationTestCreateContext_doesNotStartRepeater_whenDisabled()
    {
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "true" );
       try ( final Context ignored = new Context() )
       {
-         Thread.sleep( 1500 );
-         assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( false ) );
+         assertThat( CARepeaterServiceManager.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( false ) );
       }
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), String.valueOf( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
    }
 
    @Test
-   void integrationTestCreateContext_startsRepeaterByDefault() throws InterruptedException
-   {
-      try ( final Context ignored = new Context() )
-      {
-         Thread.sleep( 1500 );
-         assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( true ) );
-      }
-      Thread.sleep( 1500 );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( false ) );
-   }
-
-   @Test
-   void integrationTestCreateContext_startsRepeaterWhenEnabled_thenShutsItDownAgainWhenContextGoesOutOfScope() throws InterruptedException
+   void integrationTestCreateContext_startsRepeater_whenEnabled()
    {
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "false" );
       try ( final Context ignored = new Context() )
       {
-         Thread.sleep( 1500 );
-         assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( true ) );
+         assertThat( CARepeaterServiceManager.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
       }
-      Thread.sleep( 1500 );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( false ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), String.valueOf( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
    }
 
    @Test
-   void integrationTestCreateMultipleContexts_repeaterShutdownOccursOnlyAfterLastContextIsClosed() throws InterruptedException
+   void integrationTestCreateContext_startsRepeaterByDefault()
+   {
+      try ( final Context ignored = new Context() )
+      {
+         assertThat( CARepeaterServiceManager.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
+      }
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
+   }
+
+   @Test
+   void integrationTestCreateMultipleContexts_repeaterShutdownOccursOnlyAfterLastContextIsClosed()
    {
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), "false" );
-      logger.info( "CREATING FIRST CONTEXT..." );
       final Context ignored1 = new Context();
-      Thread.sleep( 1500 );
-
-      logger.info( "CHECKING REPEATER IS RUNNING..." );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( true ) );
-      logger.info( "OK" );
-
-      logger.info( "CREATING SECOND CONTEXT..." );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
       try ( final Context ignored2 = new Context() )
       {
-         Thread.sleep( 1500 );
-         logger.info( "CHECKING REPEATER IS RUNNING..." );
-         assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( true ) );
-         logger.info( "OK" );
-         logger.info( "CLOSING SECOND CONTEXT..." );
+         assertThat( CARepeaterServiceManager.isRepeaterRunning( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT  ), is( true ) );
       }
-
-      Thread.sleep( 1500 );
-      logger.info( "CHECKING REPEATER IS STILL RUNNING..." );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( true ) );
-      logger.info( "OK" );
-
-      logger.info( "CLOSING FIRST CONTEXT..." );
+      assertThat( CARepeaterServiceManager.isRepeaterRunning( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT  ), is( true ) );
       ignored1.close();
-
-      Thread.sleep( 1500 );
-      logger.info( "CHECKING REPEATER IS NOW STOPPED..." );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( 5065 ), is( false ) );
-      logger.info( "OK" );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( ProtocolConfiguration.EPICS_CA_REPEATER_PORT_DEFAULT ), is( true ) );
       System.setProperty( LibraryConfiguration.PropertyNames.CA_REPEATER_DISABLE.toString(), String.valueOf( LibraryConfiguration.CA_REPEATER_DISABLE_DEFAULT ) );
    }
 
    @Test
-   void integrationTestCreateMultipleContexts_withMultipleRepeaters_runningOnMultiplePorts() throws InterruptedException
+   void integrationTestCreateMultipleContexts_withMultipleRepeaters_runningOnMultiplePorts()
    {
       final Properties ctx1Props = new Properties();
       ctx1Props.setProperty( ProtocolConfiguration.PropertyNames.EPICS_CA_REPEATER_PORT.toString(), "1111" );
       final Context ignored1 = new Context( ctx1Props );
-      Thread.sleep( 1500 );
-
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( 1111 ), is( true ) );
-
+      assertThat( CARepeaterServiceManager.verifyRepeaterStarts( 1111 ), is( true ) );
       final Properties ctx2Props = new Properties();
-      ctx2Props.setProperty(ProtocolConfiguration.PropertyNames.EPICS_CA_REPEATER_PORT.toString(), "2222" );
-
+      ctx2Props.setProperty( ProtocolConfiguration.PropertyNames.EPICS_CA_REPEATER_PORT.toString(), "2222" );
       try ( final Context ignored2 = new Context( ctx2Props ) )
       {
-         Thread.sleep( 1500 );
-         assertThat( CARepeaterServiceManager.isRepeaterRunning( 2222 ), is( true ) );
+         assertThat( CARepeaterServiceManager.verifyRepeaterStarts( 2222 ), is( true ) );
       }
-
-      Thread.sleep( 1500 );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( 2222 ), is( false ) );
-
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( 2222 ), is( true ) );
       ignored1.close();
-
-      Thread.sleep( 1500 );
-      assertThat( CARepeaterServiceManager.isRepeaterRunning( 1111 ), is( false ) );
+      assertThat( CARepeaterServiceManager.verifyRepeaterStops( 1111 ), is( true ) );
    }
 
    @Test
