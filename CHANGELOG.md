@@ -227,8 +227,8 @@ This log describes the functionality of tagged versions within the repository.
   
   ###### Test Results: 
   * Mac OSX: 536 tests successful / 0 tests failed / 0 tests skipped.
-  * Linux RHEL7: xxx tests completed / 0 tests failed / 0 tests skipped.
-  * Windows 10: xxx tests passed / 0 tests failed / 2 tests skipped.
+  * Linux RHEL7: 536 tests completed / 0 tests failed / 0 tests skipped.
+  * Windows 10: 536 tests passed / 0 tests failed / 2 tests skipped.
 
   ###### Integration Test Results: 
   * See the [INTEGRATION_TESTS](INTEGRATION_TESTS.md) page.

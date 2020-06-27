@@ -68,66 +68,66 @@ public class CARepeaterServiceManagerTest
    @Test
    void testCARepeaterServiceManager_requestAndCancelService()
    {
-      final CARepeaterServiceManager caRepeaterServiceManager1 = new CARepeaterServiceManager();
-      caRepeaterServiceManager1.requestServiceOnPort( 2 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 1 ) );
+      final CARepeaterServiceManager caRepeaterServiceManager = new CARepeaterServiceManager();
+      caRepeaterServiceManager.requestServiceOnPort( 2 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
       assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( 2 ), is( true ) );
 
-      caRepeaterServiceManager1.cancelServiceRequestOnPort( 2 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 0 ) );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( 2 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 0 ) );
       assertThat( CARepeaterStatusChecker.verifyRepeaterStops( 2 ), is( true ) );
    }
 
    @Test
    void testCARepeaterServiceManager_requestAndCancelServiceTwiceOnSamePort()
    {
-      final CARepeaterServiceManager caRepeaterServiceManager1 = new CARepeaterServiceManager();
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 0 ) );
+      final CARepeaterServiceManager caRepeaterServiceManager = new CARepeaterServiceManager();
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 0 ) );
 
-      caRepeaterServiceManager1.requestServiceOnPort( 2 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 1 ) );
+      caRepeaterServiceManager.requestServiceOnPort( 2 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
       assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( 2 ), is( true ) );
 
-      caRepeaterServiceManager1.requestServiceOnPort( 2 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 1 ) );
+      caRepeaterServiceManager.requestServiceOnPort( 2 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
       assertThat( CARepeaterStatusChecker.isRepeaterRunning( 2 ), is( true ) );
 
-      caRepeaterServiceManager1.cancelServiceRequestOnPort( 2 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 1 ) );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( 2 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
       assertThat( CARepeaterStatusChecker.isRepeaterRunning( 2 ), is( true ) );
 
-      caRepeaterServiceManager1.cancelServiceRequestOnPort( 2 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 0 ) );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( 2 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 0 ) );
       assertThat( CARepeaterStatusChecker.verifyRepeaterStops( 2 ), is( true ) );
    }
 
    @Test
    void testCARepeaterServiceManager_requestAndCancelServiceOnDifferentPorts()
    {
-      final CARepeaterServiceManager caRepeaterServiceManager1 = new CARepeaterServiceManager();
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 0 ) );
+      final CARepeaterServiceManager caRepeaterServiceManager = new CARepeaterServiceManager();
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 0 ) );
 
-      caRepeaterServiceManager1.requestServiceOnPort( 22 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 1 ) );
+      caRepeaterServiceManager.requestServiceOnPort( 22 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
       assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( 22 ), is( true ) );
 
-      caRepeaterServiceManager1.requestServiceOnPort( 33 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 2 ) );
+      caRepeaterServiceManager.requestServiceOnPort( 33 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 2 ) );
       assertThat( CARepeaterStatusChecker.isRepeaterRunning( 22 ), is( true ) );
       assertThat( CARepeaterStatusChecker.verifyRepeaterStarts( 33 ), is( true ) );
 
-      caRepeaterServiceManager1.cancelServiceRequestOnPort( 999 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 2 ) );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( 999 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 2 ) );
       assertThat( CARepeaterStatusChecker.isRepeaterRunning( 22 ), is( true ) );
       assertThat( CARepeaterStatusChecker.isRepeaterRunning( 33 ), is( true ) );
 
-      caRepeaterServiceManager1.cancelServiceRequestOnPort( 22 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 1 ) );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( 22 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 1 ) );
       assertThat( CARepeaterStatusChecker.verifyRepeaterStops( 22 ), is( true ) );
       assertThat( CARepeaterStatusChecker.isRepeaterRunning( 33 ), is( true ) );
 
-      caRepeaterServiceManager1.cancelServiceRequestOnPort( 33 );
-      assertThat( caRepeaterServiceManager1.getServiceInstances(), is( 0 ) );
+      caRepeaterServiceManager.cancelServiceRequestOnPort( 33 );
+      assertThat( caRepeaterServiceManager.getServiceInstances(), is( 0 ) );
       assertThat( CARepeaterStatusChecker.verifyRepeaterStops( 33 ), is( true ) );
    }
 
