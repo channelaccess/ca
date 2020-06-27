@@ -142,6 +142,7 @@ class ChannelTests
       {
          logger.info( String.format( "- Creating %d channels took %d ms. Average: %.3f ms", result, resultMap.get(result), (float) resultMap.get(result) / result ) );
       }
+      logger.info("```");
 
       logger.info( String.format( "Q12: Do all channels connected to the same PV share the same returned object ? Answer: %s", resultMap.size() == channelObjectMap.size() ? "**NO**." : "**YES**." ) );
       logger.info( "Channel object names were as follows:");

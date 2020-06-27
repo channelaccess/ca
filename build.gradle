@@ -186,7 +186,7 @@ task integrationTest(type: Test) {
         events 'passed', 'skipped', 'failed'
         exceptionFormat 'full'
         outputs.upToDateWhen {false}
-        showStandardStreams = false
+        showStandardStreams = true
     }
 }
 
