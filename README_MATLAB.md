@@ -8,7 +8,7 @@ The latest release of this package can be downloaded [here](https://github.com/c
 After this download and copy the jar into your Matlab workspace and you are ready to go:
 
 ```Matlab
-javaaddpath('ca-all-1.3.1.jar')
+javaaddpath('ca-all-1.3.2.jar')
 import org.epics.ca.*
 
 context = Context();
@@ -25,7 +25,7 @@ channel.close()
 context.close()
 ```
 
-For more details on the available functions please below or refer to the main [Readme.md](Readme.md) of the library.
+For more details on the available functions please below or refer to the main [README.md](Readme.md) of the library.
 
 
 # Configuration
@@ -54,7 +54,7 @@ To get started with the library:
 * At the top of your .m file add following line (remember to change the version to the actual one).
 
 ```matlab
-javaaddpath('ca-1.3.1-all.jar')
+javaaddpath('ca-1.3.2-all.jar')
 ```
 
 In scripts that get executed several times in the same workspace:
@@ -62,7 +62,7 @@ In scripts that get executed several times in the same workspace:
 
 ```matlab
 if not(exist('java_classpath_set'))
-    javaaddpath('ca-1.3.1-all.jar')
+    javaaddpath('ca-1.3.2-all.jar')
     java_classpath_set = 1;
 end
 ```
@@ -70,7 +70,7 @@ end
 In more complex Matlab projects you might want to have the library in a sub/parent-folder. In this case use relative paths to refer to the library.
 
 ```matlab
-javaaddpath('../ca-1.3.1-all.jar')
+javaaddpath('../ca-1.3.2-all.jar')
 ```
 
 For Windows users, keep in mind to use backslashes ( __\__ ) !
@@ -80,7 +80,7 @@ For Windows users, keep in mind to use backslashes ( __\__ ) !
 Include the _full qualified path_ of the jar in the *javaclasspath.txt* within the Matlab home folder (ideally also copy the jar into this directory). For example:
 
 ```
-/some/location/MATLAB/ca-1.3.1-all.jar
+/some/location/MATLAB/ca-1.3.2-all.jar
 ```
 
 After creating/altering the file *javaclasspath.txt* you need to restart Matlab.

@@ -33,7 +33,7 @@ version is archived in the [documents](docs) area of this project.
 
 The __ca__ library 1.x.y series of releases are compatible with __Java 8__ and higher.
 
-It is anticipated that the current __ca__ release (1.3.1) will be the __last release to support Java 8__ and 
+It is anticipated that the current __ca__ release range (1.3.x) will be the __last release to support Java 8__ and 
 that future releases will require at least __Java 11__.
 
 ## Distribution
@@ -53,7 +53,7 @@ Add the following dependency:
 <dependency>
   <groupId>org.epics</groupId>
   <artifactId>ca</artifactId>
-  <version>1.3.1</version>
+  <version>1.3.2</version>
 </dependency>
 ```
 
@@ -73,7 +73,7 @@ and the following repository:
 Add the following dependency:
 
 ```gradle
-compile 'org.epics:ca:1.3.1'
+compile 'org.epics:ca:1.3.2'
 ```
 
 and the following repository:

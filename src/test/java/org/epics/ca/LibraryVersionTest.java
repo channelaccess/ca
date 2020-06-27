@@ -42,7 +42,7 @@ public class LibraryVersionTest
          // Note: the version string will have to be updated on every new release.
          // However, new releases should not be published until all the unit tests pass.
          logger.info( "Test is running from JAR. Version is: "  + versionString + "'." );
-         assertThat( LibraryVersion.getAsString(), is("1.3.1" ) );
+         assertThat( LibraryVersion.getAsString(), is("1.3.2" ) );
       }
       else
       {

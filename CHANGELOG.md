@@ -206,4 +206,30 @@ This log describes the functionality of tagged versions within the repository.
 
   ###### Integration Test Results: 
   * See the [INTEGRATION_TESTS](INTEGRATION_TESTS.md) page.
+
+
+* [1.3.2](https://github.com/channelaccess/ca/releases/tag/1.3.2) Released 2020-06-27.
+
+  ###### Overview:
+  Fixed performance regression in Context create. Other code improvements triggered by testing. 
+  
+  ###### Change List: 
+  
+  * [Issue #107](https://github.com/channelaccess/ca/issues/107) Integration Test Loggers should be static.
+  * [Issue #108](https://github.com/channelaccess/ca/issues/108) Channel Integration Tests: Q20 does not close context.
+  * [Issue #109](https://github.com/channelaccess/ca/issues/109) Method isAlive can throw NPE if invoked before process started.
+  * [Issue #110](https://github.com/channelaccess/ca/issues/110) CA Repeater Service Startup Code Hardening.
+  * [Issue #111](https://github.com/channelaccess/ca/issues/111) Create release 1.3.2.
+
+  ###### Java Release Compatibility
+  
+  See previous release.
+  
+  ###### Test Results: 
+  * Mac OSX: 536 tests successful / 0 tests failed / 0 tests skipped.
+  * Linux RHEL7: xxx tests completed / 0 tests failed / 0 tests skipped.
+  * Windows 10: xxx tests passed / 0 tests failed / 2 tests skipped.
+
+  ###### Integration Test Results: 
+  * See the [INTEGRATION_TESTS](INTEGRATION_TESTS.md) page.
   
