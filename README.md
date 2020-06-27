@@ -335,7 +335,6 @@ A channel can have Access Right and Connection listeners. These two types of lis
 ```
 Listener connectionListener = channel.addConnectionListener((channel, state) -> System.out.println(channel.getName() + " is connected? " + state));
 
-
 Listener accessRightListener = channel.addAccessRightListener((channel, rights) -> System.out.println(channel.getName() + " is rights? " + rights));
 ```
 To remove the listener(s), or use `try-catch-resources` (i.e. Listeners implement `AutoCloseable`) or
@@ -374,7 +373,7 @@ descriptors.add(new ChannelDescriptor<Double>("name_double", Double.class));
 List<Channel<?>> channels = Channels.create(context,  descriptors);
 ```
 
-All of these function will __create__ and __connect__ the specified channels. a
+All of these function will __create__ and __connect__ the specified channels.
 
 ### WaitForValue
 For waiting until a channel reaches a specified value `Channels` provide following functions:
