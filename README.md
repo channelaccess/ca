@@ -103,7 +103,7 @@ means of environmental variables set in the host OS, or through Java System prop
 | CA_MONITOR_NOTIFIER_IMPL    | The configuration of the CA library monitor notification engine.                        | see below     |
 
 
-#### EPICS Channel Access Protocol Configuration
+#### EPICS Channel-Access Protocol Configuration
 
 The __ca__ library supports the configuration of the operating parameters of the EPICS Channel Access Protocol by
 means of the "normal" configuration variables. These can be set once per context instance.
@@ -166,9 +166,7 @@ This is how to create a context:
 Context context = new Context()
 ```
 
-Each context supports the configuration properties defined in the previous section. By default whencreated these 
-properties are taken from the CA library environment. If finer-grained control is required over each context then
-an appropriately configured properties object can be supplied in the class constructor.
+Each context supports the EPICS Channel-Access configuration properties defined in the previous section. The default properties may be overridden by variables set in the host operating system environment, or by setting Java system properties in the CA library environment. If finer-grained control is required over individual contexts then an appropriately configured properties object can be supplied in the class constructor.
 
 ```
 Properties properties = new Properties();
@@ -176,16 +174,16 @@ properties.setProperty( Context.ProtocolConfiguration.EPICS_CA_ADDR_LIST.toStrin
 new Context(properties);
 ```
 
-The context's resources (= network sockets and allocated memory) should be disposed of when the context is no longer 
-required.  This can be achieved by callling the `close` method.
+The context's resources (= network sockets and allocated memory) are disposed of when the context is no longer 
+required.  This can be achieved by calling the `close` method.
 
 ```
 context.close();
 ```
 
-Alternatively as the Context implements the Java `AutoCloseable` interface it can also be used inside a 
+Alternatively, as the Context implements the Java `AutoCloseable` interface, it can also be used inside a 
 try-with-resources statement to ensure that the context's resources are automatically disposed when the 
-context is no longer in scope. 
+context hoes out of scope. 
 
 ```
 try ( Context context = new Context)
