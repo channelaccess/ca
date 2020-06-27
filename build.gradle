@@ -172,7 +172,7 @@ task integrationTest(type: Test) {
     // For the integration tests there are useful messages output using log
     // messages at FINE level. This allows the information for the actual results
     // which are emitted with log level INFO to be filtered out.
-    systemProperty 'CA_LIBRARY_LOG_LEVEL', 'ALL'
+    systemProperty 'CA_LIBRARY_LOG_LEVEL', 'INFO'
     systemProperty 'CA_REPEATER_DISABLE', 'false'
 
     group = 'verification'
