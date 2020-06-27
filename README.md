@@ -199,7 +199,7 @@ To create a channel use:
 Channel<Double> channel = context.createChannel("MY_CHANNEL", Double.class);
 ```
 
-At channel creation time the channel's type need to be defined. If you want to have a generic type of the channel (i.e. you want to use the type set on the server) use:
+At channel creation time the channel's type needs to be defined. If you want to have a generic type of channel (i.e. you want to use the type set on the server) use:
 
 ```
 Channel<Object> channel = context.createChannel("ARIDI-PCT:CURRENT", Object.class);
