@@ -337,7 +337,7 @@ Listener connectionListener = channel.addConnectionListener((channel, state) -> 
 
 Listener accessRightListener = channel.addAccessRightListener((channel, rights) -> System.out.println(channel.getName() + " is rights? " + rights));
 ```
-To remove the listener(s), or use `try-catch-resources` (i.e. Listeners implement `AutoCloseable`) or
+To remove the listener(s), one can use `try-catch-resources` (i.e. Listeners implement `AutoCloseable`) or
 
 ```
 listener.close()
