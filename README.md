@@ -406,25 +406,25 @@ Ca provides the annotation, __@CaChannel__,  to annotate channel declarations wi
 All that needs to done is, to annotate the channel declarations as follows:
 ```
 class AnnotatedClass {
-		@CaChannel(name="adc01", type=Double.class)
-		private Channel<Double> doubleChannel;
+	@CaChannel(name="adc01", type=Double.class)
+	private Channel<Double> doubleChannel;
 
-		@CaChannel(name="adc01", type=String.class)
-		private Channel<String> stringChannel;
+	@CaChannel(name="adc01", type=String.class)
+	private Channel<String> stringChannel;
 
-		@CaChannel(name={"adc01", "simple"}, type=String.class)
-		private List<Channel<String>> stringChannels;
+	@CaChannel(name={"adc01", "simple"}, type=String.class)
+	private List<Channel<String>> stringChannels;
 
-		public Channel<Double> getDoubleChannel() {
-			return doubleChannel;
-		}
-		public Channel<String> getStringChannel() {
-			return stringChannel;
-		}
-		public List<Channel<String>> getStringChannels() {
-			return stringChannels;
-		}
+	public Channel<Double> getDoubleChannel() {
+		return doubleChannel;
 	}
+	public Channel<String> getStringChannel() {
+		return stringChannel;
+	}
+	public List<Channel<String>> getStringChannels() {
+		return stringChannels;
+	}
+}	
 ```
 
 Afterwards the channels can be created via `Channels` as follows:
