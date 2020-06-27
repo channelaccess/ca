@@ -158,7 +158,7 @@ This engine will remain fully configurable to meet the needs of all client appli
 ## Context
 
 In order to create channels a Context must first be created. The context acts as a channel container. When the context 
-is closed also all channels created with that context will be automatically closed.
+is closed, all the channels created with that context will also be automatically closed.
 
 This is how to create a context:
 
