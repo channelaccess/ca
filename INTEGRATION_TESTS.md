@@ -1,6 +1,6 @@
 # Performance Testing
 
-This document presents the results of integration testing on the current and previous release. By comparing the 
+This document presents the results of integration testing on the current library release. By comparing the 
 results with previous releases it is hoped we may optimse the performance of the library and/or spot performance regressions that might otherwise go unnoticed.
 
 The performance tests were written from the persoective of a developer who is first starting to use the __ca__. Each test presents the answer to a genuine question that a new maintainer of the library once had.
