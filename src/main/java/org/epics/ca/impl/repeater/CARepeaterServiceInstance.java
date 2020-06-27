@@ -117,12 +117,12 @@ class CARepeaterServiceInstance
          return;
       }
 
-      try
+      final boolean outputCaptureEnable = LibraryConfiguration.getInstance().isRepeaterOutputCaptureEnabled();
+      if ( processManager.start( outputCaptureEnable ) )
       {
-         final boolean outputCaptureEnable = LibraryConfiguration.getInstance().isRepeaterOutputCaptureEnabled();
-         start( outputCaptureEnable );
+         logger.info( "The CA Repeater on port " + port + " was started." );
       }
-      catch ( RuntimeException ex )
+      else
       {
          logger.warning( "The CA Repeater on port " + port + " failed to start." );
       }
@@ -149,24 +149,17 @@ class CARepeaterServiceInstance
          return;
       }
 
-      if ( ! CARepeaterServiceManager.isRepeaterRunning( port ) )
-      {
-         logger.info( "The CA Repeater is not running on port " + port + "." );
-         return;
-      }
-
       if ( ! processManager.isAlive() )
       {
-         logger.info( "The CA Repeater that is running on port " + port + " was not started by this service instance." );
-         logger.info( "Possibly it was started previously by another operating system process." );
+         logger.info( "The CA Repeater on port " + port + " is no longer alive." );
          return;
       }
 
-      try
+      if ( processManager.shutdown() )
       {
-         stopRepeater(  processManager );
+         logger.info( "The CA Repeater on port " + port + " was shut down." );
       }
-      catch ( RuntimeException ex )
+      else
       {
          logger.warning( "The CA Repeater on port " + port + " failed to shut down." );
       }
@@ -218,84 +211,6 @@ class CARepeaterServiceInstance
       final String[] programArgs = new String[] { "-p", repeaterPortAsString };
 
       return new JavaProcessManager( CARepeater.class, properties, programArgs );
-   }
-
-   /**
-    * Starts the CA Repeater process and waits a predefined delay before
-    * verifying that the repeater is now running.
-    *
-    * @param outputCaptureEnable whether the standard output and standard error of
-    *    the spawned process should be captured and sent to the logging system in
-    *    the owning process.
-    *
-    * @throws RuntimeException if some unexpected condition prevented the
-    *    repeater from being started.
-    */
-   private void start( boolean outputCaptureEnable )
-   {
-      processManager.start( outputCaptureEnable );
-
-      try
-      {
-         Thread.sleep( REPEATER_STARTUP_DELAY );
-      }
-      catch ( InterruptedException e )
-      {
-         logger.warning( "Interrupted whilst waiting for CA Repeater to start running." );
-         Thread.currentThread().interrupt();
-      }
-
-      if ( CARepeaterServiceManager.isRepeaterRunning( port ) )
-      {
-         logger.info( "The CA Repeater started ok." );
-      }
-      else
-      {
-         logger.warning( "The CA Repeater failed to start." );
-      }
-   }
-
-
-   /**
-    * Shuts down the CA Repeater which was previously started by the supplied Java
-    * process manager.
-    *
-    * @param repeaterProcessManager the process manager.
-    * @throws NullPointerException if the repeaterProcessManager argument was null.
-    */
-   private void stopRepeater( JavaProcessManager repeaterProcessManager )
-   {
-      Validate.notNull( repeaterProcessManager );
-      if ( repeaterProcessManager.isAlive() )
-      {
-         logger.fine( "Sending the CA Repeater a termination signal..." );
-         repeaterProcessManager.shutdown();
-         logger.fine( "The CA Repeater was sent a termination signal." );
-      }
-      else
-      {
-         logger.fine( "The CA Repeater process was no longer alive => nothing to do." );
-         return;
-      }
-
-      try
-      {
-         Thread.sleep( REPEATER_SHUTDOWN_DELAY );
-      }
-      catch ( InterruptedException e )
-      {
-         logger.warning( "Interrupted whilst waiting for CA Repeater to start running." );
-         Thread.currentThread().interrupt();
-      }
-
-      if ( CARepeaterServiceManager.isRepeaterRunning( port ) )
-      {
-         logger.warning( "The CA Repeater failed to shutdown." );
-      }
-      else
-      {
-         logger.info( "The CA Repeater was shutdown ok." );
-      }
    }
 
 /*- Nested Classes -----------------------------------------------------------*/
