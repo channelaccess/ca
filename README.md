@@ -24,6 +24,7 @@ We warmly invite and appreciate __contributions__, __improvement suggestions__ a
 * Supports channel monitoring, including mask capability to select events-of-interest (eg value, log, alarm and/or 
 property changes).
 * Supports the following listeners: ConnectionListener, AccessRightsListener.
+ * Library can be used inside MATLAB to provide access to EPICS control system data. (See the [MATLAB_README](MATLAB_README.md) file for further details.)
 
 ## Compatibility
 
