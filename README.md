@@ -186,7 +186,7 @@ context.close();
 
 Alternatively, as the Context implements the Java `AutoCloseable` interface, it can also be used inside a 
 try-with-resources statement to ensure that the context's resources are automatically disposed when the 
-context hoes out of scope. 
+context goes out of scope. 
 
 ```
 try ( Context context = new Context)
