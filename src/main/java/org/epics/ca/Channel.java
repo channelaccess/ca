@@ -95,6 +95,15 @@ public interface Channel<T> extends AutoCloseable
    // get channel properties, e.g. native type, host, etc.
    Map<String, Object> getProperties();
 
+   //Number of elements to read.
+   //Default: 0 (defined by type or protocol)
+   //If negative then requests the native element count.
+   void setElementsToRead( int elementsToRead );
+
+   int getElementsToRead();
+
+   int getNativeElementCount();
+
    // suppresses AutoCloseable.close() exception
    @Override
    void close();

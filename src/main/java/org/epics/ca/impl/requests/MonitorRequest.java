@@ -142,13 +142,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
 
    public void resubscribe( Transport transport )
    {
-      int dataCount = typeSupport.getForcedElementCount ();
-
-      if ( dataCount == 0 && channel.getTcpTransport().getMinorRevision () < 13 )
-      {
-         dataCount = channel.getNativeElementCount();
-      }
-
+      final int dataCount = channel.getElementsToRead(typeSupport);
       Messages.createSubscriptionMessage ( transport, typeSupport.getDataType (), dataCount, channel.getSID (), ioid, mask );
       transport.flush ();
    }
@@ -198,12 +192,7 @@ public class MonitorRequest<T> implements Monitor<T>, NotifyResponseRequest
          return;
       }
 
-      int dataCount = typeSupport.getForcedElementCount();
-
-      if ( dataCount == 0 && channel.getTcpTransport().getMinorRevision () < 13 )
-      {
-         dataCount = channel.getNativeElementCount();
-      }
+      final int dataCount = channel.getElementsToRead(typeSupport);
 
       try
       {
