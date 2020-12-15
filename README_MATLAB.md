@@ -8,7 +8,7 @@ The latest release of this package can be downloaded [here](https://github.com/c
 After this download and copy the jar into your Matlab workspace and you are ready to go:
 
 ```Matlab
-javaaddpath('ca-all-1.3.2.jar')
+javaaddpath('ca-1.3.2-all.jar')
 import org.epics.ca.*
 
 context = Context();
