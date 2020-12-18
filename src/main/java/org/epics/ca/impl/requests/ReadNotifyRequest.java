@@ -60,11 +60,7 @@ public class ReadNotifyRequest<T> extends CompletableFuture<T> implements Notify
       this.sid = sid;
       this.typeSupport = typeSupport;
 
-      final int minorRevision = channel.getTcpTransport().getMinorRevision();
-      final int forcedElementCount = typeSupport.getForcedElementCount();
-      final int nativeElementCount = channel.getNativeElementCount();
-
-      final int dataCount = ( forcedElementCount == 0 ) && ( minorRevision < 13 ) ? nativeElementCount : forcedElementCount;
+      final int dataCount = channel.getElementsToRead(typeSupport);
       logger.finest( "Receive data count is: " + dataCount );
       context = transport.getContext();
       ioid = context.registerResponseRequest( this );

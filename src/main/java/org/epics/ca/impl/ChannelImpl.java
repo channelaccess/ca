@@ -6,6 +6,7 @@ package org.epics.ca.impl;
 
 import org.apache.commons.lang3.Validate;
 import org.epics.ca.*;
+import org.epics.ca.annotation.CaChannel;
 import org.epics.ca.data.Metadata;
 import org.epics.ca.impl.TypeSupports.TypeSupport;
 import org.epics.ca.impl.monitor.MonitorNotificationService;
@@ -18,8 +19,10 @@ import org.epics.ca.util.logging.LibraryLogManager;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,6 +78,8 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
    private boolean allowCreation = false;
 
    private volatile int nativeElementCount = 0;
+
+   private volatile int elementsToRead = 0;
 
    // on every connection loss the value gets incremented
    private final AtomicInteger connectionLossId = new AtomicInteger ();
@@ -374,6 +379,23 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       return properties;
    }
 
+   @Override
+   public void setElementsToRead( int elementsToRead )
+   {
+      this.elementsToRead = elementsToRead;
+   }
+
+   @Override
+   public int getElementsToRead()
+   {
+      return getElementsToRead(typeSupport);
+   }
+
+   @Override
+   public int getNativeElementCount()
+   {
+      return nativeElementCount;
+   }
 
 /*- Public non-interface methods ---------------------------------------------*/
 
@@ -395,9 +417,17 @@ public class ChannelImpl<T> implements Channel<T>, TransportClient
       return tcpTransport;
    }
 
-   public int getNativeElementCount()
+   public int getElementsToRead(TypeSupport typeSupport)
    {
-      return nativeElementCount;
+      int ret = (elementsToRead < 0) ?  nativeElementCount : elementsToRead;
+      ret = Math.max(Math.min(ret,nativeElementCount),0);
+      if(ret <=0) {
+         ret = typeSupport.getForcedElementCount();
+         if (ret == 0 && getTcpTransport().getMinorRevision() < 13) {
+            ret = nativeElementCount;
+         }
+      }
+      return ret;
    }
 
    /**

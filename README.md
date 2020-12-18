@@ -56,7 +56,7 @@ Add the following dependency:
 <dependency>
   <groupId>org.epics</groupId>
   <artifactId>ca</artifactId>
-  <version>1.3.2</version>
+  <version>1.4.0</version>
 </dependency>
 ```
 
@@ -76,7 +76,7 @@ and the following repository:
 Add the following dependency:
 
 ```gradle
-compile 'org.epics:ca:1.3.2'
+compile 'org.epics:ca:1.4.0'
 ```
 
 and the following repository:
